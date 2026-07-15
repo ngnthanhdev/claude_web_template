@@ -1,0 +1,21 @@
+# Builds the web app's Docker image and deploys it. The deploy step is
+# intentionally left as a provider-agnostic placeholder below — plug in your
+# host's CLI/action (Fly.io, Render, Railway, AWS, etc.) once one is chosen;
+# see docs/CI_CD.md. Mirrors api-deploy.yml for the apps/web target.
+name: Web Build
+on:
+  push: { branches: [main] }
+  workflow_dispatch:
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build web image
+        run: docker build -t web:${{ github.sha }} apps/web
+      # TODO: add your host's deploy step
+      # Examples:
+      #   - Fly.io:  flyctl deploy --config apps/web/fly.toml
+      #   - Render:  trigger the Render deploy hook or use the Render GitHub Action
+      #   - Railway: railway up --service web
+      #   - AWS:     push the image to ECR, then update the service (ECS/App Runner)

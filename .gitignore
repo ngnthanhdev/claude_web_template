@@ -1,0 +1,20 @@
+node_modules/
+.pnpm-store/
+dist/
+.turbo/
+coverage/
+*.orig.*
+# web build outputs
+.next/
+.vite/
+build/
+playwright-report/
+test-results/
+# graphify output (generated)
+graphify-out/
+# env & secrets
+.env
+.env.*.local
+.claude/settings.local.json
+# os
+.DS_Store

@@ -1,7 +1,12 @@
 import { ConfigService } from "@nestjs/config";
+import { ConfigModule } from "@nestjs/config";
+import { Test } from "@nestjs/testing";
 import { describe, expect, expectTypeOf, it } from "vitest";
 
 import type { Env } from "../../config/env.js";
+import { validateEnv } from "../../config/env.js";
+import { PrismaModule } from "../../prisma/prisma.module.js";
+import { PrismaService } from "../../prisma/prisma.service.js";
 import {
   SESSION_COOKIE_NAME,
   clearSessionCookie,
@@ -24,6 +29,7 @@ import {
   type AuthSessionTransaction,
   type StoredSession,
 } from "./auth-session.service.js";
+import { AuthCoreModule } from "./auth-core.module.js";
 
 const secret = (byte: string): string => Buffer.alloc(32, byte).toString("base64url");
 
@@ -363,5 +369,29 @@ describe("database-backed authentication state", () => {
     expect(AUTH_CLOCK).toBeTypeOf("symbol");
     expectTypeOf<AuthRatePrisma>().toBeObject();
     expectTypeOf<AuthSessionPrisma>().toBeObject();
+  });
+});
+
+describe("AuthCoreModule dependency injection", () => {
+  it("boots through Nest and resolves every auth-core provider", async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [
+        ConfigModule.forRoot({
+          isGlobal: true,
+          ignoreEnvFile: true,
+          validate: validateEnv,
+        }),
+        PrismaModule,
+        AuthCoreModule,
+      ],
+    })
+      .overrideProvider(PrismaService)
+      .useValue({})
+      .compile();
+
+    expect(moduleRef.get(AuthCryptoService)).toBeInstanceOf(AuthCryptoService);
+    expect(moduleRef.get(AuthRateLimitService)).toBeInstanceOf(AuthRateLimitService);
+    expect(moduleRef.get(AuthSessionService)).toBeInstanceOf(AuthSessionService);
+    await moduleRef.close();
   });
 });

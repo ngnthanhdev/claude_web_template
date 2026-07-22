@@ -49,7 +49,7 @@ const DAY = 24 * 60 * MINUTE;
 export class AuthRateLimitService {
   constructor(
     @Inject(PrismaService) private readonly prisma: AuthRatePrisma,
-    private readonly crypto: AuthCryptoService,
+    @Inject(AuthCryptoService) private readonly crypto: AuthCryptoService,
     @Inject(AUTH_CLOCK) private readonly clock: AuthClock,
   ) {}
 

@@ -112,7 +112,7 @@ const ROTATION_INTERVAL = DAY;
 export class AuthSessionService {
   constructor(
     @Inject(PrismaService) private readonly prisma: AuthSessionPrisma,
-    private readonly crypto: AuthCryptoService,
+    @Inject(AuthCryptoService) private readonly crypto: AuthCryptoService,
     @Inject(AUTH_CLOCK) private readonly clock: AuthClock,
   ) {}
 

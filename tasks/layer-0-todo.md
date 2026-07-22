@@ -1,171 +1,100 @@
-# Layer 0 — Foundation
+# Layer 0 — Template Marketplace Foundation
 
-Status: **not started**
+Status: **in progress**
 
-This is the first layer every project built from this template runs, before
-any project-specific feature work. It scaffolds the empty `apps/*` and
-`packages/shared` placeholders into a real web app, a real NestJS API, and a
-real shared-schema package, adds Docker build for both apps, then wires CI
-against them. Nothing in Layer 1 should start until every task below is
-`Status: done` and its acceptance criteria are met.
+This layer establishes the project skeleton required by every later marketplace
+feature. It intentionally stops before catalogue models, authentication,
+commerce, storefront screens, admin workflows, and template inventory. Those
+belong to later layers derived after this foundation is proven green.
 
-Each task is a level-3 heading with a stable `T-xxxxxx` id, followed by a
-metadata list (`Status`, `Assignee`, `Files`, `Acceptance`, `Skills`, and an
-optional `Depends`):
-
-```markdown
-### T-a3f9c1 — <title>
-- **Status:** todo        <!-- todo | ready | in-progress | blocked | review | done -->
-- **Assignee:** ai        <!-- ai | human -->
-- **Files:** apps/api/prisma/schema.prisma, ...
-- **Acceptance:** <checkable definition of done>
-- **Skills:** database-orm, shared-contracts
-- **Depends:** T-xxxxxx   <!-- optional, omit if none -->
-```
-
-`Status` moves `todo → ready → in-progress → blocked/review → done` as
-`/run-layer` and its `task-implementer`s work the task; `Assignee` is `ai`
-unless a task needs a human decision first. Tasks in this layer are
-independent enough to fan out via `/run-layer`, except where a task
-explicitly notes a `Depends` on another task in this file.
-
-> The web framework (Next.js App Router or Vite + React) and styling approach
-> are decided in Phase 0 and recorded in the approved `docs/specs/` design.
-> The tasks below scaffold whichever was chosen — read the design doc first.
+Tasks run in dependency waves. Tasks whose `Depends` requirements are already
+complete may run in parallel, and no two tasks own the same file. To avoid
+worktree conflicts, only the final CI task updates `pnpm-lock.yaml`; preceding
+tasks may install locally with `--no-lockfile` for verification but must not
+commit lockfile changes.
 
 ---
 
-### T-13ab58 — Scaffold the web app in apps/web
-- **Status:** todo
+### T-a463b5 — Establish shared wire-contract primitives
+- **Status:** done
 - **Assignee:** ai
-- **Files:** apps/web/**, apps/web/package.json, apps/web/tsconfig.json
+- **Files:** packages/shared/package.json, packages/shared/tsconfig.json, packages/shared/vitest.config.ts, packages/shared/src/index.ts, packages/shared/src/api.ts, packages/shared/src/localization.ts, packages/shared/src/money.ts, packages/shared/src/api.test.ts
 - **Acceptance:**
-  - Web app created in the Phase-0-chosen framework: **Next.js (App Router)**
-    or **Vite + React (SPA)** — per the approved `docs/specs/` design.
-  - Root layout/entry wires the providers stack (`QueryClientProvider`, theme
-    provider) and a responsive app shell (header + collapsible nav + max-width
-    main), per `web-app-foundation`.
-  - Path aliases `@/*` and `@shared/*` resolve in `tsconfig.json` (extends
-    `../../tsconfig.base.json`) and the bundler config.
-  - A sample styled page renders correctly with the chosen styling layer.
-  - `pnpm --filter web exec tsc --noEmit` passes with no errors.
-  - Dev server (`next dev` / `vite`) boots with no console errors.
-- **Skills:** web-app-foundation, web-styling, web-responsive
-
----
-
-### T-804011 — Install the web UI + data stack
-- **Status:** todo
-- **Assignee:** ai
-- **Files:** apps/web/package.json
-- **Acceptance:**
-  - Styling layer installed and configured: **Tailwind CSS + shadcn/ui** by
-    default (or the Phase-0-chosen alternative), with design tokens and dark
-    mode wired per `web-styling`.
-  - **TanStack Query** installed with a typed API client that validates
-    responses against `@shared` zod schemas (`web-api-integration`).
-  - **react-hook-form** + `@hookform/resolvers/zod` installed for forms
-    (`web-data-forms`).
-  - **Framer Motion** installed for animation (`web-animations`).
-  - A trivial query hook and a trivial `motion` transition each render without
-    runtime errors.
-- **Skills:** web-styling, web-api-integration, web-data-forms, web-animations
-- **Depends:** T-13ab58
-
----
-
-### T-2f2057 — Scaffold the NestJS API in apps/api
-- **Status:** todo
-- **Assignee:** ai
-- **Files:** apps/api/**, apps/api/package.json, apps/api/tsconfig.json, apps/api/prisma/schema.prisma
-- **Acceptance:**
-  - NestJS app created using the **Fastify** adapter
-    (`@nestjs/platform-fastify`), not the default Express adapter.
-  - Prisma initialized with a `PrismaModule`/`PrismaService` pattern and a
-    minimal `schema.prisma` (even a placeholder model is fine at this stage).
-  - `nestjs-zod`'s `ZodValidationPipe` wired as a global pipe.
-  - `apps/api/tsconfig.json` extends `../../tsconfig.base.json`.
-  - A health-check endpoint (`GET /health`) returns `200`.
-  - `pnpm --filter api exec tsc --noEmit` passes with no errors.
-  - `pnpm --filter api test` runs (even a single smoke test) and passes.
-- **Skills:** nestjs-backend, database-orm
-
----
-
-### T-a463b5 — Initialize packages/shared
-- **Status:** todo
-- **Assignee:** ai
-- **Files:** packages/shared/**, packages/shared/package.json, packages/shared/tsconfig.json, packages/shared/src/index.ts
-- **Acceptance:**
-  - Package exports zod schemas and their inferred TypeScript types from
-    `packages/shared/src`.
-  - `packages/shared/tsconfig.json` extends `../../tsconfig.base.json` and
-    respects the `@shared/*` path alias defined there.
-  - At least one real schema exists (even a minimal one, e.g. a shared error
-    envelope or a health-check response shape) and is importable from both
-    `apps/web` and `apps/api` without a build step (or with a documented
-    build step if the monorepo setup requires one).
-  - `pnpm --filter @shared exec tsc --noEmit` passes with no errors.
+  - `@marketplace/shared` is a strict TypeScript package exporting Zod schemas and inferred types for the `/v1` error envelope, health response, cursor-page metadata, supported locales (`vi`, `en`), supported currencies (`VND`, `USD`), and integer-minor-unit money values.
+  - The primitives encode only cross-cutting wire conventions from the approved spec; catalogue, auth, cart, order, and entitlement contracts are deferred.
+  - Package scripts provide `build`, `lint`, `typecheck`, and `test`, with contract tests covering valid data and representative invalid boundaries such as fractional money and unsupported locale/currency values.
+  - `pnpm --filter @marketplace/shared typecheck` and `pnpm --filter @marketplace/shared test` pass.
 - **Skills:** shared-contracts, typescript-strict
 
----
-
-### T-9e4c1a — Add Dockerfiles for apps/web and apps/api
-- **Status:** todo
+### T-6c8d2e — Scaffold the controlled template-factory package
+- **Status:** done
 - **Assignee:** ai
-- **Files:** apps/web/Dockerfile, apps/api/Dockerfile, apps/web/.dockerignore, apps/api/.dockerignore
+- **Files:** packages/template-factory/package.json, packages/template-factory/tsconfig.json, packages/template-factory/vitest.config.ts, packages/template-factory/src/index.ts, packages/template-factory/src/manifest.ts, packages/template-factory/src/adapter.ts, packages/template-factory/src/pipeline.ts, packages/template-factory/src/manifest.test.ts, packages/template-factory/fixtures/valid/template.manifest.json
 - **Acceptance:**
-  - Each app has a multi-stage Dockerfile that installs workspace deps,
-    builds the app (and `packages/shared`), and runs as a non-root user.
-  - The web image builds the chosen framework's production output
-    (`next build` standalone, or the Vite build served by a static host/nginx).
-  - The API image builds the NestJS app and starts it with a `/health`
-    healthcheck.
-  - No secrets baked into either image (env supplied at runtime).
-  - `.github/workflows/web-build.yml` and `api-deploy.yml` build these images
-    successfully (deploy step stays the provider-agnostic placeholder).
+  - `@marketplace/template-factory` is a strict TypeScript package with `build`, `lint`, `typecheck`, and `test` scripts.
+  - A versioned `template.manifest.json` schema validates identity, category, version, compatibility, Regular/Extended licence metadata, demo-page declarations, and build-adapter identity without embedding a specific product or vendor implementation.
+  - Typed adapter and pipeline-stage interfaces establish the later validate → build/install test → browser/axe/visual QA → security/licence scan → package/checksum/SBOM/docs → install-from-ZIP → human approval → immutable publish flow; provider integrations and executable build runners remain deferred.
+  - The committed fixture passes, malformed manifest cases fail with useful validation errors, and `pnpm --filter @marketplace/template-factory typecheck` plus `pnpm --filter @marketplace/template-factory test` pass.
+- **Skills:** typescript-strict
+
+### T-13ab58 — Scaffold the Next.js marketplace shell
+- **Status:** done
+- **Assignee:** ai
+- **Files:** apps/web/package.json, apps/web/tsconfig.json, apps/web/next-env.d.ts, apps/web/next.config.ts, apps/web/eslint.config.mjs, apps/web/postcss.config.mjs, apps/web/components.json, apps/web/vitest.config.ts, apps/web/src/app/layout.tsx, apps/web/src/app/page.tsx, apps/web/src/app/globals.css, apps/web/src/components/app-shell.tsx, apps/web/src/components/providers.tsx, apps/web/src/components/ui/button.tsx, apps/web/src/lib/api-client.ts, apps/web/src/lib/query-client.ts, apps/web/src/lib/utils.ts, apps/web/src/app/page.test.tsx
+- **Acceptance:**
+  - The app uses the locked Next.js App Router stack with strict TypeScript, Tailwind CSS, owned shadcn/ui source, TanStack Query, react-hook-form with Zod resolver support, and Framer Motion.
+  - The root provider stack and a responsive public-shell placeholder render without introducing any product screen; `@/*` and `@shared/*` resolve, and the typed API client validates a health response with `@marketplace/shared` before returning it.
+  - Global CSS defines the approved Coral modern-minimal Hallmark foundation as semantic tokens (neutral paper surfaces, restrained coral accent, typography, spacing, radius, borders, focus, and motion durations) without a gradient hero or invented marketing proof.
+  - The shell preserves zoom, uses visible keyboard focus, provides at least 44px interactive targets, respects reduced motion, and has no page-level horizontal overflow at a 320px viewport.
+  - Package scripts provide `build`, `lint`, `typecheck`, and `test`; the component test verifies the shell, provider wiring, and accessible landmark/focus behavior.
+  - `pnpm --filter @marketplace/web typecheck` and `pnpm --filter @marketplace/web test` pass, and `pnpm --filter @marketplace/web dev` boots without console errors.
+- **Skills:** web-app-foundation, web-styling, hallmark, web-responsive, web-api-integration, web-data-forms, motion-design-principles, web-animations, web-security, web-testing-release, typescript-strict
+- **Depends:** T-a463b5
+
+### T-2f2057 — Scaffold the NestJS Fastify API
+- **Status:** done
+- **Assignee:** ai
+- **Files:** apps/api/package.json, apps/api/tsconfig.json, apps/api/nest-cli.json, apps/api/eslint.config.mjs, apps/api/vitest.config.ts, apps/api/.env.example, apps/api/prisma/schema.prisma, apps/api/src/main.ts, apps/api/src/app.module.ts, apps/api/src/config/env.ts, apps/api/src/common/filters/api-exception.filter.ts, apps/api/src/prisma/prisma.module.ts, apps/api/src/prisma/prisma.service.ts, apps/api/src/health/health.module.ts, apps/api/src/health/health.controller.ts, apps/api/src/health/health.controller.test.ts
+- **Acceptance:**
+  - NestJS boots on the Fastify adapter with `ConfigModule`, PrismaModule/PrismaService, `nestjs-zod` global validation, and a global exception filter that emits the shared `{error:{code,message,details?}}` envelope.
+  - Prisma is configured for PostgreSQL through validated environment variables and contains generator/datasource configuration only; marketplace domain models and migrations are deferred.
+  - `GET /health` returns `200` with a body accepted by the shared health schema, while future API resources are configured under the `/v1` prefix.
+  - The baseline config uses no hard-coded credentials, does not expose stack traces in production responses, and leaves provider-neutral CORS/origin configuration explicit in `.env.example`.
+  - Package scripts provide `build`, `lint`, `typecheck`, and `test`; the health/exception smoke tests pass with the Fastify-backed Nest application.
+  - `pnpm --filter @marketplace/api typecheck` and `pnpm --filter @marketplace/api test` pass.
+- **Skills:** api-design, nestjs-backend, database-orm, backend-auth-security, backend-testing, shared-contracts, typescript-strict
+- **Depends:** T-a463b5
+
+### T-9e4c1a — Add production container definitions
+- **Status:** done
+- **Assignee:** ai
+- **Files:** apps/web/Dockerfile, apps/web/.dockerignore, apps/api/Dockerfile, apps/api/.dockerignore, .github/workflows/web-build.yml, .github/workflows/api-deploy.yml
+- **Acceptance:**
+  - Both apps have multi-stage, workspace-aware Dockerfiles that build from the repository-root context, include required shared workspace packages, copy only production output, and run as non-root users without baking secrets into images.
+  - The web container runs the Next.js standalone production output; the API container runs compiled NestJS output and exposes a container health check against `/health`.
+  - Both workflows invoke `docker build` with repository-root context and their app-specific Dockerfile, retain manual/main-only triggers, and retain an explicit provider-neutral deploy placeholder because hosting remains an open decision.
+  - Dockerfiles and workflow YAML pass static validation; full image builds are verified in a real terminal outside the agent session, consistent with the repository's heavy-build rule.
 - **Skills:** web-testing-release, web-security, backend-auth-security
 - **Depends:** T-13ab58, T-2f2057
 
----
-
-### T-f5834d — Wire CI against the scaffolded skeleton
-- **Status:** todo
+### T-f5834d — Reconcile the workspace lockfile and CI gate
+- **Status:** done
 - **Assignee:** ai
-- **Files:** .github/workflows/ci.yml, turbo.json
+- **Files:** pnpm-lock.yaml, turbo.json, .github/workflows/ci.yml
 - **Acceptance:**
-  - `pnpm turbo run lint typecheck test` passes locally across all three
-    packages.
-  - Pushing a branch/PR triggers `ci.yml` and it goes green.
-  - Any turbo pipeline gaps discovered (e.g. a package missing a `lint` or
-    `test` script that `turbo.json` expects) are fixed so the root scripts
-    work uniformly across `apps/web`, `apps/api`, and `packages/shared`.
+  - `pnpm install --lockfile-only` produces a frozen lockfile covering `@marketplace/web`, `@marketplace/api`, `@marketplace/shared`, and `@marketplace/template-factory` without changing any package manifest.
+  - Turbo runs dependency-aware `build`, `lint`, `typecheck`, and `test` tasks across all four packages with cache outputs appropriate to Next.js, NestJS, and coverage artifacts.
+  - CI installs with `--frozen-lockfile` and gates pull requests plus pushes to `main`/`develop` on `pnpm turbo run lint typecheck test` using Node.js 20 and pnpm 9.
+  - `pnpm lint`, `pnpm typecheck`, and `pnpm test` pass from the repository root; CI workflow syntax is valid.
 - **Skills:** git-workflow
-- **Depends:** T-13ab58, T-804011, T-2f2057, T-a463b5
-
-No new files are expected for this task beyond what's listed above — it
-verifies `.github/workflows/ci.yml` (already shipped by the template) against
-the now-populated `apps/*` and `packages/shared`, touching a package's own
-`package.json` scripts only if a pipeline gap is found.
+- **Depends:** T-a463b5, T-6c8d2e, T-13ab58, T-2f2057, T-9e4c1a
 
 ---
 
-## After this layer: creating `layer-1-todo.md`
+## Layer completion gate
 
-Once every task above is `Status: done` and `pnpm turbo run lint typecheck test`
-is green, run `/next-layer`. It will:
-
-1. Confirm the gate (all Layer 0 tests passing).
-2. Move this file's completed tasks into `tasks/done.md`.
-3. Dispatch `scope-planner` again — this time with both the approved
-   `docs/specs/` design and the now-real `apps/*`/`packages/shared` code as
-   context — to derive `tasks/layer-1-todo.md`, the first layer of actual
-   product features (see `docs/SCOPE_BREAKDOWN.md` for how layers are
-   derived, and its worked example for what a Layer 1 commonly contains:
-   shared auth/data contracts, the primary data model, and the first
-   real pages).
-4. Bump "Current Layer" / "Current Task" in `CLAUDE.md` to point at Layer 1.
-
-Do not hand-write `layer-1-todo.md` yourself — always generate it through
-`/next-layer` → `scope-planner` so it stays derived from the approved spec
-rather than drifting from it.
+Do not create or start Layer 1 until every task above is `done`, the root
+lint/typecheck/test commands pass, and the external Docker build checks have
+been reported green. Then run `/next-layer` so the next scope-planning pass can
+derive the first product layer from the approved design and the foundation that
+actually shipped.

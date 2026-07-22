@@ -1,55 +1,54 @@
 # Brief
 
-> Filled during Phase 0 for **your** project. This file starts as a rough
-> brain-dump — it doesn't need to be polished, it needs to capture the idea
-> before it's forgotten. `scripts/start-project.*` may have pre-filled parts
-> of this from a description you gave it; Phase 0 (`/phase-0`) reads it as the
-> starting point for the clarifying conversation.
+## The idea
 
-## The idea, in a few sentences
+A bilingual Vietnamese/English marketplace named **KITVERA** for downloadable website templates,
+similar in breadth to ThemeForest but with its own product and visual identity.
+The platform sells templates created and owned by the platform in v1 while
+keeping the ownership model ready for a future multi-vendor marketplace.
 
-_[fill in during Phase 0]_
+## Who it is for
 
-What is this product, in the way you'd describe it to a friend in thirty
-seconds?
-
-## Who it's for
-
-_[fill in during Phase 0]_
-
-Who is the primary user? What are they doing today instead of using this?
+Developers, freelancers, agencies, and business owners in Vietnam and abroad
+who need to discover, compare, preview, license, and download production-ready
+website templates.
 
 ## Why it matters
 
-_[fill in during Phase 0]_
-
-What problem does this solve, or what does it make meaningfully better/faster/
-more delightful?
+Buyers need a trustworthy catalogue with clear compatibility, live demos,
+version history, documentation, and predictable licensing. The product also
+needs a repeatable way to produce and quality-check a large, diverse inventory
+rather than publishing superficial recolours of one design.
 
 ## Rough scope
 
-_[fill in during Phase 0]_
+- Ten top-level catalogue groups: WordPress, Elementor, HTML, Shopify,
+  Jamstack, Marketing, CMS, eCommerce, UI Templates, and Plugins.
+- At least eight downloadable products per group (80 products minimum).
+- Multiple pages/demos per product, with Regular and Extended licences.
+- Public storefront, product discovery, live previews, cart/checkout sandbox,
+  customer library, admin console, and a controlled template factory.
+- Vietnamese/English locale routes and separately managed VND/USD prices.
+- Next.js App Router web app backed by the template's locked NestJS/Fastify,
+  Prisma/PostgreSQL, and shared-Zod-contract stack.
 
-A loose list of the things you imagine this needing — screens, core actions,
-integrations. This does not need to be complete or correctly scoped; Phase 0
-will turn it into a real PRD and design.
+## Explicit non-goals for v1
 
-## Anything you already know you don't want
-
-_[fill in during Phase 0]_
-
-Explicit non-goals, if you have any in mind already — these save time in
-Phase 0 by ruling things out early.
+- Production payment integration, automated tax/invoicing, refunds, or
+  chargebacks.
+- Public seller onboarding, KYC, commissions, payouts, or seller dashboards.
+- Subscriptions, unlimited downloads, hosting, Client Workspace, a browser
+  website builder, native apps, or offline mode.
+- Languages other than Vietnamese/English or currencies other than VND/USD.
 
 ## Constraints
 
-_[fill in during Phase 0]_
-
-Any hard constraints already known: timeline, platforms, must-integrate-with
-systems, compliance requirements, budget for third-party services, etc.
-
----
-
-Once this brief is roughly filled in (even partially), running `/phase-0`
-starts the clarifying conversation that turns it into `docs/PRD.md` and an
-approved design in `docs/specs/`.
+- KITVERA uses the approved browser-frame/modular-block `K` identity and Coral
+  modern-minimal palette documented in `docs/brand/README.md`.
+- Payment-provider integration is deferred and blocks production go-live.
+- Every product must pass platform-specific build, install, accessibility,
+  visual, security, packaging, and documentation gates.
+- Template sources live in private per-product repositories; immutable release
+  artifacts and isolated live previews are referenced by the marketplace.
+- No invented sales counts, ratings, testimonials, scarcity, or compatibility
+  claims.

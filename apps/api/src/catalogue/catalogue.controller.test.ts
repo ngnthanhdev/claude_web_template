@@ -280,6 +280,88 @@ describe("CatalogueService boundaries", () => {
     expect(prisma.$queryRaw).not.toHaveBeenCalled();
   });
 
+  it("maps reserved persistence prefixes to deterministic public tags that round-trip", async () => {
+    prisma.$queryRaw.mockResolvedValue([
+      {
+        id: "00000000-0000-4000-8000-000000000101",
+        root_slug: "elementor",
+        published_at: new Date("2026-07-21T12:00:00.000Z"),
+        updated_at: new Date("2026-07-21T12:00:00.000Z"),
+        amount: 49,
+        normalized_title: "aurora",
+        rank_value: "0",
+      },
+    ]);
+    prisma.product.findMany.mockResolvedValue([
+      {
+        id: "00000000-0000-4000-8000-000000000101",
+        slug: "aurora",
+        publicationState: PublicationState.published,
+        currentVersion: "1.0.0",
+        thumbnailUrl: "https://assets.example.com/aurora.webp",
+        translations: [
+          { locale: "vi", title: "Aurora", summary: "Tóm tắt Aurora" },
+          { locale: "en", title: "Aurora", summary: "Aurora summary" },
+        ],
+        tags: [
+          { tag: { slug: "technology-react" } },
+          { tag: { slug: "industry-saas" } },
+          { tag: { slug: "page-type-landing-page" } },
+          { tag: { slug: "template-type-kit" } },
+          { tag: { slug: "feature-fast-loading" } },
+          { tag: { slug: "feature-react" } },
+          { tag: { slug: "utility" } },
+        ],
+        licenceOptions: [
+          {
+            identifier: "Regular",
+            prices: [
+              { currency: "VND", amount: 1_000_000 },
+              { currency: "USD", amount: 49 },
+            ],
+          },
+          {
+            identifier: "Extended",
+            prices: [
+              { currency: "VND", amount: 2_000_000 },
+              { currency: "USD", amount: 99 },
+            ],
+          },
+        ],
+      },
+    ]);
+
+    const response = productCollectionResponseSchema.parse(
+      await catalogue.findProducts(baseQuery),
+    );
+    expect(response.data[0]?.tags).toEqual([
+      "fast-loading",
+      "kit",
+      "landing-page",
+      "react",
+      "saas",
+      "utility",
+    ]);
+    expect(JSON.stringify(response)).not.toMatch(
+      /technology-|template-type-|page-type-|industry-|feature-/,
+    );
+
+    const returnedReact = response.data[0]?.tags.find((tag) => tag === "react");
+    if (returnedReact === undefined) throw new Error("Missing public react tag");
+    vi.clearAllMocks();
+    prisma.tag.findMany.mockResolvedValue([{ slug: "technology-react" }]);
+    prisma.$queryRaw.mockResolvedValue([]);
+    prisma.product.findMany.mockResolvedValue([]);
+    await catalogue.findProducts({
+      ...baseQuery,
+      technology: [returnedReact],
+    });
+    expect(prisma.tag.findMany).toHaveBeenCalledWith({
+      where: { slug: { in: ["technology-react"] } },
+      select: { slug: true },
+    });
+  });
+
   it("scopes detail lookup to published products and hides a missing slug", async () => {
     prisma.product.findFirst.mockResolvedValue(null);
 

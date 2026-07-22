@@ -470,6 +470,13 @@ describeWithPostgres("Catalogue PostgreSQL integration", () => {
       "aurora-landing",
       "cobalt-portfolio",
     ]);
+    expect(collection.data.flatMap(({ tags }) => tags)).not.toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(
+          /^(?:technology|template-type|page-type|industry|feature)-/,
+        ),
+      ]),
+    );
     expect(collectionResponse.text).not.toContain("sellerId");
     expect(collectionResponse.text).not.toContain("normalizedEmail");
 
@@ -482,6 +489,38 @@ describeWithPostgres("Catalogue PostgreSQL integration", () => {
     expect(detail.slug).toBe("aurora-landing");
     expect(detail.translations).toHaveLength(2);
     expect(detail.licenceOptions).toHaveLength(2);
+    expect(detail.tags).toEqual([
+      "fast-loading",
+      "landing-page",
+      "react",
+      "saas",
+    ]);
+    expect(detailResponse.text).not.toMatch(
+      /technology-|template-type-|page-type-|industry-|feature-/,
+    );
+
+    const returnedTechnology = detail.tags.find((tag) => tag === "react");
+    const returnedIndustry = detail.tags.find((tag) => tag === "saas");
+    const returnedPageType = detail.tags.find((tag) => tag === "landing-page");
+    const returnedFeature = detail.tags.find((tag) => tag === "fast-loading");
+    if (
+      returnedTechnology === undefined ||
+      returnedIndustry === undefined ||
+      returnedPageType === undefined ||
+      returnedFeature === undefined
+    ) {
+      throw new Error("Public facet tags were not mapped from persistence");
+    }
+    const roundTripResponse = await request(app.getHttpServer())
+      .get(
+        `/v1/products?locale=en&currency=USD&licence=Regular&technology=${encodeURIComponent(returnedTechnology)}&industry=${encodeURIComponent(returnedIndustry)}&pageType=${encodeURIComponent(returnedPageType)}&feature=${encodeURIComponent(returnedFeature)}`,
+      )
+      .expect(200);
+    expect(
+      productCollectionResponseSchema.parse(
+        JSON.parse(roundTripResponse.text),
+      ).data.map(({ slug }) => slug),
+    ).toEqual(["aurora-landing"]);
   });
 
   it.each(["private-draft", "retired-template", "unknown-product"])(

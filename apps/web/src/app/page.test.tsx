@@ -2,6 +2,8 @@ import { cleanup, render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 import userEvent from "@testing-library/user-event";
 import { useQueryClient } from "@tanstack/react-query";
+import { categorySlugSchema } from "@shared/catalogue";
+import { localeSchema } from "@shared/localization";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ZodError } from "zod";
@@ -10,7 +12,7 @@ import { viewport } from "@/app/layout";
 import HomePage from "@/app/[locale]/page";
 import { AppShell } from "@/components/app-shell";
 import { Providers } from "@/components/providers";
-import { isSupportedLocale, resolvePreferredLocale } from "@/i18n/routing";
+import { isSupportedLocale, resolvePreferredLocale, routing } from "@/i18n/routing";
 import { ApiClientError, apiClient } from "@/lib/api-client";
 import { createContentSecurityPolicy } from "@/middleware";
 import enMessages from "../../messages/en.json";
@@ -33,6 +35,18 @@ describe("public marketplace shell", () => {
       locale: "vi",
       messages: viMessages,
       navigationLabel: "Điều hướng chính",
+      categoryLabels: [
+        "WordPress",
+        "Elementor",
+        "HTML",
+        "Jamstack",
+        "Shopify",
+        "Thương mại điện tử",
+        "Tiện ích",
+        "Tiếp thị",
+        "CMS",
+        "Mẫu giao diện",
+      ],
       status: "Nội dung danh mục sẽ xuất hiện tại đây",
       templateGroupsLabel: "Nhóm mẫu",
     },
@@ -43,6 +57,18 @@ describe("public marketplace shell", () => {
       locale: "en",
       messages: enMessages,
       navigationLabel: "Primary navigation",
+      categoryLabels: [
+        "WordPress",
+        "Elementor",
+        "HTML",
+        "Jamstack",
+        "Shopify",
+        "eCommerce",
+        "Plugins",
+        "Marketing",
+        "CMS",
+        "UI Templates",
+      ],
       status: "Catalogue content will appear here",
       templateGroupsLabel: "Template groups",
     },
@@ -53,6 +79,7 @@ describe("public marketplace shell", () => {
     locale,
     messages,
     navigationLabel,
+    categoryLabels,
     status,
     templateGroupsLabel,
   }) => {
@@ -89,6 +116,10 @@ describe("public marketplace shell", () => {
     await user.click(menuButton);
     expect(menuButton).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByRole("region", { name: templateGroupsLabel })).toBeInTheDocument();
+    expect(screen.getAllByRole("listitem")).toHaveLength(categorySlugSchema.options.length);
+    for (const categoryLabel of categoryLabels) {
+      expect(screen.getByText(categoryLabel)).toBeInTheDocument();
+    }
 
     await user.keyboard("{Escape}");
     expect(menuButton).toHaveAttribute("aria-expanded", "false");
@@ -99,6 +130,10 @@ describe("public marketplace shell", () => {
 afterEach(() => cleanup());
 
 describe("locale routing", () => {
+  it("uses the shared catalogue locale vocabulary for every web route", () => {
+    expect([...routing.locales]).toEqual(localeSchema.options);
+  });
+
   it.each([
     {
       acceptLanguage: "vi-VN,vi;q=0.9",

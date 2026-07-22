@@ -64,6 +64,18 @@ const tagFacetKeys = [
   "feature",
 ] satisfies readonly TagFacetKey[];
 
+const tagFacetPrefixes = {
+  technology: "technology",
+  templateType: "template-type",
+  pageType: "page-type",
+  industry: "industry",
+  feature: "feature",
+} satisfies Record<TagFacetKey, string>;
+
+// Tag has no dimension column. Reserving valid slug prefixes keeps each
+// controlled facet in its own persistence vocabulary without unsafe parsing
+// or allowing one row to satisfy multiple dimensions.
+
 const accentCharacters =
   "áàảãạăắằẳẵặâấầẩẫậéèẻẽẹêếềểễệíìỉĩịóòỏõọôốồổỗộơớờởỡợúùủũụưứừửữựýỳỷỹỵđ";
 const plainCharacters =
@@ -77,6 +89,14 @@ function invalidRequest(path: (string | number)[], message: string): never {
 
 function uniqueSorted(values: readonly string[]): string[] {
   return [...new Set(values)].sort();
+}
+
+function persistenceFacetSlugs(
+  key: TagFacetKey,
+  values: readonly string[],
+): string[] {
+  const prefix = tagFacetPrefixes[key];
+  return uniqueSorted(values).map((value) => `${prefix}-${value}`);
 }
 
 function normalizeSearch(value: string): string {
@@ -341,12 +361,13 @@ export class CatalogueService {
     for (const key of tagFacetKeys) {
       const values = query[key];
       if (values === undefined) continue;
+      const persistedValues = persistenceFacetSlugs(key, values);
       clauses.push(Prisma.sql`EXISTS (
         SELECT 1
         FROM "product_tags" AS "facet_product_tag"
         JOIN "tags" AS "facet_tag" ON "facet_tag"."id" = "facet_product_tag"."tag_id"
         WHERE "facet_product_tag"."product_id" = "product"."id"
-          AND "facet_tag"."slug" IN (${Prisma.join(uniqueSorted(values))})
+          AND "facet_tag"."slug" IN (${Prisma.join(persistedValues)})
       )`);
     }
     if (query.compatibility !== undefined) {
@@ -543,7 +564,7 @@ export class CatalogueService {
     for (const key of tagFacetKeys) {
       const values = query[key];
       if (values === undefined) continue;
-      const requested = uniqueSorted(values);
+      const requested = persistenceFacetSlugs(key, values);
       const rows = await this.prisma.tag.findMany({
         where: { slug: { in: requested } },
         select: { slug: true },
@@ -551,7 +572,8 @@ export class CatalogueService {
       const known = new Set(rows.map(({ slug }) => slug));
       const unknown = requested.find((slug) => !known.has(slug));
       if (unknown !== undefined) {
-        invalidRequest([key], `Unknown ${key} value: ${unknown}`);
+        const publicValue = unknown.slice(tagFacetPrefixes[key].length + 1);
+        invalidRequest([key], `Unknown ${key} value: ${publicValue}`);
       }
     }
 

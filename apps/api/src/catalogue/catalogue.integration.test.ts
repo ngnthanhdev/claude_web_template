@@ -300,12 +300,13 @@ async function seedCatalogue(prisma: PrismaClient): Promise<void> {
     });
     await tx.tag.createMany({
       data: [
-        { slug: "react" },
-        { slug: "vue" },
-        { slug: "landing-page" },
-        { slug: "portfolio" },
-        { slug: "saas" },
-        { slug: "agency" },
+        { slug: "technology-react" },
+        { slug: "technology-vue" },
+        { slug: "page-type-landing-page" },
+        { slug: "page-type-portfolio" },
+        { slug: "industry-saas" },
+        { slug: "industry-agency" },
+        { slug: "feature-fast-loading" },
       ],
     });
 
@@ -317,7 +318,12 @@ async function seedCatalogue(prisma: PrismaClient): Promise<void> {
       state: PublicationState.published,
       enTitle: "Aurora Landing Template",
       viTitle: "Mẫu Ánh Dương",
-      tags: ["react", "landing-page", "saas"],
+      tags: [
+        "technology-react",
+        "page-type-landing-page",
+        "industry-saas",
+        "feature-fast-loading",
+      ],
       compatibilityTarget: "wordpress",
       compatibilityConstraint: "6.x",
       regularVnd: 1_000_000,
@@ -334,7 +340,11 @@ async function seedCatalogue(prisma: PrismaClient): Promise<void> {
       state: PublicationState.published,
       enTitle: "Cobalt Portfolio Template",
       viTitle: "Mẫu Hồ Sơ Cobalt",
-      tags: ["vue", "portfolio", "agency"],
+      tags: [
+        "technology-vue",
+        "page-type-portfolio",
+        "industry-agency",
+      ],
       compatibilityTarget: "html5",
       compatibilityConstraint: "1.x",
       regularVnd: 2_000_000,
@@ -351,7 +361,7 @@ async function seedCatalogue(prisma: PrismaClient): Promise<void> {
       state: PublicationState.draft,
       enTitle: "Private Draft Template",
       viTitle: "Mẫu nháp riêng tư",
-      tags: ["react", "saas"],
+      tags: ["technology-react", "industry-saas"],
       compatibilityTarget: "wordpress",
       compatibilityConstraint: "6.x",
       regularVnd: 100,
@@ -368,7 +378,7 @@ async function seedCatalogue(prisma: PrismaClient): Promise<void> {
       state: PublicationState.delisted,
       enTitle: "Retired Template",
       viTitle: "Mẫu đã gỡ",
-      tags: ["react", "landing-page"],
+      tags: ["technology-react", "page-type-landing-page"],
       compatibilityTarget: "wordpress",
       compatibilityConstraint: "6.x",
       regularVnd: 500_000,
@@ -502,9 +512,20 @@ describeWithPostgres("Catalogue PostgreSQL integration", () => {
     );
     expect(andBody.data).toEqual([]);
 
+    const multiDimensionResponse = await request(app.getHttpServer())
+      .get(
+        "/v1/products?locale=en&currency=USD&licence=Regular&technology=react&industry=saas&pageType=landing-page&feature=fast-loading",
+      )
+      .expect(200);
+    expect(
+      productCollectionResponseSchema.parse(
+        JSON.parse(multiDimensionResponse.text),
+      ).data.map(({ slug }) => slug),
+    ).toEqual(["aurora-landing"]);
+
     const categoryResponse = await request(app.getHttpServer())
       .get(
-        "/v1/products?locale=en&currency=USD&licence=Regular&category=elementor&subcategory=elementor-kits&feature=saas&compatibility=wordpress%406.x",
+        "/v1/products?locale=en&currency=USD&licence=Regular&category=elementor&subcategory=elementor-kits&industry=saas&compatibility=wordpress%406.x",
       )
       .expect(200);
     expect(
@@ -577,6 +598,17 @@ describeWithPostgres("Catalogue PostgreSQL integration", () => {
     const response = await request(app.getHttpServer())
       .get(
         `/v1/products?locale=en&currency=USD&licence=Regular&${facet}`,
+      )
+      .expect(422);
+    expect(apiErrorSchema.parse(JSON.parse(response.text))).toMatchObject({
+      error: { code: "VALIDATION_ERROR" },
+    });
+  });
+
+  it("rejects reuse of a valid technology value in the industry dimension", async () => {
+    const response = await request(app.getHttpServer())
+      .get(
+        "/v1/products?locale=en&currency=USD&licence=Regular&technology=react&industry=react",
       )
       .expect(422);
     expect(apiErrorSchema.parse(JSON.parse(response.text))).toMatchObject({

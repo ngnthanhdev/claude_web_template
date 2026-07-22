@@ -20,7 +20,7 @@ tests the port but does not select a vendor.
 ---
 
 ### T-b4e1a7 — Implement the database-backed public catalogue resource
-- **Status:** in-progress
+- **Status:** review
 - **Assignee:** ai
 - **Files:** apps/api/src/catalogue/catalogue.module.ts, apps/api/src/catalogue/catalogue.controller.ts, apps/api/src/catalogue/catalogue.service.ts, apps/api/src/catalogue/catalogue-cursor.ts, apps/api/src/catalogue/catalogue.controller.test.ts, apps/api/src/catalogue/catalogue.integration.test.ts
 - **Acceptance:**

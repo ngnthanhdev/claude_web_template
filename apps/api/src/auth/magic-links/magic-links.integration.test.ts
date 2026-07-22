@@ -33,6 +33,10 @@ import {
   type MagicLinkDelivery,
 } from "./email-delivery.port.js";
 import { MagicLinksModule } from "./magic-links.module.js";
+import {
+  MAGIC_LINK_INITIATION_RESPONSE_EQUALIZER,
+  type MagicLinkInitiationResponseEqualizer,
+} from "./magic-links.service.js";
 
 const integrationDatabaseUrl = process.env.MAGIC_LINK_INTEGRATION_DATABASE_URL;
 const describeWithPostgres =
@@ -53,6 +57,18 @@ class CaptureEmailDelivery implements EmailDeliveryPort {
     this.deliveries.splice(0);
     this.outcome = { status: "delivered" };
     this.failure = null;
+  }
+}
+
+class CaptureResponseEqualizer implements MagicLinkInitiationResponseEqualizer {
+  readonly startedAtValues: number[] = [];
+
+  async equalize(startedAt: number): Promise<void> {
+    this.startedAtValues.push(startedAt);
+  }
+
+  reset(): void {
+    this.startedAtValues.splice(0);
   }
 }
 
@@ -77,6 +93,7 @@ describeWithPostgres("Magic links PostgreSQL integration", () => {
   let prisma: PrismaClient;
   let crypto: AuthCryptoService;
   const email = new CaptureEmailDelivery();
+  const equalizer = new CaptureResponseEqualizer();
 
   beforeAll(async () => {
     if (integrationDatabaseUrl === undefined) return;
@@ -104,6 +121,8 @@ describeWithPostgres("Magic links PostgreSQL integration", () => {
       .useValue(prisma)
       .overrideProvider(EMAIL_DELIVERY_PORT)
       .useValue(email)
+      .overrideProvider(MAGIC_LINK_INITIATION_RESPONSE_EQUALIZER)
+      .useValue(equalizer)
       .compile();
 
     crypto = moduleRef.get(AuthCryptoService);
@@ -121,6 +140,7 @@ describeWithPostgres("Magic links PostgreSQL integration", () => {
   beforeEach(async () => {
     if (integrationDatabaseUrl === undefined) return;
     email.reset();
+    equalizer.reset();
     await prisma.authSecurityEvent.deleteMany();
     await prisma.session.deleteMany();
     await prisma.magicLinkToken.deleteMany();
@@ -255,18 +275,33 @@ describeWithPostgres("Magic links PostgreSQL integration", () => {
     expect(await prisma.magicLinkToken.count()).toBe(20);
   });
 
-  it("fails closed on suppressed and failed delivery without changing the generic response", async () => {
-    email.outcome = { status: "suppressed" };
-    await request(app.getHttpServer())
+  it("equalizes delivered, suppressed, failed, and limited generic responses", async () => {
+    const outcomes = [];
+    outcomes.push(await request(app.getHttpServer())
       .post("/v1/auth/magic-links")
-      .send({ email: "suppressed@delivery.magic.test", locale: "vi" })
-      .expect(202, { status: "accepted" });
+      .send({ email: "equalized@delivery.magic.test", locale: "vi" }));
+
+    email.outcome = { status: "suppressed" };
+    outcomes.push(await request(app.getHttpServer())
+      .post("/v1/auth/magic-links")
+      .send({ email: "equalized@delivery.magic.test", locale: "vi" }));
 
     email.failure = new Error("provider unavailable");
-    await request(app.getHttpServer())
+    outcomes.push(await request(app.getHttpServer())
       .post("/v1/auth/magic-links")
-      .send({ email: "failed@delivery.magic.test", locale: "en" })
-      .expect(202, { status: "accepted" });
+      .send({ email: "equalized@delivery.magic.test", locale: "vi" }));
+    outcomes.push(await request(app.getHttpServer())
+      .post("/v1/auth/magic-links")
+      .send({ email: "equalized@delivery.magic.test", locale: "vi" }));
+
+    expect(outcomes.map(({ status, body }) => ({ status, body }))).toEqual(
+      Array.from({ length: 4 }, () => ({
+        status: 202,
+        body: { status: "accepted" },
+      })),
+    );
+    expect(equalizer.startedAtValues).toHaveLength(4);
+    expect(email.deliveries).toHaveLength(3);
 
     const live = await prisma.magicLinkToken.count({ where: { revokedAt: null } });
     expect(live).toBe(0);

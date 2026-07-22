@@ -1,5 +1,6 @@
 import cookie from "@fastify/cookie";
 import { VersioningType } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { Test } from "@nestjs/testing";
 import {
   FastifyAdapter,
@@ -14,9 +15,18 @@ import { ZodValidationPipe } from "nestjs-zod";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ApiExceptionFilter } from "../../common/filters/api-exception.filter.js";
+import type { Env } from "../../config/env.js";
+import { PrismaService } from "../../prisma/prisma.service.js";
 import { SESSION_COOKIE_NAME } from "../core/auth-cookie.js";
+import { AuthCryptoService } from "../core/auth-crypto.service.js";
+import { AuthRateLimitService } from "../core/auth-rate-limit.service.js";
+import { AuthSessionService } from "../core/auth-session.service.js";
+import { EMAIL_DELIVERY_PORT } from "./email-delivery.port.js";
 import { MagicLinksController } from "./magic-links.controller.js";
-import { MagicLinksService } from "./magic-links.service.js";
+import {
+  MAGIC_LINK_INITIATION_RESPONSE_EQUALIZER,
+  MagicLinksService,
+} from "./magic-links.service.js";
 import { NullEmailDeliveryAdapter } from "./null-email-delivery.adapter.js";
 
 const redemptionResponse = magicLinkRedemptionResponseSchema.parse({
@@ -138,4 +148,119 @@ describe("NullEmailDeliveryAdapter", () => {
       link: "https://app.kitvera.test/vi/auth/magic-link#token=opaque",
     })).resolves.toEqual({ status: "suppressed" });
   });
+});
+
+describe("MagicLinksService initiation response equalization", () => {
+  const transaction = {
+    $queryRawUnsafe: vi.fn().mockResolvedValue([]),
+    magicLinkToken: {
+      updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+      create: vi.fn().mockResolvedValue({
+        id: "10000000-0000-4000-8000-000000000003",
+      }),
+    },
+    authSecurityEvent: {
+      create: vi.fn().mockResolvedValue({}),
+    },
+  };
+  const prisma = {
+    $transaction: vi.fn(
+      async (operation: (current: typeof transaction) => Promise<unknown>) =>
+        operation(transaction),
+    ),
+    authSecurityEvent: {
+      create: vi.fn().mockResolvedValue({}),
+    },
+  };
+  const crypto = {
+    generateOpaqueValue: vi.fn(() => Buffer.alloc(32, 4).toString("base64url")),
+    hashMagicLinkToken: vi.fn(() => "hashed-magic-link"),
+  };
+  const rateLimit = {
+    checkMagicLinkInitiation: vi.fn(),
+  };
+  const emailDelivery = {
+    sendMagicLink: vi.fn(),
+  };
+  const equalizer = {
+    equalize: vi.fn().mockResolvedValue(undefined),
+  };
+  let serviceUnderTest: MagicLinksService;
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    transaction.magicLinkToken.updateMany.mockResolvedValue({ count: 0 });
+    transaction.magicLinkToken.create.mockResolvedValue({
+      id: "10000000-0000-4000-8000-000000000003",
+    });
+    transaction.authSecurityEvent.create.mockResolvedValue({});
+    prisma.authSecurityEvent.create.mockResolvedValue({});
+    equalizer.equalize.mockResolvedValue(undefined);
+
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        MagicLinksService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: AuthCryptoService, useValue: crypto },
+        { provide: AuthRateLimitService, useValue: rateLimit },
+        { provide: AuthSessionService, useValue: {} },
+        {
+          provide: ConfigService,
+          useValue: {
+            getOrThrow: vi.fn((name: keyof Env) =>
+              name === "PUBLIC_WEB_ORIGIN"
+                ? "https://app.kitvera.test"
+                : undefined,
+            ),
+          },
+        },
+        { provide: EMAIL_DELIVERY_PORT, useValue: emailDelivery },
+        {
+          provide: MAGIC_LINK_INITIATION_RESPONSE_EQUALIZER,
+          useValue: equalizer,
+        },
+      ],
+    }).compile();
+    serviceUnderTest = moduleRef.get(MagicLinksService);
+  });
+
+  it.each(["delivered", "suppressed", "provider-failure", "limited"] as const)(
+    "passes the %s branch exactly once through the common equalizer",
+    async (branch) => {
+      rateLimit.checkMagicLinkInitiation.mockResolvedValue({
+        allowed: branch !== "limited",
+        sourceIpDigest: Buffer.alloc(32, 5).toString("base64url"),
+      });
+      if (branch === "provider-failure") {
+        emailDelivery.sendMagicLink.mockRejectedValue(new Error("provider down"));
+      } else {
+        emailDelivery.sendMagicLink.mockResolvedValue({
+          status: branch === "suppressed" ? "suppressed" : "delivered",
+        });
+      }
+
+      await expect(serviceUnderTest.initiate(
+        {
+          email: "buyer@example.com",
+          locale: "vi",
+          returnTo: "/vi/account",
+        },
+        { ip: "127.0.0.1" },
+      )).resolves.toEqual({ status: "accepted" });
+
+      expect(equalizer.equalize).toHaveBeenCalledTimes(1);
+      expect(equalizer.equalize).toHaveBeenCalledWith(expect.any(Number));
+      expect(equalizer.equalize.mock.invocationCallOrder[0]).toBeGreaterThan(
+        rateLimit.checkMagicLinkInitiation.mock.invocationCallOrder[0] ?? 0,
+      );
+      if (branch === "limited") {
+        expect(emailDelivery.sendMagicLink).not.toHaveBeenCalled();
+      } else {
+        expect(emailDelivery.sendMagicLink).toHaveBeenCalledTimes(1);
+        expect(equalizer.equalize.mock.invocationCallOrder[0]).toBeGreaterThan(
+          emailDelivery.sendMagicLink.mock.invocationCallOrder[0] ?? 0,
+        );
+      }
+    },
+  );
 });

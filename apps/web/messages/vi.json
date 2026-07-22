@@ -1,0 +1,50 @@
+{
+  "Metadata": {
+    "title": "KITVERA — Sàn mẫu web",
+    "description": "Sàn song ngữ để khám phá và cấp phép mẫu web."
+  },
+  "Shell": {
+    "skipToContent": "Chuyển đến nội dung",
+    "homeLabel": "Trang chủ KITVERA",
+    "primaryNavigation": "Điều hướng chính",
+    "browseGroups": "Duyệt nhóm mẫu",
+    "browse": "Khám phá",
+    "templateGroups": "Nhóm mẫu",
+    "closeGroups": "Đóng nhóm mẫu",
+    "catalogueRoutePending": "Đường dẫn danh mục sẽ có trong lớp sau",
+    "footerFoundation": "Nền tảng sàn song ngữ Việt và Anh",
+    "groups": {
+      "build": {
+        "heading": "Nền tảng xây dựng",
+        "items": {
+          "wordpress": "WordPress",
+          "elementor": "Elementor",
+          "html": "HTML",
+          "jamstack": "Jamstack"
+        }
+      },
+      "commerce": {
+        "heading": "Thương mại",
+        "items": {
+          "shopify": "Shopify",
+          "ecommerce": "Thương mại điện tử",
+          "plugins": "Tiện ích"
+        }
+      },
+      "design": {
+        "heading": "Thiết kế",
+        "items": {
+          "marketing": "Tiếp thị",
+          "cms": "CMS",
+          "uiTemplates": "Mẫu giao diện"
+        }
+      }
+    }
+  },
+  "Home": {
+    "context": "Nền tảng sàn công khai",
+    "title": "Sàn mẫu web đang được xây dựng.",
+    "introduction": "KITVERA sẽ quy tụ các mẫu web dành cho lập trình viên, freelancer, agency và chủ doanh nghiệp bằng tiếng Việt và tiếng Anh.",
+    "status": "Nội dung danh mục sẽ xuất hiện tại đây sau khi hợp đồng dữ liệu và kho mẫu sẵn sàng."
+  }
+}

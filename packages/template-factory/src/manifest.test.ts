@@ -3,13 +3,9 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
+import * as factoryApi from "./index.js";
 import { parseTemplateManifest, templateManifestSchema } from "./manifest.js";
-import {
-  CONTROLLED_PIPELINE,
-  createImmutablePublication,
-  getNextPipelineStage,
-  type CompletedPipelineGate,
-} from "./pipeline.js";
+import { CONTROLLED_PIPELINE, getNextPipelineStage } from "./pipeline.js";
 
 const fixtureUrl = new URL(
   "../fixtures/valid/template.manifest.json",
@@ -19,38 +15,6 @@ const fixtureUrl = new URL(
 async function readValidFixture(): Promise<unknown> {
   return JSON.parse(await readFile(fileURLToPath(fixtureUrl), "utf8"));
 }
-
-const completedGates = CONTROLLED_PIPELINE.slice(0, -1).map((stage) => ({
-  stageId: stage.id,
-  completedAt: "2026-07-22T06:00:00.000Z",
-  evidence: stage.evidence.map((kind) => ({
-    kind,
-    evidenceId: `evidence-${stage.id}-${kind}`,
-    outcome: "passed",
-  })),
-})) satisfies readonly CompletedPipelineGate[];
-
-const invalidPublicationFields = [
-  ["artifactId", ""],
-  ["approvedBy", "   "],
-  ["approvedAt", "yesterday"],
-  ["publishedAt", "tomorrow"],
-  ["publishedAt", "2026-07-22T06:15:00.000Z"],
-  ["version", "1.2.0-01"],
-  ["sha256", "not-a-checksum"],
-] satisfies ReadonlyArray<
-  readonly [
-    (
-      | "artifactId"
-      | "approvedBy"
-      | "approvedAt"
-      | "publishedAt"
-      | "version"
-      | "sha256"
-    ),
-    string,
-  ]
->;
 
 describe("template manifest v1", () => {
   it("validates the provider-neutral manifest fixture", async () => {
@@ -171,96 +135,8 @@ describe("controlled release pipeline", () => {
     );
   });
 
-  it("creates an immutable publication only after every prior gate", () => {
-    const publication = createImmutablePublication({
-      completedGates,
-      artifactId: "artifact_studio-grid_1.2.0",
-      version: "1.2.0",
-      sha256: "a".repeat(64),
-      sbomId: "sbom_studio-grid_1.2.0",
-      documentationId: "docs_studio-grid_1.2.0",
-      approvedBy: "reviewer_42",
-      approvedAt: "2026-07-22T06:30:00.000Z",
-      publishedAt: "2026-07-22T06:45:00.000Z",
-    });
-
-    expect(publication.immutable).toBe(true);
-    expect(publication.completedStages.at(-1)).toBe("immutable-publish");
-    expect(publication.completedGates.map((gate) => gate.stageId)).toEqual(
-      publication.completedStages,
-    );
-    expect(publication.completedGates.at(-1)).toEqual({
-      stageId: "immutable-publish",
-      completedAt: "2026-07-22T06:45:00.000Z",
-      evidence: [
-        {
-          kind: "immutable artifact identifier",
-          evidenceId: "artifact_studio-grid_1.2.0",
-          outcome: "passed",
-        },
-        {
-          kind: "published checksum",
-          evidenceId: "a".repeat(64),
-          outcome: "passed",
-        },
-      ],
-    });
-    expect(Object.isFrozen(publication)).toBe(true);
-    expect(() =>
-      createImmutablePublication({
-        completedGates: completedGates.slice(0, 1),
-        artifactId: "artifact_studio-grid_1.2.0",
-        version: "1.2.0",
-        sha256: "a".repeat(64),
-        sbomId: "sbom_studio-grid_1.2.0",
-        documentationId: "docs_studio-grid_1.2.0",
-        approvedBy: "reviewer_42",
-        approvedAt: "2026-07-22T06:30:00.000Z",
-        publishedAt: "2026-07-22T06:45:00.000Z",
-      }),
-    ).toThrow(/expected build-install-test/i);
+  it("does not expose a forgeable publication constructor", () => {
+    expect(factoryApi).not.toHaveProperty("createImmutablePublication");
+    expect(factoryApi).not.toHaveProperty("mintImmutablePublication");
   });
-
-  it("rejects missing gate evidence", () => {
-    const gatesWithMissingEvidence = completedGates.map((gate) =>
-      gate.stageId === "security-license-scan"
-        ? { ...gate, evidence: [] }
-        : gate,
-    );
-
-    expect(() =>
-      createImmutablePublication({
-        completedGates: gatesWithMissingEvidence,
-        artifactId: "artifact_studio-grid_1.2.0",
-        version: "1.2.0",
-        sha256: "a".repeat(64),
-        sbomId: "sbom_studio-grid_1.2.0",
-        documentationId: "docs_studio-grid_1.2.0",
-        approvedBy: "reviewer_42",
-        approvedAt: "2026-07-22T06:30:00.000Z",
-        publishedAt: "2026-07-22T06:45:00.000Z",
-      }),
-    ).toThrow(/evidence/i);
-  });
-
-  it.each(invalidPublicationFields)(
-    "rejects invalid publication %s",
-    (field, value) => {
-      const validInput = {
-        completedGates,
-        artifactId: "artifact_studio-grid_1.2.0",
-        version: "1.2.0",
-        sha256: "a".repeat(64),
-        sbomId: "sbom_studio-grid_1.2.0",
-        documentationId: "docs_studio-grid_1.2.0",
-        approvedBy: "reviewer_42",
-        approvedAt: "2026-07-22T06:30:00.000Z",
-        publishedAt: "2026-07-22T06:45:00.000Z",
-      };
-
-      expect(() =>
-        createImmutablePublication({ ...validInput, [field]: value }),
-      ).toThrow();
-    },
-  );
 });

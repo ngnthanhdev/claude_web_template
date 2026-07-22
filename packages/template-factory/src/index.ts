@@ -16,10 +16,8 @@ export {
 } from "./manifest.js";
 export {
   CONTROLLED_PIPELINE,
-  createImmutablePublication,
   getNextPipelineStage,
   type ImmutablePublication,
-  type ImmutablePublicationInput,
   type CompletedPipelineGate,
   type PipelineGateEvidence,
   type PipelineStage,

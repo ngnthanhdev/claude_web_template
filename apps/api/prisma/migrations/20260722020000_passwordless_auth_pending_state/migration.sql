@@ -42,11 +42,13 @@ ALTER TABLE "magic_link_tokens"
     ),
     ADD CONSTRAINT "magic_link_tokens_relative_return_to_check" CHECK (
         (
-            "return_to" = '/' || "locale"::text
-            OR "return_to" LIKE '/' || "locale"::text || '/%'
+            split_part("return_to", '?', 1) = '/' || "locale"::text
+            OR split_part("return_to", '?', 1) LIKE '/' || "locale"::text || '/%'
         )
-        AND "return_to" !~ '[[:space:]\\?#]'
-        AND "return_to" NOT LIKE '%//%'
+        AND "return_to" !~ '[[:space:]\\#]'
+        AND split_part("return_to", '?', 1) NOT LIKE '%//%'
+        AND split_part("return_to", '?', 1) !~* '(^|/)([.]|%2e){1,2}(/|$)'
+        AND split_part("return_to", '?', 1) !~* '%(2f|5c)'
     ),
     ADD CONSTRAINT "magic_link_tokens_single_terminal_state_check" CHECK (
         "consumed_at" IS NULL OR "revoked_at" IS NULL

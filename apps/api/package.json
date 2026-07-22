@@ -1,0 +1,38 @@
+{
+  "name": "@marketplace/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "pnpm --filter @marketplace/shared build && prisma generate && nest build",
+    "lint": "eslint \"src/**/*.ts\"",
+    "typecheck": "pnpm --filter @marketplace/shared build && prisma generate && tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@fastify/helmet": "^13.0.1",
+    "@marketplace/shared": "workspace:*",
+    "@nestjs/common": "^11.1.6",
+    "@nestjs/config": "^4.0.2",
+    "@nestjs/core": "^11.1.6",
+    "@nestjs/platform-fastify": "^11.1.6",
+    "@prisma/client": "^6.18.0",
+    "nestjs-zod": "^5.0.1",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.38.0",
+    "@nestjs/cli": "^11.0.10",
+    "@nestjs/testing": "^11.1.6",
+    "@types/node": "^22.18.12",
+    "@types/supertest": "^6.0.3",
+    "eslint": "^9.38.0",
+    "prisma": "^6.18.0",
+    "supertest": "^7.1.4",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.2",
+    "vitest": "^2.1.9"
+  }
+}

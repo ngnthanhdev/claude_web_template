@@ -28,7 +28,7 @@ type HashSecretName =
 @Injectable()
 export class AuthCryptoService {
   constructor(
-    private readonly config: ConfigService<Env, true>,
+    @Inject(ConfigService) private readonly config: ConfigService<Env, true>,
     @Inject(AUTH_RANDOM_SOURCE) private readonly random: AuthRandomSource,
   ) {}
 

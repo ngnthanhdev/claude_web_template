@@ -73,7 +73,7 @@ tests the port but does not select a vendor.
 - **Depends:** T-e6a93c
 
 ### T-a2c5e8 — Implement current-session and revocation resources
-- **Status:** in-progress
+- **Status:** review
 - **Assignee:** ai
 - **Files:** apps/api/src/auth/sessions/sessions.module.ts, apps/api/src/auth/sessions/session-auth.guard.ts, apps/api/src/auth/sessions/session-csrf.guard.ts, apps/api/src/auth/sessions/session-context.ts, apps/api/src/auth/sessions/sessions.controller.ts, apps/api/src/auth/sessions/sessions.controller.test.ts, apps/api/src/auth/sessions/sessions.integration.test.ts
 - **Acceptance:**

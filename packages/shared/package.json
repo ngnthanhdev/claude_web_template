@@ -14,6 +14,14 @@
       "types": "./dist/api.d.ts",
       "default": "./dist/api.js"
     },
+    "./auth": {
+      "types": "./dist/auth.d.ts",
+      "default": "./dist/auth.js"
+    },
+    "./catalogue": {
+      "types": "./dist/catalogue.d.ts",
+      "default": "./dist/catalogue.js"
+    },
     "./localization": {
       "types": "./dist/localization.d.ts",
       "default": "./dist/localization.js"

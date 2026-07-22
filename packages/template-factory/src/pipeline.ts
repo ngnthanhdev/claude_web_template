@@ -99,6 +99,34 @@ export function getNextPipelineStage(
   return CONTROLLED_PIPELINE[completedStages.length] ?? null;
 }
 
+function validateCompletedGate(
+  gate: CompletedPipelineGate,
+  stage: PipelineStage,
+): void {
+  if (gate.stageId !== stage.id) {
+    throw new Error(
+      `Cannot publish: expected ${stage.id}, received ${gate.stageId}`,
+    );
+  }
+  if (!isoDatetimeSchema.safeParse(gate.completedAt).success) {
+    throw new Error(
+      `Cannot publish: ${gate.stageId} completedAt must be an ISO datetime`,
+    );
+  }
+  for (const evidenceKind of stage.evidence) {
+    const evidence = gate.evidence.find((entry) => entry.kind === evidenceKind);
+    if (
+      !evidence ||
+      evidence.outcome !== "passed" ||
+      !evidence.evidenceId.trim()
+    ) {
+      throw new Error(
+        `Cannot publish: ${gate.stageId} requires passed evidence for ${evidenceKind}`,
+      );
+    }
+  }
+}
+
 export interface ImmutablePublicationInput {
   readonly completedGates: readonly CompletedPipelineGate[];
   readonly artifactId: string;
@@ -108,6 +136,7 @@ export interface ImmutablePublicationInput {
   readonly documentationId: string;
   readonly approvedBy: string;
   readonly approvedAt: string;
+  readonly publishedAt: string;
 }
 
 export interface ImmutablePublication {
@@ -121,6 +150,7 @@ export interface ImmutablePublication {
   readonly documentationId: string;
   readonly approvedBy: string;
   readonly approvedAt: string;
+  readonly publishedAt: string;
 }
 
 export function createImmutablePublication(
@@ -137,25 +167,7 @@ export function createImmutablePublication(
     if (!stage) {
       throw new Error("Cannot publish: unexpected completed gate");
     }
-    if (!isoDatetimeSchema.safeParse(gate.completedAt).success) {
-      throw new Error(
-        `Cannot publish: ${gate.stageId} completedAt must be an ISO datetime`,
-      );
-    }
-    for (const evidenceKind of stage.evidence) {
-      const evidence = gate.evidence.find(
-        (entry) => entry.kind === evidenceKind,
-      );
-      if (
-        !evidence ||
-        evidence.outcome !== "passed" ||
-        !evidence.evidenceId.trim()
-      ) {
-        throw new Error(
-          `Cannot publish: ${gate.stageId} requires passed evidence for ${evidenceKind}`,
-        );
-      }
-    }
+    validateCompletedGate(gate, stage);
   }
 
   if (!input.artifactId.trim()) {
@@ -166,6 +178,12 @@ export function createImmutablePublication(
   }
   if (!isoDatetimeSchema.safeParse(input.approvedAt).success) {
     throw new Error("Cannot publish: approvedAt must be an ISO datetime");
+  }
+  if (!isoDatetimeSchema.safeParse(input.publishedAt).success) {
+    throw new Error("Cannot publish: publishedAt must be an ISO datetime");
+  }
+  if (Date.parse(input.publishedAt) < Date.parse(input.approvedAt)) {
+    throw new Error("Cannot publish: publishedAt must not precede approvedAt");
   }
   if (!semanticVersionSchema.safeParse(input.version).success) {
     throw new Error("Cannot publish: version must be valid SemVer");
@@ -181,12 +199,7 @@ export function createImmutablePublication(
     );
   }
 
-  const immutablePublishStage: PipelineStageId = "immutable-publish";
-  const publicationStages = Object.freeze([
-    ...completedStages,
-    immutablePublishStage,
-  ]);
-  const completedGates = Object.freeze(
+  const prerequisiteGates = Object.freeze(
     input.completedGates.map((gate) =>
       Object.freeze({
         ...gate,
@@ -195,6 +208,36 @@ export function createImmutablePublication(
         ),
       }),
     ),
+  );
+  const publicationGate: CompletedPipelineGate = Object.freeze({
+    stageId: "immutable-publish",
+    completedAt: input.publishedAt,
+    evidence: Object.freeze([
+      Object.freeze({
+        kind: "immutable artifact identifier",
+        evidenceId: input.artifactId,
+        outcome: "passed",
+      }),
+      Object.freeze({
+        kind: "published checksum",
+        evidenceId: input.sha256,
+        outcome: "passed",
+      }),
+    ]),
+  });
+  const immutablePublishStage = CONTROLLED_PIPELINE.at(-1);
+  if (
+    !immutablePublishStage ||
+    immutablePublishStage.id !== "immutable-publish"
+  ) {
+    throw new Error(
+      "Cannot publish: immutable publication gate is not configured",
+    );
+  }
+  validateCompletedGate(publicationGate, immutablePublishStage);
+  const completedGates = Object.freeze([...prerequisiteGates, publicationGate]);
+  const publicationStages = Object.freeze(
+    completedGates.map((gate) => gate.stageId),
   );
   return Object.freeze({
     immutable: true,
@@ -207,5 +250,6 @@ export function createImmutablePublication(
     documentationId: input.documentationId,
     approvedBy: input.approvedBy,
     approvedAt: input.approvedAt,
+    publishedAt: input.publishedAt,
   });
 }

@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "pnpm --filter @marketplace/shared build && prisma generate && nest build",
-    "lint": "eslint \"src/**/*.ts\"",
-    "typecheck": "pnpm --filter @marketplace/shared build && prisma generate && tsc --noEmit",
+    "lint": "eslint \"{src,test}/**/*.ts\"",
+    "typecheck": "pnpm --filter @marketplace/shared build && prisma generate && tsc --noEmit && tsc --project tsconfig.test.json",
     "test": "vitest run"
   },
   "dependencies": {

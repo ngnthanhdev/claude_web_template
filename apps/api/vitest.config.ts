@@ -8,6 +8,9 @@ export default defineConfig({
       "@marketplace/shared/api": fileURLToPath(
         new URL("../../packages/shared/src/api.ts", import.meta.url),
       ),
+      "@shared/api": fileURLToPath(
+        new URL("../../packages/shared/src/api.ts", import.meta.url),
+      ),
     },
   },
   test: {
@@ -17,6 +20,6 @@ export default defineConfig({
       NODE_ENV: "test",
     },
     environment: "node",
-    include: ["src/**/*.test.ts"],
+    include: ["src/**/*.test.ts", "test/**/*.test.ts"],
   },
 });

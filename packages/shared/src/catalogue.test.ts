@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  categoryCollectionQuerySchema,
+  categoryCollectionResponseSchema,
   categorySlugSchema,
   licenceIdentifierSchema,
   localizedCategorySummarySchema,
+  productCollectionQuerySchema,
   productCollectionResponseSchema,
   productDetailResponseSchema,
   publicationStateSchema,
@@ -332,5 +335,148 @@ describe("catalogue read contracts", () => {
         meta: { nextCursor: null, hasMore: false },
       }).success,
     ).toBe(false);
+  });
+});
+
+describe("catalogue query contracts", () => {
+  it("parses category locale context and its cursor collection response", () => {
+    expect(
+      categoryCollectionQuerySchema.parse(new URLSearchParams("locale=vi")),
+    ).toEqual({ locale: "vi" });
+    expect(
+      categoryCollectionResponseSchema.parse({
+        data: [
+          {
+            slug: "ecommerce",
+            translations: [
+              {
+                locale: "vi",
+                name: "Thương mại điện tử",
+                summary: "Mẫu cửa hàng.",
+              },
+              {
+                locale: "en",
+                name: "eCommerce",
+                summary: "Storefront templates.",
+              },
+            ],
+          },
+        ],
+        meta: { nextCursor: null, hasMore: false },
+      }),
+    ).toMatchObject({ data: [{ slug: "ecommerce" }] });
+    expect(
+      categoryCollectionQuerySchema.safeParse(
+        new URLSearchParams("locale=en&currency=USD"),
+      ).success,
+    ).toBe(false);
+  });
+
+  it("preserves one and repeated facet entries with OR-within semantics", () => {
+    const parsed = productCollectionQuerySchema.parse(
+      new URLSearchParams(
+        "locale=en&currency=USD&licence=Regular" +
+          "&technology=react&technology=vue&feature=dark-mode" +
+          "&compatibility=wordpress%406.x&compatibility=nodejs%4020.x",
+      ),
+    );
+
+    expect(parsed).toMatchObject({
+      technology: ["react", "vue"],
+      feature: ["dark-mode"],
+      compatibility: ["wordpress@6.x", "nodejs@20.x"],
+    });
+  });
+
+  it("normalizes search and chooses the q-dependent sort default", () => {
+    const context = "locale=vi&currency=USD&licence=Extended";
+
+    expect(
+      productCollectionQuerySchema.parse(
+        new URLSearchParams(`${context}&q=%20%20landing%20%20page%20%20`),
+      ),
+    ).toMatchObject({ q: "landing page", sort: "relevance", limit: 24 });
+    const emptySearch = productCollectionQuerySchema.parse(
+      new URLSearchParams(`${context}&q=%20%20%20`),
+    );
+    expect(emptySearch).toMatchObject({ sort: "newest", limit: 24 });
+    expect(emptySearch).not.toHaveProperty("q");
+    expect(
+      productCollectionQuerySchema.parse(new URLSearchParams(context)),
+    ).toMatchObject({ sort: "newest", limit: 24 });
+  });
+
+  it("supports locale/currency independence and explicit price/licence context", () => {
+    expect(
+      productCollectionQuerySchema.parse(
+        new URLSearchParams(
+          "locale=vi&currency=USD&licence=Extended&minPrice=4900&maxPrice=15900",
+        ),
+      ),
+    ).toMatchObject({
+      locale: "vi",
+      currency: "USD",
+      licence: "Extended",
+      minPrice: 4900,
+      maxPrice: 15900,
+    });
+    expect(
+      productCollectionQuerySchema.parse(
+        new URLSearchParams("locale=en&currency=VND&licence=Regular"),
+      ),
+    ).toMatchObject({ locale: "en", currency: "VND" });
+  });
+
+  it("accepts the 1/48 limit bounds and an opaque cursor", () => {
+    const prefix = "locale=en&currency=USD&licence=Regular";
+
+    expect(
+      productCollectionQuerySchema.parse(
+        new URLSearchParams(`${prefix}&limit=1`),
+      ).limit,
+    ).toBe(1);
+    expect(
+      productCollectionQuerySchema.parse(
+        new URLSearchParams(`${prefix}&limit=48&cursor=v1.opaque.signature`),
+      ),
+    ).toMatchObject({ limit: 48, cursor: "v1.opaque.signature" });
+  });
+
+  it("leaves syntactically-valid dynamic vocabulary membership to the API", () => {
+    expect(
+      productCollectionQuerySchema.safeParse(
+        new URLSearchParams(
+          "locale=en&currency=USD&licence=Regular&technology=future-runtime",
+        ),
+      ).success,
+    ).toBe(true);
+  });
+
+  it.each([
+    "locale=en&currency=USD&licence=Regular&unknown=value",
+    "locale=en&currency=USD&licence=Regular&technology=react%2Cvue",
+    "locale=en&currency=USD&licence=Regular&compatibility=wordpress%40%3E%3D6",
+    "locale=en&currency=USD&licence=Regular&compatibility=WordPress%406.x",
+    "locale=en&currency=USD&licence=Regular&updatedWithin=7d",
+    "locale=en&currency=USD&licence=Regular&minPrice=100&maxPrice=99",
+    "locale=en&currency=USD&licence=Regular&minPrice=1.5",
+    "locale=en&currency=USD&licence=Regular&limit=0",
+    "locale=en&currency=USD&licence=Regular&limit=49",
+    "locale=en&locale=vi&currency=USD&licence=Regular",
+    "locale=en&currency=USD&licence=Regular&q=x",
+  ])("rejects representative HTTP-422 query input: %s", (query) => {
+    expect(
+      productCollectionQuerySchema.safeParse(new URLSearchParams(query))
+        .success,
+    ).toBe(false);
+  });
+
+  it("rejects more than 20 values in each repeatable facet", () => {
+    const query = new URLSearchParams("locale=en&currency=USD&licence=Regular");
+    for (let index = 0; index < 21; index += 1) {
+      query.append("pageType", `page-${index}`);
+    }
+
+    expect(productCollectionQuerySchema.safeParse(query).success).toBe(false);
   });
 });

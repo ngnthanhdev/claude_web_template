@@ -45,6 +45,100 @@ export type PublicationState = z.infer<typeof publicationStateSchema>;
 export const licenceIdentifierSchema = z.enum(["Regular", "Extended"]);
 export type LicenceIdentifier = z.infer<typeof licenceIdentifierSchema>;
 
+const repeatableProductQueryKeys = new Set([
+  "category",
+  "subcategory",
+  "technology",
+  "templateType",
+  "pageType",
+  "industry",
+  "feature",
+  "compatibility",
+]);
+
+function collectUrlSearchParams(input: unknown): unknown {
+  if (!(input instanceof URLSearchParams)) return input;
+
+  const query: Record<string, string | string[]> = {};
+  input.forEach((value, key) => {
+    const current = query[key];
+    if (current === undefined) {
+      query[key] = value;
+    } else if (typeof current === "string") {
+      query[key] = [current, value];
+    } else {
+      current.push(value);
+    }
+  });
+  return query;
+}
+
+function normalizeRepeatableProductQueryValues(input: unknown): unknown {
+  const collected = collectUrlSearchParams(input);
+  if (
+    typeof collected !== "object" ||
+    collected === null ||
+    Array.isArray(collected)
+  ) {
+    return collected;
+  }
+
+  return Object.fromEntries(
+    Object.entries(collected).map(([key, value]) => [
+      key,
+      repeatableProductQueryKeys.has(key) && typeof value === "string"
+        ? [value]
+        : value,
+    ]),
+  );
+}
+
+const canonicalQueryIntegerSchema = z
+  .union([
+    z.number().int().safe(),
+    z
+      .string()
+      .regex(/^(?:0|[1-9]\d*)$/, "must be a canonical non-negative integer")
+      .transform(Number),
+  ])
+  .pipe(z.number().int().nonnegative().safe());
+
+const normalizedSearchQuerySchema = z
+  .string()
+  .transform((value) => value.trim().replace(/\s+/g, " "))
+  .transform((value) => (value === "" ? undefined : value))
+  .pipe(z.string().min(2).max(100).optional());
+
+const controlledFacetSchema = z.array(slugSchema).min(1).max(20);
+
+export const compatibilityFilterSchema = z.string().refine((value) => {
+  const [target, versionBand, extra] = value.split("@");
+  return (
+    extra === undefined &&
+    slugSchema.safeParse(target).success &&
+    /^(?:0|[1-9]\d*)\.(?:x|(?:0|[1-9]\d*)\.x)$/.test(versionBand ?? "")
+  );
+}, "must use <target>@<major>.x or <target>@<major>.<minor>.x");
+export type CompatibilityFilter = z.infer<typeof compatibilityFilterSchema>;
+
+const compatibilityFiltersSchema = z
+  .array(compatibilityFilterSchema)
+  .min(1)
+  .max(20);
+
+export const productSortSchema = z.enum([
+  "relevance",
+  "newest",
+  "recently-updated",
+  "price-asc",
+  "price-desc",
+  "title-asc",
+]);
+export type ProductSort = z.infer<typeof productSortSchema>;
+
+export const updatedWithinSchema = z.enum(["30d", "90d", "1y"]);
+export type UpdatedWithin = z.infer<typeof updatedWithinSchema>;
+
 function hasUniqueLocales(items: readonly { locale: string }[]): boolean {
   return new Set(items.map(({ locale }) => locale)).size === items.length;
 }
@@ -75,6 +169,24 @@ export const localizedCategorySummarySchema = z
   .strict();
 export type LocalizedCategorySummary = z.infer<
   typeof localizedCategorySummarySchema
+>;
+
+export const categoryCollectionQuerySchema = z.preprocess(
+  collectUrlSearchParams,
+  z.object({ locale: localeSchema }).strict(),
+);
+export type CategoryCollectionQuery = z.infer<
+  typeof categoryCollectionQuerySchema
+>;
+
+export const categoryCollectionResponseSchema = z
+  .object({
+    data: z.array(localizedCategorySummarySchema),
+    meta: cursorPageMetaSchema,
+  })
+  .strict();
+export type CategoryCollectionResponse = z.infer<
+  typeof categoryCollectionResponseSchema
 >;
 
 function isNonPublicIpv4(octets: readonly number[]): boolean {
@@ -361,6 +473,67 @@ export const productDetailResponseSchema = productCardSchema
   })
   .strict();
 export type ProductDetailResponse = z.infer<typeof productDetailResponseSchema>;
+
+const productCollectionQueryObjectSchema = z
+  .object({
+    locale: localeSchema,
+    currency: currencySchema,
+    licence: licenceIdentifierSchema,
+    q: normalizedSearchQuerySchema.optional(),
+    category: controlledFacetSchema.optional(),
+    subcategory: controlledFacetSchema.optional(),
+    technology: controlledFacetSchema.optional(),
+    templateType: controlledFacetSchema.optional(),
+    pageType: controlledFacetSchema.optional(),
+    industry: controlledFacetSchema.optional(),
+    feature: controlledFacetSchema.optional(),
+    compatibility: compatibilityFiltersSchema.optional(),
+    updatedWithin: updatedWithinSchema.optional(),
+    minPrice: canonicalQueryIntegerSchema.optional(),
+    maxPrice: canonicalQueryIntegerSchema.optional(),
+    sort: productSortSchema.optional(),
+    limit: canonicalQueryIntegerSchema
+      .pipe(z.number().min(1).max(48))
+      .default(24),
+    cursor: z.string().min(1).optional(),
+  })
+  .strict()
+  .superRefine(({ minPrice, maxPrice }, context) => {
+    if (
+      minPrice !== undefined &&
+      maxPrice !== undefined &&
+      minPrice > maxPrice
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "minPrice must be less than or equal to maxPrice",
+        path: ["maxPrice"],
+      });
+    }
+  })
+  .transform((query) => {
+    if (query.q === undefined) {
+      const { q: _emptySearch, ...queryWithoutEmptySearch } = query;
+      return {
+        ...queryWithoutEmptySearch,
+        sort: query.sort ?? "newest",
+      };
+    }
+
+    return { ...query, sort: query.sort ?? "relevance" };
+  });
+
+/**
+ * Each facet array is ORed within its field; populated fields are ANDed
+ * across the query. Facet membership is validated against the catalogue DB.
+ */
+export const productCollectionQuerySchema = z.preprocess(
+  normalizeRepeatableProductQueryValues,
+  productCollectionQueryObjectSchema,
+);
+export type ProductCollectionQuery = z.infer<
+  typeof productCollectionQuerySchema
+>;
 
 export const productCollectionResponseSchema = z
   .object({

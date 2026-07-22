@@ -1,6 +1,6 @@
 # Layer 1 — Core Domain and Locale Foundations
 
-Status: **in progress**
+Status: **done**
 
 This is the smallest product layer that unlocks later catalogue work without
 coupling independent implementers. It establishes the public catalogue's wire

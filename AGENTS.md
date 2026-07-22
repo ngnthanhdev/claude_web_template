@@ -161,8 +161,8 @@ claude_web_template/
 
 ## Current Layer / Current Task
 
-- **Current Layer:** Layer 1 — Core Domain and Locale Foundations (not started)
-- **Current Task:** `T-d17cbd` — Define catalogue read contracts
+- **Current Layer:** Layer 2 — Catalogue Persistence and Public Contract Decisions (not started)
+- **Current Task:** `T-6ed6da` — Persist the public catalogue read model
 - After each layer completes, this section is updated by `/next-layer`.
 
 ## Token discipline

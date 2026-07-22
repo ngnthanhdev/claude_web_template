@@ -811,6 +811,71 @@ BEGIN
 END;
 $$;
 
+-- Publication writes are low-volume administrative operations. Acquire one
+-- transaction-level lock before any readiness-relevant statement mutates
+-- rows, so deferred checks can never lock multiple products in opposing
+-- event order and deadlock at commit.
+CREATE FUNCTION "serialize_product_publication_writes"() RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    PERFORM pg_advisory_xact_lock(1262838869);
+    RETURN NULL;
+END;
+$$;
+
+CREATE TRIGGER "products_serialize_publication_writes_trigger"
+BEFORE INSERT OR UPDATE OR DELETE ON "products"
+FOR EACH STATEMENT EXECUTE FUNCTION "serialize_product_publication_writes"();
+
+CREATE TRIGGER "product_translations_serialize_publication_writes_trigger"
+BEFORE INSERT OR UPDATE OR DELETE ON "product_translations"
+FOR EACH STATEMENT EXECUTE FUNCTION "serialize_product_publication_writes"();
+
+CREATE TRIGGER "product_compatibility_serialize_publication_writes_trigger"
+BEFORE INSERT OR UPDATE OR DELETE ON "product_compatibility"
+FOR EACH STATEMENT EXECUTE FUNCTION "serialize_product_publication_writes"();
+
+CREATE TRIGGER "product_specifications_serialize_publication_writes_trigger"
+BEFORE INSERT OR UPDATE OR DELETE ON "product_specifications"
+FOR EACH STATEMENT EXECUTE FUNCTION "serialize_product_publication_writes"();
+
+CREATE TRIGGER "product_specification_translations_serialize_publication_writes_trigger"
+BEFORE INSERT OR UPDATE OR DELETE ON "product_specification_translations"
+FOR EACH STATEMENT EXECUTE FUNCTION "serialize_product_publication_writes"();
+
+CREATE TRIGGER "product_media_serialize_publication_writes_trigger"
+BEFORE INSERT OR UPDATE OR DELETE ON "product_media"
+FOR EACH STATEMENT EXECUTE FUNCTION "serialize_product_publication_writes"();
+
+CREATE TRIGGER "product_media_translations_serialize_publication_writes_trigger"
+BEFORE INSERT OR UPDATE OR DELETE ON "product_media_translations"
+FOR EACH STATEMENT EXECUTE FUNCTION "serialize_product_publication_writes"();
+
+CREATE TRIGGER "product_demo_pages_serialize_publication_writes_trigger"
+BEFORE INSERT OR UPDATE OR DELETE ON "product_demo_pages"
+FOR EACH STATEMENT EXECUTE FUNCTION "serialize_product_publication_writes"();
+
+CREATE TRIGGER "product_demo_page_translations_serialize_publication_writes_trigger"
+BEFORE INSERT OR UPDATE OR DELETE ON "product_demo_page_translations"
+FOR EACH STATEMENT EXECUTE FUNCTION "serialize_product_publication_writes"();
+
+CREATE TRIGGER "product_versions_serialize_publication_writes_trigger"
+BEFORE INSERT OR UPDATE OR DELETE ON "product_versions"
+FOR EACH STATEMENT EXECUTE FUNCTION "serialize_product_publication_writes"();
+
+CREATE TRIGGER "product_version_translations_serialize_publication_writes_trigger"
+BEFORE INSERT OR UPDATE OR DELETE ON "product_version_translations"
+FOR EACH STATEMENT EXECUTE FUNCTION "serialize_product_publication_writes"();
+
+CREATE TRIGGER "licence_options_serialize_publication_writes_trigger"
+BEFORE INSERT OR UPDATE OR DELETE ON "licence_options"
+FOR EACH STATEMENT EXECUTE FUNCTION "serialize_product_publication_writes"();
+
+CREATE TRIGGER "prices_serialize_publication_writes_trigger"
+BEFORE INSERT OR UPDATE OR DELETE ON "prices"
+FOR EACH STATEMENT EXECUTE FUNCTION "serialize_product_publication_writes"();
+
 CREATE CONSTRAINT TRIGGER "products_publication_readiness_trigger"
 AFTER INSERT OR UPDATE OR DELETE ON "products"
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW

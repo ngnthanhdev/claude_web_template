@@ -168,7 +168,6 @@ export class MagicLinksService {
   ): Promise<MagicLinkRedemptionResult> {
     const decision = await this.rateLimit.checkMagicLinkRedemption(source);
     if (!decision.allowed) {
-      await this.recordRedemptionFailure(decision.sourceIpDigest);
       throw this.invalidMagicLink();
     }
 

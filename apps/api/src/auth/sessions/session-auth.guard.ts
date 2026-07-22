@@ -10,7 +10,12 @@ import { ApiHttpException } from "../../common/errors/api-http.exception.js";
 import { PrismaService } from "../../prisma/prisma.service.js";
 import { SESSION_COOKIE_NAME } from "../core/auth-cookie.js";
 import { AuthCryptoService } from "../core/auth-crypto.service.js";
-import { AuthSessionService } from "../core/auth-session.service.js";
+import {
+  AUTH_CLOCK,
+  type AuthClock,
+  type ResolvedSession,
+  AuthSessionService,
+} from "../core/auth-session.service.js";
 import {
   attachSessionContext,
   type SessionRequest,
@@ -22,6 +27,7 @@ export class SessionAuthGuard implements CanActivate {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(AuthCryptoService) private readonly crypto: AuthCryptoService,
     @Inject(AuthSessionService) private readonly sessions: AuthSessionService,
+    @Inject(AUTH_CLOCK) private readonly clock: AuthClock,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -31,23 +37,50 @@ export class SessionAuthGuard implements CanActivate {
       throw this.unauthenticated();
     }
 
+    if (request.method === "GET" || request.method === "HEAD") {
+      const resolved = await this.sessions.resolveSession(rawSessionToken);
+      if (resolved === null) {
+        throw this.unauthenticated();
+      }
+      attachSessionContext(request, resolved);
+      return true;
+    }
+
     const tokenHash = this.crypto.hashSessionToken(rawSessionToken);
-    const verifier = await this.prisma.session.findUnique({
+    const stored = await this.prisma.session.findUnique({
       where: { tokenHash },
-      select: { csrfHash: true },
+      select: {
+        id: true,
+        csrfHash: true,
+        idleExpiresAt: true,
+        absoluteExpiresAt: true,
+        revokedAt: true,
+        rotatedToId: true,
+        user: { select: { id: true, normalizedEmail: true } },
+      },
     });
-    if (verifier === null) {
+    const now = this.clock.now();
+    if (
+      stored === null ||
+      stored.revokedAt !== null ||
+      stored.rotatedToId !== null ||
+      stored.idleExpiresAt.getTime() <= now.getTime() ||
+      stored.absoluteExpiresAt.getTime() <= now.getTime()
+    ) {
       throw this.unauthenticated();
     }
 
-    const resolved = await this.sessions.resolveSession(rawSessionToken);
-    if (resolved === null) {
-      throw this.unauthenticated();
-    }
-
+    const resolved = {
+      sessionId: stored.id,
+      user: { id: stored.user.id, email: stored.user.normalizedEmail },
+      csrfToken: this.crypto.deriveCsrfToken(rawSessionToken),
+      idleExpiresAt: stored.idleExpiresAt,
+      absoluteExpiresAt: stored.absoluteExpiresAt,
+      replacementSessionToken: null,
+    } satisfies ResolvedSession;
     attachSessionContext(request, resolved, {
       rawSessionToken,
-      csrfHash: verifier.csrfHash,
+      csrfHash: stored.csrfHash,
     });
     return true;
   }

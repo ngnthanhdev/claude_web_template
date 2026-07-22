@@ -15,7 +15,10 @@ import { ApiExceptionFilter } from "../../common/filters/api-exception.filter.js
 import { PrismaService } from "../../prisma/prisma.service.js";
 import { clearSessionCookie, SESSION_COOKIE_NAME } from "../core/auth-cookie.js";
 import { AuthCryptoService } from "../core/auth-crypto.service.js";
-import { AuthSessionService } from "../core/auth-session.service.js";
+import {
+  AUTH_CLOCK,
+  AuthSessionService,
+} from "../core/auth-session.service.js";
 import { SessionAuthGuard } from "./session-auth.guard.js";
 import { SessionCsrfGuard } from "./session-csrf.guard.js";
 import { SessionsController } from "./sessions.controller.js";
@@ -26,6 +29,7 @@ const csrfToken = Buffer.alloc(32, 13).toString("base64url");
 const sessionId = "10000000-0000-4000-8000-000000000001";
 const userId = "10000000-0000-4000-8000-000000000002";
 const absoluteExpiresAt = new Date("2026-10-20T00:00:00.000Z");
+const idleExpiresAt = new Date("2026-08-21T00:00:00.000Z");
 
 describe("SessionsController", () => {
   let app: NestFastifyApplication;
@@ -35,7 +39,11 @@ describe("SessionsController", () => {
     revokeCurrentSession: vi.fn(),
     revokeAllSessions: vi.fn(),
   };
-  const crypto = { hashSessionToken: vi.fn() };
+  const crypto = {
+    hashSessionToken: vi.fn(),
+    deriveCsrfToken: vi.fn(),
+  };
+  const clock = { now: vi.fn() };
   const prisma = { session: { findUnique: vi.fn() } };
 
   beforeAll(async () => {
@@ -46,6 +54,7 @@ describe("SessionsController", () => {
         SessionCsrfGuard,
         { provide: AuthSessionService, useValue: sessions },
         { provide: AuthCryptoService, useValue: crypto },
+        { provide: AUTH_CLOCK, useValue: clock },
         { provide: PrismaService, useValue: prisma },
       ],
     }).compile();
@@ -62,13 +71,26 @@ describe("SessionsController", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    clock.now.mockReturnValue(new Date("2026-07-22T00:00:00.000Z"));
     crypto.hashSessionToken.mockReturnValue("stored-session-hash");
-    prisma.session.findUnique.mockResolvedValue({ csrfHash: "stored-csrf-hash" });
+    crypto.deriveCsrfToken.mockReturnValue(csrfToken);
+    prisma.session.findUnique.mockResolvedValue({
+      id: sessionId,
+      userId,
+      csrfHash: "stored-csrf-hash",
+      idleExpiresAt,
+      absoluteExpiresAt,
+      lastActivityAt: new Date("2026-07-22T00:00:00.000Z"),
+      lastRotatedAt: new Date("2026-07-22T00:00:00.000Z"),
+      revokedAt: null,
+      rotatedToId: null,
+      user: { id: userId, normalizedEmail: "buyer@example.com" },
+    });
     sessions.resolveSession.mockResolvedValue({
       sessionId,
       user: { id: userId, email: "buyer@example.com" },
       csrfToken,
-      idleExpiresAt: new Date("2026-08-21T00:00:00.000Z"),
+      idleExpiresAt,
       absoluteExpiresAt,
       replacementSessionToken: null,
     });
@@ -96,16 +118,15 @@ describe("SessionsController", () => {
   });
 
   it("rejects unknown and revoked bearer values before a handler runs", async () => {
-    prisma.session.findUnique.mockResolvedValueOnce(null);
+    sessions.resolveSession.mockResolvedValueOnce(null);
     await request(app.getHttpServer())
       .get("/v1/sessions/current")
       .set("Cookie", `${SESSION_COOKIE_NAME}=${rawSessionToken}`)
       .expect(HttpStatus.UNAUTHORIZED);
-    expect(sessions.resolveSession).not.toHaveBeenCalled();
 
-    sessions.resolveSession.mockResolvedValueOnce(null);
+    prisma.session.findUnique.mockResolvedValueOnce(null);
     await request(app.getHttpServer())
-      .get("/v1/sessions/current")
+      .delete("/v1/sessions/current")
       .set("Cookie", `${SESSION_COOKIE_NAME}=${rawSessionToken}`)
       .expect(HttpStatus.UNAUTHORIZED);
   });
@@ -115,7 +136,7 @@ describe("SessionsController", () => {
       sessionId,
       user: { id: userId, email: "buyer@example.com" },
       csrfToken,
-      idleExpiresAt: new Date("2026-08-21T00:00:00.000Z"),
+      idleExpiresAt,
       absoluteExpiresAt,
       replacementSessionToken,
     });
@@ -127,17 +148,14 @@ describe("SessionsController", () => {
 
     expect(currentSessionResponseSchema.parse(response.body)).toEqual({
       user: { id: userId, email: "buyer@example.com" },
-      session: { id: sessionId, expiresAt: absoluteExpiresAt.toISOString() },
+      session: { id: sessionId, expiresAt: idleExpiresAt.toISOString() },
       csrfToken,
     });
     expect(String(response.headers["set-cookie"])).toContain(
       `${SESSION_COOKIE_NAME}=${replacementSessionToken}`,
     );
-    expect(crypto.hashSessionToken).toHaveBeenCalledWith(rawSessionToken);
-    expect(prisma.session.findUnique).toHaveBeenCalledWith({
-      where: { tokenHash: "stored-session-hash" },
-      select: { csrfHash: true },
-    });
+    expect(crypto.hashSessionToken).not.toHaveBeenCalled();
+    expect(prisma.session.findUnique).not.toHaveBeenCalled();
   });
 
   it("requires the session-bound CSRF token for both DELETE resources", async () => {
@@ -157,6 +175,7 @@ describe("SessionsController", () => {
 
     expect(sessions.revokeCurrentSession).not.toHaveBeenCalled();
     expect(sessions.revokeAllSessions).not.toHaveBeenCalled();
+    expect(sessions.resolveSession).not.toHaveBeenCalled();
   });
 
   it("revokes only the server-resolved current session and clears the exact host cookie", async () => {

@@ -44,7 +44,12 @@ export class SessionsController {
       user: session.user,
       session: {
         id: session.sessionId,
-        expiresAt: session.absoluteExpiresAt.toISOString(),
+        expiresAt: new Date(
+          Math.min(
+            session.idleExpiresAt.getTime(),
+            session.absoluteExpiresAt.getTime(),
+          ),
+        ).toISOString(),
       },
       csrfToken: session.csrfToken,
     };

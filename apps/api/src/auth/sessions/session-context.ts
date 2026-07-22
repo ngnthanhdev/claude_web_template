@@ -11,7 +11,7 @@ interface SessionAuthenticationProof {
 
 interface InternalSessionContext {
   readonly resolved: ResolvedSession;
-  readonly proof: SessionAuthenticationProof;
+  readonly proof?: SessionAuthenticationProof;
 }
 
 export interface SessionRequest extends FastifyRequest {
@@ -21,7 +21,7 @@ export interface SessionRequest extends FastifyRequest {
 export function attachSessionContext(
   request: SessionRequest,
   resolved: ResolvedSession,
-  proof: SessionAuthenticationProof,
+  proof?: SessionAuthenticationProof,
 ): void {
   Object.defineProperty(request, SESSION_CONTEXT, {
     configurable: false,
@@ -43,7 +43,7 @@ export function getSessionAuthenticationProof(
   request: SessionRequest,
 ): SessionAuthenticationProof {
   const context = request[SESSION_CONTEXT];
-  if (context === undefined) {
+  if (context?.proof === undefined) {
     throw new Error("Authenticated session proof is unavailable");
   }
   return context.proof;

@@ -14,8 +14,12 @@ ALTER TABLE "sessions"
     ADD COLUMN "last_rotated_at" TIMESTAMPTZ(3);
 
 -- Infer the original absolute deadline from the first session in each existing
--- replacement chain. This keeps rotation from extending a legacy login beyond
--- 90 days. Rows without predecessors are roots; UNION prevents duplicate work.
+-- replacement chain. Historical data may contain a replacement created after
+-- that inferred deadline because the old schema had no absolute lifetime. Every
+-- legacy row is revoked below, so such a descendant receives only the minimum
+-- representable finite deadline after its own creation. This satisfies the new
+-- ordering constraints without extending usable legacy authentication. Rows
+-- without predecessors are roots; UNION prevents duplicate work.
 WITH RECURSIVE "session_chain" AS (
     SELECT
         root."id",
@@ -39,7 +43,10 @@ WITH RECURSIVE "session_chain" AS (
       ON replacement."id" = chain."rotated_to_id"
 )
 UPDATE "sessions" AS session
-SET "absolute_expires_at" = chain."root_created_at" + INTERVAL '90 days'
+SET "absolute_expires_at" = GREATEST(
+    chain."root_created_at" + INTERVAL '90 days',
+    session."created_at" + INTERVAL '1 millisecond'
+)
 FROM "session_chain" AS chain
 WHERE session."id" = chain."id";
 

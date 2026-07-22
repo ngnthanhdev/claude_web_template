@@ -1,0 +1,27 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "brand": {
+    "name": {
+      "$type": "string",
+      "$value": "KITVERA"
+    },
+    "color": {
+      "coral": {
+        "$type": "color",
+        "$value": "#F26B4A"
+      },
+      "charcoal": {
+        "$type": "color",
+        "$value": "#171717"
+      },
+      "paper": {
+        "$type": "color",
+        "$value": "#F7F3EE"
+      },
+      "white": {
+        "$type": "color",
+        "$value": "#FFFFFF"
+      }
+    }
+  }
+}

@@ -1,6 +1,6 @@
 ---
 name: web-styling
-description: Use when setting up or working with the styling layer of apps/web — Tailwind CSS config, design tokens as CSS variables, the cn() helper, installing and using shadcn/ui components, semantic color tokens, and dark mode via the class strategy and a theme provider. Styling is a Phase-0 choice; Tailwind CSS + shadcn/ui is the template default. Pair with web-responsive for layout and ui-ux-pro-max for design decisions.
+description: Use when setting up or working with the styling layer of apps/web — Tailwind CSS config, design tokens as CSS variables, the cn() helper, installing and using shadcn/ui components, semantic color tokens, and dark mode via the class strategy and a theme provider. Styling is a Phase-0 choice; Tailwind CSS + shadcn/ui is the template default. Pair with web-responsive for layout and hallmark for design decisions.
 ---
 
 # web-styling
@@ -11,7 +11,7 @@ copied into the repo rather than installed as a dependency). This skill covers
 the Tailwind setup, the token system, the `cn()` helper, the shadcn install
 flow, and dark mode. Layout and breakpoints belong to `web-responsive`;
 theme/locale switching UI to `web-i18n-theme`; design judgment to
-`ui-ux-pro-max`.
+`hallmark`.
 
 ## Goal
 
@@ -85,7 +85,7 @@ the *only* place hex/oklch literals appear:
 
 Every component then uses the *semantic* utility (`bg-background`,
 `text-foreground`, `border-border`) that resolves to whichever theme is
-active. Cross-check contrast against `ui-ux-pro-max` Priority-1
+active. Cross-check contrast against `hallmark` Priority-1
 (Accessibility: 4.5:1) when choosing values.
 
 ## The `cn()` helper
@@ -185,7 +185,7 @@ The visible theme-switch control and any locale switcher belong to
   copied source as editable, reviewable code.
 - Drive dark mode with the `.dark` class and a theme provider mounted in the
   `web-app-foundation` providers stack.
-- Check chosen colors against `ui-ux-pro-max` contrast requirements.
+- Check chosen colors against `hallmark` contrast requirements.
 
 ## Don't
 

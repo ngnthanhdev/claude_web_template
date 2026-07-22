@@ -1,20 +1,20 @@
 # External skills — provenance and re-sync
 
 This template vendors a small set of external, community-maintained skills
-into `.claude/skills/` alongside the skills authored for this repo (Layers
+into `.agents/skills/` alongside the skills authored for this repo (Layers
 1–3). Vendoring means the upstream skill content is copied in-tree, at a
 pinned commit, with its license preserved — not installed as a live
 dependency. This keeps the skill set reproducible (no surprise upstream
 changes between sessions) and keeps attribution intact.
 
-3 external skills are vendored. Everything else in `.claude/skills/` is
+3 external skills are vendored. Everything else in `.agents/skills/` is
 authored for this template.
 
 ## Vendored skills
 
 | Skill | Source repo | Pinned commit | License | Re-sync command |
 |---|---|---|---|---|
-| `ui-ux-pro-max` | [nextlevelbuilder/ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) | `12b486b22e67f5d887962ef8351c1ac863bfaeb9` | MIT (top-level `LICENSE` file, copied verbatim) | `tmp=$(mktemp -d) && git clone --depth 1 https://github.com/nextlevelbuilder/ui-ux-pro-max-skill "$tmp/uiux" && rm -rf .claude/skills/ui-ux-pro-max && cp -R "$tmp/uiux/.claude/skills/ui-ux-pro-max" .claude/skills/ui-ux-pro-max && ( cd "$tmp/uiux" && git rev-parse HEAD ) > .claude/skills/ui-ux-pro-max/.upstream-commit && rm -rf "$tmp"` |
+| `hallmark` | [ngnthanhdev/hallmark-next](https://github.com/ngnthanhdev/hallmark-next) | `ee88fb8d704299c935f92217143dcce752f0f08b` | See upstream repository | Install with Codex, then copy the installed `hallmark` skill into `.agents/skills/hallmark` and record the source commit in `.upstream-commit` |
 | `ponytail` | [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) | `1b2760d384c44e573a9d8c7a729fac616e5c3a76` | MIT (top-level `LICENSE` file, copied verbatim) | `tmp=$(mktemp -d) && git clone --depth 1 https://github.com/DietrichGebert/ponytail "$tmp/ponytail" && rm -rf .claude/skills/ponytail && cp -R "$tmp/ponytail/skills/ponytail" .claude/skills/ponytail && ( cd "$tmp/ponytail" && git rev-parse HEAD ) > .claude/skills/ponytail/.upstream-commit && rm -rf "$tmp"` |
 | `graphify` | [Graphify-Labs/graphify](https://github.com/Graphify-Labs/graphify) | `53efaf89b68190d367feb73f9ef5dba15899377c` | MIT (top-level `LICENSE` file, copied verbatim) | `tmp=$(mktemp -d) && git clone --depth 1 https://github.com/Graphify-Labs/graphify "$tmp/graphify" && rm -rf .claude/skills/graphify && mkdir -p .claude/skills/graphify && cp "$tmp/graphify/graphify/skill.md" .claude/skills/graphify/SKILL.md && cp -R "$tmp/graphify/graphify/skills/claude/references" .claude/skills/graphify/references && cp "$tmp/graphify/LICENSE" .claude/skills/graphify/LICENSE && ( cd "$tmp/graphify" && git rev-parse HEAD ) > .claude/skills/graphify/.upstream-commit && rm -rf "$tmp"` |
 
@@ -28,9 +28,8 @@ Each vendored folder contains, in addition to the skill content:
 - `.upstream-commit` — the exact commit the vendored copy was cut from. Diff
   against a fresh clone at this commit to see if upstream has drifted.
 
-No skill was left install-only — all 3 requested skills carried a
-redistribution-permissive license (MIT in every case), so all 3 were vendored
-in full rather than recorded as an `npx`/plugin-install pointer. `graphify` is
+No skill was left install-only: all 3 requested skills are vendored in-tree at
+the pinned revisions shown above. `graphify` is
 the one exception to "no live dependency": the skill content itself is fully
 vendored, but the skill is only *useful* once its companion CLI is installed
 separately (see its per-skill note below) — it's a documentation/knowledge
@@ -39,17 +38,11 @@ other two.
 
 ### Per-skill notes
 
-- **`ui-ux-pro-max`** — upstream ships a pre-built, ready-to-use Claude Code
-  skill directory at `.claude/skills/ui-ux-pro-max/` (there's also a
-  `src/ui-ux-pro-max/` "source of truth" used by the repo's own build/CLI to
-  generate per-platform variants — that one has extra/different CSV rows for
-  stacks this template doesn't target, e.g. WPF/UWP/JavaFX, and lacks a
-  `SKILL.md`). We vendored the already-built `.claude/skills/ui-ux-pro-max/`
-  directory: `SKILL.md`, `data/*.csv` (styles, colors, typography, product
-  types, UX guidelines, charts, and 16 per-stack CSVs, one per supported UI
-  stack), and `scripts/*.py` (a small BM25 search engine over the CSVs). No
-  CLI or database initialization is required — the scripts are self-contained
-  stdlib Python 3 that read the local CSVs directly.
+- **`hallmark`** — the workspace copy comes from
+  [ngnthanhdev/hallmark-next](https://github.com/ngnthanhdev/hallmark-next).
+  It provides the anti-AI-slop design flow, audits, responsive rules, theme
+  direction, and supporting references used by KITVERA. It replaces the
+  previously vendored `ui-ux-pro-max` skill.
 - **`ponytail`** — upstream repo ships the same "lazy senior dev" behavior as
   a skill, a slash command, and native integrations for several other coding
   agents (Cursor rules, Cline rules, Windsurf rules, OpenCode plugin, Gemini
@@ -119,11 +112,11 @@ the situation below comes up:
 To pick up upstream changes, re-run that skill's re-sync command above, then
 diff the result against the currently vendored folder before committing —
 upstream authors may rename files, change frontmatter, or (as with
-`ui-ux-pro-max`) restructure between a "source" layout and a "built" layout.
+`hallmark`) restructure between releases.
 After re-syncing, re-run the frontmatter check every vendored skill must pass:
 
 ```bash
-for f in .claude/skills/*/SKILL.md; do
+for f in .agents/skills/*/SKILL.md; do
   grep -q "^name:" "$f" && grep -q "^description:" "$f" || echo "BAD: $f"
 done
 ```

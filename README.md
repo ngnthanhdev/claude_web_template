@@ -244,11 +244,11 @@ terminal, not inside a Claude Code session (see `/board` and
 | `security-review` | Audit a diff/PR for high‑confidence security findings (OWASP ASVS) |
 | `web-security` | Web hardening to OWASP ASVS: CSP, cookies, CSRF, security headers, XSS |
 
-### Vendored (external, license‑preserved)
+### Vendored external skills
 
 | Skill | Source | Why |
 |---|---|---|
-| `ui-ux-pro-max` | nextlevelbuilder/ui-ux-pro-max-skill | Visual design intelligence (styles, palettes, typography) |
+| `hallmark` | ngnthanhdev/hallmark-next | Anti-AI-slop design direction and UI review |
 | `ponytail` | DietrichGebert/ponytail | Code‑minimalism discipline (anti over‑engineering) |
 | `graphify` | Graphify-Labs/graphify | Codebase knowledge graph — powers `/graph` (needs the `graphifyy` CLI) |
 

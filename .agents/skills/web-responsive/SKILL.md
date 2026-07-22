@@ -1,6 +1,6 @@
 ---
 name: web-responsive
-description: Use when a screen, component, or layout in apps/web has to work across phone, tablet, and desktop widths — choosing breakpoints, fluid type/spacing with clamp(), container queries vs media queries, responsive grids, responsive images, the table→card pattern, safe-area insets, the viewport meta tag, and cross-viewport testing. This is the dedicated multi-screen-size skill; pair it with web-styling for tokens and ui-ux-pro-max for design judgment.
+description: Use when a screen, component, or layout in apps/web has to work across phone, tablet, and desktop widths — choosing breakpoints, fluid type/spacing with clamp(), container queries vs media queries, responsive grids, responsive images, the table→card pattern, safe-area insets, the viewport meta tag, and cross-viewport testing. This is the dedicated multi-screen-size skill; pair it with web-styling for tokens and hallmark for design judgment.
 ---
 
 # web-responsive
@@ -9,7 +9,7 @@ Every surface in `apps/web` has to hold up from a 320px phone to a wide
 desktop. This skill is the how: a mobile-first breakpoint strategy, fluid
 sizing, container queries, responsive media, and the layout patterns that
 survive real viewports. It complements `web-styling` (Tailwind + tokens) and
-answers to `ui-ux-pro-max`'s **Priority-5 Layout & Responsive** rules.
+answers to `hallmark`'s **Priority-5 Layout & Responsive** rules.
 
 ## Goal
 
@@ -229,7 +229,7 @@ Run this before calling a screen responsive-done:
   be reachable by tap/focus, since touch devices have no hover.
 - **Reserve space for media** (`aspect-ratio`) to keep CLS < 0.1.
 
-These mirror `ui-ux-pro-max`'s Priority-5 (Layout) and Priority-2 (Touch)
+These mirror `hallmark`'s Priority-5 (Layout) and Priority-2 (Touch)
 rows — cross-check there for the design rationale.
 
 ## Do

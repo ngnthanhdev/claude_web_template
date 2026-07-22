@@ -1,7 +1,7 @@
 # KITVERA Template Marketplace Design
 
 **Date:** 2026-07-22
-**Status:** Approved by user on 2026-07-22
+**Status:** Approved by user on 2026-07-22; catalogue-query and passwordless-auth amendment approved on 2026-07-22
 **Approach:** Controlled template factory with a platform-owned v1 catalogue
 and future multi-vendor boundaries
 
@@ -108,6 +108,118 @@ Key resources:
 
 Initial search uses indexed PostgreSQL full-text/trigram queries. An external
 search service is deferred until catalogue/query measurements justify it.
+
+### 3.1 Public product collection request contract
+
+`GET /v1/products` uses a strict query schema. `locale=vi|en`,
+`currency=VND|USD`, and `licence=Regular|Extended` are required so localized
+copy, displayed prices, price filters, and price sorting always use the same
+explicit context. `GET /v1/categories` requires only `locale`.
+
+The optional query fields are:
+
+- `q`: trimmed and whitespace-normalized search text, 2-100 characters when
+  present. Search is case- and accent-insensitive, weights localized title,
+  category, and tags above summary/description, and uses trigram similarity
+  for small typing errors. An empty value is treated as absent; one character
+  is rejected.
+- Repeatable controlled-slug facets: `category`, `subcategory`, `technology`,
+  `templateType`, `pageType`, `industry`, and `feature`.
+- Repeatable `compatibility` values in the controlled
+  `<target>@<version-band>` form, such as `wordpress@6.x`; arbitrary user
+  version ranges are not accepted.
+- `updatedWithin=30d|90d|1y`.
+- `minPrice` and `maxPrice`: non-negative integer minor-unit values in the
+  selected currency and licence, with `minPrice <= maxPrice`.
+- `sort=relevance|newest|recently-updated|price-asc|price-desc|title-asc`.
+- `limit`: default 24, minimum 1, maximum 48.
+- `cursor`: the opaque continuation value returned by the preceding page.
+
+Each repeatable facet accepts at most 20 values. Values within one facet use
+OR semantics; different facets use AND semantics. Repetition uses separate
+query entries (`technology=react&technology=vue`), not comma-separated text.
+Unknown parameters, unknown controlled values, malformed compatibility bands,
+and invalid ranges return the shared validation envelope with HTTP 422.
+
+When `q` is present, sort defaults to `relevance`; otherwise it defaults to
+`newest`. Bestseller, rating, and trending sorts stay unavailable until real
+transactions/reviews exist. Ordering is deterministic:
+
+- relevance: rank descending, published time descending, product ID descending;
+- newest: published time descending, product ID descending;
+- recently-updated: updated time descending, product ID descending;
+- price: selected licence/currency amount then product ID in the matching
+  direction;
+- title: normalized localized title ascending, product ID ascending.
+
+The cursor is versioned, HMAC-signed with a server secret, and contains the
+last ordering tuple plus a fingerprint of the normalized filters, context,
+and sort. It is opaque to clients; a modified cursor or reuse with a different
+query returns HTTP 422. All non-cursor collection state remains URL-backed so
+Back navigation and shared links restore the exact collection.
+
+### 3.2 Passwordless authentication and session contract
+
+`POST /v1/auth/magic-links` accepts `{email, locale, returnTo?}`. Email is
+trimmed and normalized; `locale` is `vi|en`. `returnTo` may only be an
+allowlisted relative KITVERA route (never an absolute or protocol-relative
+URL) and defaults to `/[locale]/account`. The endpoint always returns HTTP
+202 with `{status:"accepted"}`, including for new/existing addresses,
+suppressed sends, and rate-limited requests, with response timing kept
+comparable to prevent account enumeration.
+
+The same flow handles sign-in and sign-up. A new customer `User` is created
+only on successful redemption, atomically with token consumption and session
+creation; the pending token therefore stores the normalized target email and
+may have no `userId` until redemption. Concurrent redemption uses the unique
+normalized email to converge on one customer. Seller/admin roles are never
+assigned by this public flow.
+
+Each raw magic-link token has at least 256 bits of cryptographic entropy; only
+its hash is stored. It expires after 15 minutes, is single-use, and issuing a
+new token revokes every older unconsumed token for the same normalized email.
+The provider-neutral email links to
+`/[locale]/auth/magic-link#token=<raw-token>` so the token is not sent in HTTP
+request targets, access logs, analytics, or referrers.
+
+The web page reads the fragment once and calls
+`POST /v1/auth/magic-link-redemptions` with `{token}`. Successful atomic
+redemption returns HTTP 201 with the safe session user, a CSRF token, and the
+validated `returnTo`, while setting the session cookie. A well-formed token
+that is unknown, expired, consumed, or revoked always returns HTTP 401 with
+`MAGIC_LINK_INVALID_OR_EXPIRED`; malformed input returns HTTP 422. Raw tokens
+must never be logged.
+
+Sessions use random opaque bearer values with hashes stored in PostgreSQL.
+The API sets `__Host-kitvera_session` with `HttpOnly`, `Secure`,
+`SameSite=Lax`, `Path=/`, and no `Domain`; tokens never enter localStorage,
+sessionStorage, URLs, or JavaScript-readable state. Sessions expire after 30
+days idle and 90 days absolute. The token rotates at most once per 24 hours
+of activity and immediately after security/role changes; rotation creates the
+replacement before revoking the prior token and preserves the audit chain.
+
+State-changing cookie-authenticated requests also require an unpredictable
+session-bound CSRF value in `X-CSRF-Token`. The API can return the safe CSRF
+value from redemption/current-session responses while validating it against
+the secure session-bound server state; SameSite alone is not the CSRF control.
+The preview origin never receives either session or CSRF cookies.
+
+Session resources are:
+
+- `GET /v1/sessions/current`: return the safe current user/session and CSRF
+  value, or HTTP 401.
+- `DELETE /v1/sessions/current`: revoke the current session, clear cookies,
+  and return HTTP 204.
+- `DELETE /v1/sessions`: revoke all sessions owned by the authenticated user,
+  clear current cookies, and return HTTP 204.
+
+Magic-link initiation is limited to 3 requests per normalized email per 15
+minutes, 10 per email per 24 hours, and 20 per source IP per 15 minutes.
+Redemption is limited to 10 attempts per source IP per 15 minutes. Limit
+outcomes on initiation retain the same generic HTTP 202 response. Security
+events are recorded without raw email-link/session tokens. Email transport
+remains provider-neutral, and payment/checkout implementation remains
+explicitly deferred.
 
 ## 4. Web pages, navigation, and interactions
 

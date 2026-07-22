@@ -440,6 +440,10 @@ DECLARE
     root_slug TEXT;
     has_cycle BOOLEAN := FALSE;
 BEGIN
+    -- Serialize all hierarchy writes so concurrent reparenting cannot create
+    -- a cycle that neither transaction can observe in its initial snapshot.
+    PERFORM pg_advisory_xact_lock(1262838868);
+
     IF TG_OP = 'DELETE' THEN
         IF OLD."parent_id" IS NULL AND OLD."slug" = ANY(approved_roots) THEN
             RAISE EXCEPTION USING ERRCODE = '23514', MESSAGE = 'approved top-level category roots cannot be deleted';
@@ -515,7 +519,8 @@ BEGIN
     SELECT "publication_state", "current_version"
     INTO product_state, selected_version
     FROM "products"
-    WHERE "id" = target_product_id;
+    WHERE "id" = target_product_id
+    FOR UPDATE;
 
     IF NOT FOUND OR product_state = 'draft' THEN
         RETURN;
@@ -629,6 +634,115 @@ BEGIN
     END IF;
 END;
 $$;
+
+-- Existing changelog entries become immutable once their product first
+-- leaves draft. New complete versions may still be inserted atomically and
+-- selected as current in the same transaction.
+CREATE FUNCTION "preserve_published_changelog_history"() RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    owning_product_id UUID;
+    product_state "PublicationState";
+BEGIN
+    IF TG_TABLE_NAME = 'product_versions' THEN
+        owning_product_id := OLD."product_id";
+    ELSE
+        SELECT "product_id"
+        INTO owning_product_id
+        FROM "product_versions"
+        WHERE "id" = OLD."version_id";
+    END IF;
+
+    SELECT "publication_state"
+    INTO product_state
+    FROM "products"
+    WHERE "id" = owning_product_id
+    FOR UPDATE;
+
+    IF product_state <> 'draft' THEN
+        RAISE EXCEPTION USING ERRCODE = '23514', MESSAGE = 'published changelog history cannot be updated or deleted';
+    END IF;
+
+    IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER "product_versions_preserve_published_history_trigger"
+BEFORE UPDATE OR DELETE ON "product_versions"
+FOR EACH ROW EXECUTE FUNCTION "preserve_published_changelog_history"();
+
+CREATE TRIGGER "product_version_translations_preserve_published_history_trigger"
+BEFORE UPDATE OR DELETE ON "product_version_translations"
+FOR EACH ROW EXECUTE FUNCTION "preserve_published_changelog_history"();
+
+-- Approved public roots always expose exactly one vi and one en translation.
+-- Locking the root row makes concurrent translation mutations observe each
+-- other's committed result before the deferred transaction check completes.
+CREATE FUNCTION "assert_approved_root_translations"("target_category_id" UUID) RETURNS void
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    category_slug TEXT;
+    category_parent_id UUID;
+    row_count BIGINT;
+    vi_count BIGINT;
+    en_count BIGINT;
+BEGIN
+    SELECT "slug", "parent_id"
+    INTO category_slug, category_parent_id
+    FROM "categories"
+    WHERE "id" = target_category_id
+    FOR UPDATE;
+
+    IF NOT FOUND OR category_parent_id IS NOT NULL OR category_slug <> ALL(ARRAY[
+        'wordpress', 'elementor', 'html', 'shopify', 'jamstack',
+        'marketing', 'cms', 'ecommerce', 'ui-templates', 'plugins'
+    ]::TEXT[]) THEN
+        RETURN;
+    END IF;
+
+    SELECT
+        count(*),
+        count(*) FILTER (WHERE "locale" = 'vi'),
+        count(*) FILTER (WHERE "locale" = 'en')
+    INTO row_count, vi_count, en_count
+    FROM "category_translations"
+    WHERE "category_id" = target_category_id;
+
+    IF row_count <> 2 OR vi_count <> 1 OR en_count <> 1 THEN
+        RAISE EXCEPTION USING ERRCODE = '23514', MESSAGE = 'approved category root requires exactly vi/en translations';
+    END IF;
+END;
+$$;
+
+CREATE FUNCTION "enforce_approved_root_translations"() RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        PERFORM "assert_approved_root_translations"(NEW."category_id");
+    ELSIF TG_OP = 'DELETE' THEN
+        PERFORM "assert_approved_root_translations"(OLD."category_id");
+    ELSE
+        PERFORM "assert_approved_root_translations"(OLD."category_id");
+        IF NEW."category_id" IS DISTINCT FROM OLD."category_id" THEN
+            PERFORM "assert_approved_root_translations"(NEW."category_id");
+        END IF;
+    END IF;
+
+    RETURN NULL;
+END;
+$$;
+
+CREATE CONSTRAINT TRIGGER "category_translations_approved_root_locales_trigger"
+AFTER INSERT OR UPDATE OR DELETE ON "category_translations"
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW
+EXECUTE FUNCTION "enforce_approved_root_translations"();
 
 -- Resolve the owning product for any catalogue row and re-check readiness at
 -- transaction commit. This prevents post-publication deletes or partial edits

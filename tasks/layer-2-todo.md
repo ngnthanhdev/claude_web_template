@@ -30,7 +30,7 @@ or any cart, checkout, payment, order, entitlement, or download behavior.
 - **Skills:** database-orm, backend-testing, backend-auth-security, shared-contracts, typescript-strict
 
 ### T-0c25e6 — Resolve catalogue query and magic-link semantics
-- **Status:** todo
+- **Status:** done
 - **Assignee:** human
 - **Files:** docs/specs/2026-07-22-template-marketplace-design.md
 - **Acceptance:**

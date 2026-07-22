@@ -161,8 +161,8 @@ claude_web_template/
 
 ## Current Layer / Current Task
 
-- **Current Layer:** Layer 0 — Foundation (not started)
-- **Current Task:** see `tasks/layer-0-todo.md` for the first unchecked task
+- **Current Layer:** Layer 1 — Core Domain and Locale Foundations (not started)
+- **Current Task:** `T-d17cbd` — Define catalogue read contracts
 - After each layer completes, this section is updated by `/next-layer`.
 
 ## Token discipline

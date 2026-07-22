@@ -1,6 +1,6 @@
 # Layer 0 — Template Marketplace Foundation
 
-Status: **in progress**
+Status: **done**
 
 This layer establishes the project skeleton required by every later marketplace
 feature. It intentionally stops before catalogue models, authentication,

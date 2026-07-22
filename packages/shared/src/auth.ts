@@ -79,7 +79,8 @@ function canonicalizeKitveraReturnTo(value: string): string | null {
     ) {
       return null;
     }
-    return `${url.pathname}${url.search}`;
+    const canonicalReturnTo = `${url.pathname}${url.search}`;
+    return canonicalReturnTo.length <= 2_048 ? canonicalReturnTo : null;
   } catch {
     return null;
   }

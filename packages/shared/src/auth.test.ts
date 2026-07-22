@@ -81,6 +81,33 @@ describe("passwordless auth contracts", () => {
     ).toBe("/en/search?q=landing+page&technology=nextjs");
   });
 
+  it("enforces the return-target limit after canonicalizing Unicode queries", () => {
+    const withinLimitQuery = "界".repeat(225);
+    const withinLimitRaw = `/en/search?q=${withinLimitQuery}`;
+    const withinLimitCanonical = `/en/search?q=${encodeURIComponent(withinLimitQuery)}`;
+    const overLimitQuery = "界".repeat(227);
+    const overLimitRaw = `/en/search?q=${overLimitQuery}`;
+    const overLimitCanonical = `/en/search?q=${encodeURIComponent(overLimitQuery)}`;
+
+    expect(withinLimitCanonical.length).toBeLessThanOrEqual(2_048);
+    expect(overLimitRaw.length).toBeLessThan(2_048);
+    expect(overLimitCanonical.length).toBeGreaterThan(2_048);
+    expect(
+      magicLinkInitiationRequestSchema.parse({
+        email: "customer@example.com",
+        locale: "en",
+        returnTo: withinLimitRaw,
+      }).returnTo,
+    ).toBe(withinLimitCanonical);
+    expect(
+      magicLinkInitiationRequestSchema.safeParse({
+        email: "customer@example.com",
+        locale: "en",
+        returnTo: overLimitRaw,
+      }).success,
+    ).toBe(false);
+  });
+
   it("rejects unsupported locales and unknown initiation fields", () => {
     expect(
       magicLinkInitiationRequestSchema.safeParse({

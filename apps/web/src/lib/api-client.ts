@@ -24,7 +24,17 @@ async function request<T>(path: string, schema: ZodType<T>, init?: RequestInit):
       ...init?.headers,
     },
   });
-  const body: unknown = await response.json();
+  const responseText = await response.text();
+  let body: unknown = null;
+
+  if (responseText) {
+    try {
+      const parsedBody: unknown = JSON.parse(responseText);
+      body = parsedBody;
+    } catch {
+      body = responseText;
+    }
+  }
 
   if (!response.ok) {
     const parsedError = apiErrorSchema.safeParse(body);
@@ -37,7 +47,11 @@ async function request<T>(path: string, schema: ZodType<T>, init?: RequestInit):
       );
     }
 
-    throw new ApiClientError(response.status, "UNKNOWN", response.statusText || "Request failed");
+    throw new ApiClientError(
+      response.status,
+      "HTTP_ERROR",
+      response.statusText || `Request failed with status ${response.status}`,
+    );
   }
 
   return schema.parse(body);

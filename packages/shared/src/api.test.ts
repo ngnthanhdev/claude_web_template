@@ -48,6 +48,18 @@ describe("shared wire-contract primitives", () => {
     expect(moneySchema.safeParse({ amount: 19.99, currency: "USD" }).success).toBe(false);
   });
 
+  it("keeps minor-unit amounts within JavaScript's safe integer range", () => {
+    expect(
+      moneySchema.safeParse({ amount: Number.MAX_SAFE_INTEGER, currency: "VND" }).success,
+    ).toBe(true);
+    expect(
+      moneySchema.safeParse({ amount: Number.MAX_SAFE_INTEGER + 1, currency: "VND" }).success,
+    ).toBe(false);
+    expect(
+      moneySchema.safeParse({ amount: Number.MIN_SAFE_INTEGER - 1, currency: "VND" }).success,
+    ).toBe(false);
+  });
+
   it("rejects unsupported locales and currencies", () => {
     expect(localeSchema.safeParse("fr").success).toBe(false);
     expect(currencySchema.safeParse("EUR").success).toBe(false);

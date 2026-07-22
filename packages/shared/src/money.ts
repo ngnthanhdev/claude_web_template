@@ -4,7 +4,7 @@ import { currencySchema } from "./localization.js";
 
 export const moneySchema = z
   .object({
-    amount: z.number().int().nonnegative(),
+    amount: z.number().int().nonnegative().safe(),
     currency: currencySchema,
   })
   .strict();

@@ -12,8 +12,11 @@ import { AppShell } from "@/components/app-shell";
 import { Providers } from "@/components/providers";
 import { isSupportedLocale, resolvePreferredLocale } from "@/i18n/routing";
 import { ApiClientError, apiClient } from "@/lib/api-client";
+import { createContentSecurityPolicy } from "@/middleware";
 import enMessages from "../../messages/en.json";
 import viMessages from "../../messages/vi.json";
+
+vi.mock("next-intl/middleware", () => ({ default: () => vi.fn() }));
 
 function QueryProviderProbe() {
   const queryClient = useQueryClient();
@@ -142,6 +145,23 @@ describe("locale routing", () => {
     expect(viewport).not.toHaveProperty("maximumScale");
     expect(viewport).not.toHaveProperty("userScalable", false);
   });
+});
+
+describe("content security policy", () => {
+  it("allows only the configured API URL origin for cross-origin requests", () => {
+    const policy = createContentSecurityPolicy("test-nonce", "https://api.kitvera.test:8443/v1/health?probe=1");
+
+    expect(policy).toContain("connect-src 'self' https://api.kitvera.test:8443");
+    expect(policy).not.toContain("/v1/health");
+    expect(policy).toContain("script-src 'self' 'nonce-test-nonce' 'strict-dynamic'");
+  });
+
+  it.each([undefined, "not a URL", "javascript:alert(1)"])(
+    "falls back to self-only connections for an unset or unsafe API URL: %s",
+    (configuredApiUrl) => {
+      expect(createContentSecurityPolicy("test-nonce", configuredApiUrl)).toContain("connect-src 'self';");
+    },
+  );
 });
 
 describe("typed API boundary", () => {

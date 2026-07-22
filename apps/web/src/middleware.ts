@@ -5,14 +5,27 @@ import { localeCookieName, resolvePreferredLocale, routing } from "@/i18n/routin
 
 const handleI18nRouting = createMiddleware(routing);
 
-function createContentSecurityPolicy(nonce: string) {
+function getConfiguredApiOrigin(configuredApiUrl: string | undefined) {
+  if (!configuredApiUrl) return undefined;
+
+  try {
+    const url = new URL(configuredApiUrl);
+    return url.protocol === "http:" || url.protocol === "https:" ? url.origin : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+export function createContentSecurityPolicy(nonce: string, configuredApiUrl: string | undefined) {
+  const apiOrigin = getConfiguredApiOrigin(configuredApiUrl);
+
   return [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
     `style-src 'self' 'nonce-${nonce}'`,
     "img-src 'self' data: https:",
     "font-src 'self'",
-    "connect-src 'self'",
+    `connect-src 'self'${apiOrigin ? ` ${apiOrigin}` : ""}`,
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
@@ -21,7 +34,7 @@ function createContentSecurityPolicy(nonce: string) {
 
 export default function middleware(request: NextRequest) {
   const nonce = btoa(crypto.randomUUID());
-  const contentSecurityPolicy = createContentSecurityPolicy(nonce);
+  const contentSecurityPolicy = createContentSecurityPolicy(nonce, process.env.NEXT_PUBLIC_API_URL);
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("content-security-policy", contentSecurityPolicy);
   requestHeaders.set("x-nonce", nonce);

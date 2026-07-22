@@ -1,6 +1,6 @@
 # Layer 1 — Core Domain and Locale Foundations
 
-Status: **todo**
+Status: **in progress**
 
 This is the smallest product layer that unlocks later catalogue work without
 coupling independent implementers. It establishes the public catalogue's wire
@@ -19,7 +19,7 @@ deferred instead of being guessed into a foundational contract.
 ---
 
 ### T-d17cbd — Define catalogue read contracts
-- **Status:** todo
+- **Status:** done
 - **Assignee:** ai
 - **Files:** packages/shared/src/catalogue.ts, packages/shared/src/catalogue.test.ts, packages/shared/src/index.ts
 - **Acceptance:**
@@ -31,7 +31,7 @@ deferred instead of being guessed into a foundational contract.
 - **Skills:** shared-contracts, typescript-strict
 
 ### T-9a89df — Add identity and seller ownership persistence
-- **Status:** todo
+- **Status:** done
 - **Assignee:** ai
 - **Files:** apps/api/prisma/schema.prisma, apps/api/prisma/migrations/migration_lock.toml, apps/api/prisma/migrations/20260722000000_identity_ownership/migration.sql
 - **Acceptance:**
@@ -43,7 +43,7 @@ deferred instead of being guessed into a foundational contract.
 - **Skills:** database-orm, backend-auth-security, backend-testing, typescript-strict
 
 ### T-4a2249 — Establish locale-prefixed web routing
-- **Status:** todo
+- **Status:** done
 - **Assignee:** ai
 - **Files:** apps/web/package.json, pnpm-lock.yaml, apps/web/next.config.ts, apps/web/src/middleware.ts, apps/web/src/i18n/routing.ts, apps/web/src/i18n/request.ts, apps/web/messages/vi.json, apps/web/messages/en.json, apps/web/src/app/layout.tsx, apps/web/src/app/page.tsx, apps/web/src/app/[locale]/layout.tsx, apps/web/src/app/[locale]/page.tsx, apps/web/src/components/app-shell.tsx, apps/web/src/app/page.test.tsx
 - **Acceptance:**

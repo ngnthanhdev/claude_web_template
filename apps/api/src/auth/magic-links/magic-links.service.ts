@@ -1,3 +1,6 @@
+import { randomInt } from "node:crypto";
+import { setTimeout as delay } from "node:timers/promises";
+
 import { HttpStatus, Inject, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type {
@@ -24,10 +27,32 @@ import {
 
 const ACCEPTED_RESPONSE = { status: "accepted" } as const;
 const MAGIC_LINK_LIFETIME_MS = 15 * 60_000;
+const INITIATION_MINIMUM_DURATION_MS = 250;
+const INITIATION_JITTER_UPPER_BOUND_MS = 51;
 const MAGIC_LINK_LOCK_SQL =
   "SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))::text AS lock_result";
 
 class InvalidMagicLinkError extends Error {}
+
+export const MAGIC_LINK_INITIATION_RESPONSE_EQUALIZER = Symbol(
+  "MAGIC_LINK_INITIATION_RESPONSE_EQUALIZER",
+);
+
+export interface MagicLinkInitiationResponseEqualizer {
+  equalize(startedAt: number): Promise<void>;
+}
+
+@Injectable()
+export class SystemMagicLinkInitiationResponseEqualizer
+  implements MagicLinkInitiationResponseEqualizer {
+  async equalize(startedAt: number): Promise<void> {
+    const targetDuration =
+      INITIATION_MINIMUM_DURATION_MS +
+      randomInt(0, INITIATION_JITTER_UPPER_BOUND_MS);
+    const remainingDuration = targetDuration - (Date.now() - startedAt);
+    if (remainingDuration > 0) await delay(remainingDuration);
+  }
+}
 
 export interface MagicLinkRedemptionResult {
   readonly response: MagicLinkRedemptionResponse;
@@ -49,17 +74,32 @@ export class MagicLinksService {
     private readonly config: ConfigService<Env, true>,
     @Inject(EMAIL_DELIVERY_PORT)
     private readonly emailDelivery: EmailDeliveryPort,
+    @Inject(MAGIC_LINK_INITIATION_RESPONSE_EQUALIZER)
+    private readonly initiationResponseEqualizer: MagicLinkInitiationResponseEqualizer,
   ) {}
 
   async initiate(
     input: MagicLinkInitiationRequest,
     source: SourceAddressRequest,
   ): Promise<MagicLinkInitiationResponse> {
+    const startedAt = Date.now();
+    try {
+      await this.processInitiation(input, source);
+      return ACCEPTED_RESPONSE;
+    } finally {
+      await this.initiationResponseEqualizer.equalize(startedAt);
+    }
+  }
+
+  private async processInitiation(
+    input: MagicLinkInitiationRequest,
+    source: SourceAddressRequest,
+  ): Promise<void> {
     const decision = await this.rateLimit.checkMagicLinkInitiation(
       input.email,
       source,
     );
-    if (!decision.allowed) return ACCEPTED_RESPONSE;
+    if (!decision.allowed) return;
 
     const rawToken = this.crypto.generateOpaqueValue();
     const tokenHash = this.crypto.hashMagicLinkToken(rawToken);
@@ -120,8 +160,6 @@ export class MagicLinksService {
     } catch {
       await this.failIssuedToken(tokenId, decision.sourceIpDigest);
     }
-
-    return ACCEPTED_RESPONSE;
   }
 
   async redeem(

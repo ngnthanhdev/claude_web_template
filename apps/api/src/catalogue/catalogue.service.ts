@@ -71,6 +71,9 @@ const tagFacetPrefixes = {
   industry: "industry",
   feature: "feature",
 } satisfies Record<TagFacetKey, string>;
+const persistenceFacetPrefixes = uniqueSorted(
+  Object.values(tagFacetPrefixes),
+).sort((left, right) => right.length - left.length);
 
 // Tag has no dimension column. Reserving valid slug prefixes keeps each
 // controlled facet in its own persistence vocabulary without unsafe parsing
@@ -97,6 +100,16 @@ function persistenceFacetSlugs(
 ): string[] {
   const prefix = tagFacetPrefixes[key];
   return uniqueSorted(values).map((value) => `${prefix}-${value}`);
+}
+
+function publicTagSlug(persistenceSlug: string): string {
+  for (const prefix of persistenceFacetPrefixes) {
+    const reservedPrefix = `${prefix}-`;
+    if (persistenceSlug.startsWith(reservedPrefix)) {
+      return persistenceSlug.slice(reservedPrefix.length);
+    }
+  }
+  return persistenceSlug;
 }
 
 function normalizeSearch(value: string): string {
@@ -212,7 +225,7 @@ function mapCard(row: CardRow, rootSlug: string) {
     slug: row.slug,
     publicationState: row.publicationState,
     category: rootSlug,
-    tags: uniqueSorted(row.tags.map(({ tag }) => tag.slug)),
+    tags: uniqueSorted(row.tags.map(({ tag }) => publicTagSlug(tag.slug))),
     translations: [...row.translations]
       .sort((left, right) => left.locale.localeCompare(right.locale))
       .map(({ locale, title, summary }) => ({ locale, title, summary })),

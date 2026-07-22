@@ -175,7 +175,7 @@ describeWithPostgres("Sessions resources with PostgreSQL", () => {
       .set("Cookie", cookieHeader(issued.sessionToken))
       .expect(200);
     expect(currentSessionResponseSchema.parse(initial.body).session.expiresAt).toBe(
-      issued.absoluteExpiresAt.toISOString(),
+      issued.idleExpiresAt.toISOString(),
     );
     expect(initial.headers["set-cookie"]).toBeUndefined();
 
@@ -185,6 +185,9 @@ describeWithPostgres("Sessions resources with PostgreSQL", () => {
       .set("Cookie", cookieHeader(issued.sessionToken))
       .expect(200);
     expect(beforeRotation.headers["set-cookie"]).toBeUndefined();
+    expect(
+      currentSessionResponseSchema.parse(beforeRotation.body).session.expiresAt,
+    ).toBe(new Date(clock.now().getTime() + 30 * DAY).toISOString());
 
     clock.advance(1);
     const rotation = await request(app.getHttpServer())
@@ -194,7 +197,7 @@ describeWithPostgres("Sessions resources with PostgreSQL", () => {
     const rotatedResponse = currentSessionResponseSchema.parse(rotation.body);
     const replacement = replacementBearer(rotation.headers["set-cookie"]);
     expect(rotatedResponse.session.expiresAt).toBe(
-      issued.absoluteExpiresAt.toISOString(),
+      new Date(clock.now().getTime() + 30 * DAY).toISOString(),
     );
 
     await request(app.getHttpServer())
@@ -241,6 +244,16 @@ describeWithPostgres("Sessions resources with PostgreSQL", () => {
         createdAt: initialTime,
       },
     });
+
+    clock.set(recentActivity);
+    const nearAbsoluteExpiry = await request(app.getHttpServer())
+      .get("/v1/sessions/current")
+      .set("Cookie", cookieHeader(absoluteToken))
+      .expect(200);
+    expect(
+      currentSessionResponseSchema.parse(nearAbsoluteExpiry.body).session
+        .expiresAt,
+    ).toBe(absoluteDeadline.toISOString());
 
     clock.set(absoluteDeadline);
     await request(app.getHttpServer())
@@ -296,6 +309,41 @@ describeWithPostgres("Sessions resources with PostgreSQL", () => {
       .get("/v1/sessions/current")
       .set("Cookie", cookieHeader(secondCurrent.sessionToken))
       .expect(200);
+  });
+
+  it("does not rotate or mutate a session when CSRF fails at the rotation boundary", async () => {
+    const issued = await sessions.createSession(users.first.id);
+    clock.advance(DAY);
+
+    await request(app.getHttpServer())
+      .delete("/v1/sessions/current")
+      .set("Cookie", cookieHeader(issued.sessionToken))
+      .expect(403);
+    await request(app.getHttpServer())
+      .delete("/v1/sessions/current")
+      .set("Cookie", cookieHeader(issued.sessionToken))
+      .set("X-CSRF-Token", Buffer.alloc(32, 99).toString("base64url"))
+      .expect(403);
+
+    const afterRejectedDeletes = await prisma.session.findMany({
+      where: { userId: users.first.id },
+    });
+    expect(afterRejectedDeletes).toHaveLength(1);
+    expect(afterRejectedDeletes[0]).toMatchObject({
+      id: issued.sessionId,
+      revokedAt: null,
+      rotatedToId: null,
+      lastActivityAt: initialTime,
+      lastRotatedAt: initialTime,
+    });
+
+    const stillActive = await request(app.getHttpServer())
+      .get("/v1/sessions/current")
+      .set("Cookie", cookieHeader(issued.sessionToken))
+      .expect(200);
+    expect(replacementBearer(stillActive.headers["set-cookie"])).toMatch(
+      /^[A-Za-z0-9_-]{43}$/,
+    );
   });
 
   it("serializes concurrent rotation and revocation without replay or bearer logging", async () => {

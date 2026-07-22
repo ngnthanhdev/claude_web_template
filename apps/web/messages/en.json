@@ -1,0 +1,50 @@
+{
+  "Metadata": {
+    "title": "KITVERA — Web template marketplace",
+    "description": "A bilingual marketplace for discovering and licensing web templates."
+  },
+  "Shell": {
+    "skipToContent": "Skip to content",
+    "homeLabel": "KITVERA home",
+    "primaryNavigation": "Primary navigation",
+    "browseGroups": "Browse template groups",
+    "browse": "Browse",
+    "templateGroups": "Template groups",
+    "closeGroups": "Close template groups",
+    "catalogueRoutePending": "Catalogue route coming in a later layer",
+    "footerFoundation": "Vietnamese and English marketplace foundation",
+    "groups": {
+      "build": {
+        "heading": "Build",
+        "items": {
+          "wordpress": "WordPress",
+          "elementor": "Elementor",
+          "html": "HTML",
+          "jamstack": "Jamstack"
+        }
+      },
+      "commerce": {
+        "heading": "Commerce",
+        "items": {
+          "shopify": "Shopify",
+          "ecommerce": "eCommerce",
+          "plugins": "Plugins"
+        }
+      },
+      "design": {
+        "heading": "Design",
+        "items": {
+          "marketing": "Marketing",
+          "cms": "CMS",
+          "uiTemplates": "UI Templates"
+        }
+      }
+    }
+  },
+  "Home": {
+    "context": "Public marketplace foundation",
+    "title": "The marketplace is being assembled.",
+    "introduction": "KITVERA will bring together web templates for developers, freelancers, agencies, and business owners in Vietnamese and English.",
+    "status": "Catalogue content will appear here after its contracts and inventory are ready."
+  }
+}

@@ -77,22 +77,100 @@ export type LocalizedCategorySummary = z.infer<
   typeof localizedCategorySummarySchema
 >;
 
+function isNonPublicIpv4(octets: readonly number[]): boolean {
+  const [first, second, third] = octets;
+  if (first === undefined || second === undefined || third === undefined) {
+    return true;
+  }
+
+  return (
+    first === 0 ||
+    first === 10 ||
+    first === 127 ||
+    first >= 224 ||
+    (first === 100 && second >= 64 && second <= 127) ||
+    (first === 169 && second === 254) ||
+    (first === 172 && second >= 16 && second <= 31) ||
+    (first === 192 && second === 0 && (third === 0 || third === 2)) ||
+    (first === 192 && second === 168) ||
+    (first === 198 && (second === 18 || second === 19)) ||
+    (first === 198 && second === 51 && third === 100) ||
+    (first === 203 && second === 0 && third === 113)
+  );
+}
+
+function parseCanonicalIpv4(hostname: string): readonly number[] | null {
+  if (!/^\d{1,3}(?:\.\d{1,3}){3}$/.test(hostname)) return null;
+
+  const octets = hostname.split(".").map(Number);
+  return octets.length === 4 && octets.every((octet) => octet <= 255)
+    ? octets
+    : null;
+}
+
+function parseMappedIpv4(hostname: string): readonly number[] | null {
+  const address =
+    hostname.startsWith("[") && hostname.endsWith("]")
+      ? hostname.slice(1, -1)
+      : hostname;
+  if (!address.startsWith("::ffff:")) return null;
+
+  const words = address.slice("::ffff:".length).split(":");
+  const [highText, lowText] = words;
+  if (words.length !== 2 || !highText || !lowText) return null;
+
+  const high = Number.parseInt(highText, 16);
+  const low = Number.parseInt(lowText, 16);
+  if (!Number.isInteger(high) || !Number.isInteger(low)) return null;
+
+  return [high >> 8, high & 0xff, low >> 8, low & 0xff];
+}
+
+function isNonPublicHostname(hostname: string): boolean {
+  const canonicalHostname = hostname.toLowerCase().replace(/\.$/, "");
+  if (
+    canonicalHostname === "localhost" ||
+    canonicalHostname.endsWith(".localhost") ||
+    canonicalHostname.endsWith(".local")
+  ) {
+    return true;
+  }
+
+  const ipv4 = parseCanonicalIpv4(canonicalHostname);
+  if (ipv4) return isNonPublicIpv4(ipv4);
+
+  const mappedIpv4 = parseMappedIpv4(canonicalHostname);
+  if (mappedIpv4) return isNonPublicIpv4(mappedIpv4);
+
+  const ipv6 = canonicalHostname.replace(/^\[|\]$/g, "");
+  return (
+    ipv6 === "::" ||
+    ipv6 === "::1" ||
+    /^f[cd][0-9a-f]{2}(?::|$)/.test(ipv6) ||
+    /^f(?:e[89ab])(?=[0-9a-f])/.test(ipv6) ||
+    /^ff[0-9a-f]{2}(?::|$)/.test(ipv6) ||
+    ipv6.startsWith("2001:db8:")
+  );
+}
+
+function isPublicHttpUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return (
+      (url.protocol === "http:" || url.protocol === "https:") &&
+      url.username === "" &&
+      url.password === "" &&
+      !isNonPublicHostname(url.hostname)
+    );
+  } catch {
+    return false;
+  }
+}
+
 const publicHttpUrlSchema = z
   .string()
   .url()
-  .refine((value) => /^https?:\/\//i.test(value), "must use HTTP or HTTPS")
-  .refine((value) => {
-    const authority = /^https?:\/\/([^/?#]+)/i.exec(value)?.[1]?.toLowerCase();
-    if (!authority || authority.includes("@")) return false;
-
-    return !(
-      /^(?:localhost|.+\.localhost|.+\.local)(?::\d+)?$/.test(authority) ||
-      /^(?:0\.0\.0\.0|127(?:\.\d{1,3}){3}|10(?:\.\d{1,3}){3}|192\.168(?:\.\d{1,3}){2}|169\.254(?:\.\d{1,3}){2}|172\.(?:1[6-9]|2\d|3[01])(?:\.\d{1,3}){2})(?::\d+)?$/.test(
-        authority,
-      ) ||
-      /^\[(?:::1|f[cd][0-9a-f:]*|fe80[0-9a-f:]*)\](?::\d+)?$/.test(authority)
-    );
-  }, "must be a public URL without credentials");
+  .refine(isPublicHttpUrl, "must be a public HTTP(S) URL without credentials");
 
 const productCardTranslationSchema = z
   .object({

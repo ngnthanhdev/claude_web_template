@@ -247,6 +247,14 @@ describe("catalogue read contracts", () => {
     "https://user:secret@media.kitvera.example/image.webp",
     "http://localhost:3000/image.webp",
     "http://192.168.1.4/image.webp",
+    "http://2130706433/image.webp",
+    "http://127.1/image.webp",
+    "http://127.0.0.1./image.webp",
+    "http://[0:0:0:0:0:0:0:1]/image.webp",
+    "http://[::ffff:127.0.0.1]/image.webp",
+    "http://[::ffff:10.0.0.1]/image.webp",
+    "http://[::ffff:172.16.0.1]/image.webp",
+    "http://[::ffff:192.168.0.1]/image.webp",
   ])("rejects the unsafe or non-HTTP(S) public URL %s", (url) => {
     expect(
       productDetailResponseSchema.safeParse({
@@ -254,6 +262,18 @@ describe("catalogue read contracts", () => {
         documentationUrl: url,
       }).success,
     ).toBe(false);
+  });
+
+  it.each([
+    "https://media.kitvera.example/image.webp",
+    "http://media.kitvera.example/image.webp",
+  ])("accepts the public HTTP(S) URL %s", (documentationUrl) => {
+    expect(
+      productDetailResponseSchema.safeParse({
+        ...productDetail,
+        documentationUrl,
+      }).success,
+    ).toBe(true);
   });
 
   it.each(["Lotus Commerce", "lotus_commerce", "-lotus", "lotus-"])(

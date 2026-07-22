@@ -78,12 +78,260 @@ model UserRole {
 }
 
 model SellerProfile {
-  id        String   @id @default(uuid()) @db.Uuid
-  ownerId   String   @unique @map("owner_id") @db.Uuid
-  slug      String   @unique @db.VarChar(100)
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
-  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  id        String    @id @default(uuid()) @db.Uuid
+  ownerId   String    @unique @map("owner_id") @db.Uuid
+  slug      String    @unique @db.VarChar(100)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  owner     User      @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  products  Product[]
 
   @@map("seller_profiles")
+}
+
+enum Locale {
+  vi
+  en
+}
+
+enum Currency {
+  VND
+  USD
+}
+
+enum PublicationState {
+  draft
+  published
+  delisted
+}
+
+enum LicenceIdentifier {
+  Regular
+  Extended
+}
+
+enum MediaKind {
+  image
+  video
+}
+
+model Category {
+  id           String                @id @default(uuid()) @db.Uuid
+  slug         String                @unique @db.VarChar(120)
+  parentId     String?               @map("parent_id") @db.Uuid
+  createdAt    DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
+  parent       Category?             @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
+  children     Category[]            @relation("CategoryHierarchy")
+  translations CategoryTranslation[]
+  products     Product[]
+
+  @@index([parentId, slug])
+  @@map("categories")
+}
+
+model CategoryTranslation {
+  id         String   @id @default(uuid()) @db.Uuid
+  categoryId String   @map("category_id") @db.Uuid
+  locale     Locale
+  name       String   @db.VarChar(200)
+  summary    String   @db.Text
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@unique([categoryId, locale])
+  @@index([locale, name])
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin, map: "category_translations_name_trigram_idx")
+  @@map("category_translations")
+}
+
+model Product {
+  id                 String                 @id @default(uuid()) @db.Uuid
+  sellerId           String                 @map("seller_id") @db.Uuid
+  categoryId         String                 @map("category_id") @db.Uuid
+  slug               String                 @unique @db.VarChar(120)
+  publicationState   PublicationState       @default(draft) @map("publication_state")
+  currentVersion     String?                @map("current_version") @db.VarChar(64)
+  thumbnailUrl       String                 @map("thumbnail_url") @db.Text
+  documentationUrl   String                 @map("documentation_url") @db.Text
+  isolatedPreviewUrl String                 @map("isolated_preview_url") @db.Text
+  publishedAt        DateTime?              @map("published_at") @db.Timestamptz(3)
+  createdAt          DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime               @updatedAt @map("updated_at") @db.Timestamptz(3)
+  seller             SellerProfile          @relation(fields: [sellerId], references: [id], onDelete: Restrict)
+  category           Category               @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  translations       ProductTranslation[]
+  tags               ProductTag[]
+  compatibility      ProductCompatibility[]
+  specifications     ProductSpecification[]
+  media              ProductMedia[]
+  demoPages          ProductDemoPage[]
+  versions           ProductVersion[]
+  licenceOptions     LicenceOption[]
+
+  @@index([publicationState, categoryId, publishedAt, id])
+  @@index([sellerId, publicationState, createdAt])
+  @@map("products")
+}
+
+model ProductTranslation {
+  id          String  @id @default(uuid()) @db.Uuid
+  productId   String  @map("product_id") @db.Uuid
+  locale      Locale
+  title       String  @db.VarChar(240)
+  summary     String  @db.Text
+  description String  @db.Text
+  product     Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@unique([productId, locale])
+  @@index([locale, title])
+  @@index([title(ops: raw("gin_trgm_ops"))], type: Gin, map: "product_translations_title_trigram_idx")
+  @@map("product_translations")
+}
+
+model Tag {
+  id       String       @id @default(uuid()) @db.Uuid
+  slug     String       @unique @db.VarChar(120)
+  products ProductTag[]
+
+  @@map("tags")
+}
+
+model ProductTag {
+  productId String  @map("product_id") @db.Uuid
+  tagId     String  @map("tag_id") @db.Uuid
+  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Restrict)
+
+  @@id([productId, tagId])
+  @@index([tagId, productId])
+  @@map("product_tags")
+}
+
+model ProductCompatibility {
+  id         String  @id @default(uuid()) @db.Uuid
+  productId  String  @map("product_id") @db.Uuid
+  target     String  @db.VarChar(120)
+  constraint String  @db.VarChar(255)
+  product    Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@unique([productId, target])
+  @@map("product_compatibility")
+}
+
+model ProductSpecification {
+  id           String                            @id @default(uuid()) @db.Uuid
+  productId    String                            @map("product_id") @db.Uuid
+  key          String                            @db.VarChar(120)
+  product      Product                           @relation(fields: [productId], references: [id], onDelete: Restrict)
+  translations ProductSpecificationTranslation[]
+
+  @@unique([productId, key])
+  @@map("product_specifications")
+}
+
+model ProductSpecificationTranslation {
+  id              String               @id @default(uuid()) @db.Uuid
+  specificationId String               @map("specification_id") @db.Uuid
+  locale          Locale
+  label           String               @db.VarChar(200)
+  value           String               @db.Text
+  specification   ProductSpecification @relation(fields: [specificationId], references: [id], onDelete: Restrict)
+
+  @@unique([specificationId, locale])
+  @@map("product_specification_translations")
+}
+
+model ProductMedia {
+  id           String                    @id @default(uuid()) @db.Uuid
+  productId    String                    @map("product_id") @db.Uuid
+  position     Int
+  kind         MediaKind
+  url          String                    @db.Text
+  product      Product                   @relation(fields: [productId], references: [id], onDelete: Restrict)
+  translations ProductMediaTranslation[]
+
+  @@unique([productId, position])
+  @@map("product_media")
+}
+
+model ProductMediaTranslation {
+  id      String       @id @default(uuid()) @db.Uuid
+  mediaId String       @map("media_id") @db.Uuid
+  locale  Locale
+  alt     String       @db.Text
+  media   ProductMedia @relation(fields: [mediaId], references: [id], onDelete: Restrict)
+
+  @@unique([mediaId, locale])
+  @@map("product_media_translations")
+}
+
+model ProductDemoPage {
+  id           String                       @id @default(uuid()) @db.Uuid
+  productId    String                       @map("product_id") @db.Uuid
+  position     Int
+  slug         String                       @db.VarChar(120)
+  previewUrl   String                       @map("preview_url") @db.Text
+  product      Product                      @relation(fields: [productId], references: [id], onDelete: Restrict)
+  translations ProductDemoPageTranslation[]
+
+  @@unique([productId, position])
+  @@unique([productId, slug])
+  @@map("product_demo_pages")
+}
+
+model ProductDemoPageTranslation {
+  id         String          @id @default(uuid()) @db.Uuid
+  demoPageId String          @map("demo_page_id") @db.Uuid
+  locale     Locale
+  title      String          @db.VarChar(240)
+  demoPage   ProductDemoPage @relation(fields: [demoPageId], references: [id], onDelete: Restrict)
+
+  @@unique([demoPageId, locale])
+  @@map("product_demo_page_translations")
+}
+
+model ProductVersion {
+  id           String                      @id @default(uuid()) @db.Uuid
+  productId    String                      @map("product_id") @db.Uuid
+  version      String                      @db.VarChar(64)
+  releasedAt   DateTime                    @map("released_at") @db.Timestamptz(3)
+  product      Product                     @relation(fields: [productId], references: [id], onDelete: Restrict)
+  translations ProductVersionTranslation[]
+
+  @@unique([productId, version])
+  @@index([productId, releasedAt])
+  @@map("product_versions")
+}
+
+model ProductVersionTranslation {
+  id        String         @id @default(uuid()) @db.Uuid
+  versionId String         @map("version_id") @db.Uuid
+  locale    Locale
+  notes     String         @db.Text
+  version   ProductVersion @relation(fields: [versionId], references: [id], onDelete: Restrict)
+
+  @@unique([versionId, locale])
+  @@map("product_version_translations")
+}
+
+model LicenceOption {
+  id         String            @id @default(uuid()) @db.Uuid
+  productId  String            @map("product_id") @db.Uuid
+  identifier LicenceIdentifier
+  product    Product           @relation(fields: [productId], references: [id], onDelete: Restrict)
+  prices     Price[]
+
+  @@unique([productId, identifier])
+  @@map("licence_options")
+}
+
+model Price {
+  id              String        @id @default(uuid()) @db.Uuid
+  licenceOptionId String        @map("licence_option_id") @db.Uuid
+  currency        Currency
+  amount          Int
+  licenceOption   LicenceOption @relation(fields: [licenceOptionId], references: [id], onDelete: Restrict)
+
+  @@unique([licenceOptionId, currency])
+  @@map("prices")
 }

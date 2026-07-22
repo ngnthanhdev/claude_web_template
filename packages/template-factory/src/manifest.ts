@@ -5,10 +5,10 @@ const slugSchema = z
   .min(1, "must not be empty")
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "must be a lowercase slug");
 
-const semanticVersionSchema = z
+export const semanticVersionSchema = z
   .string()
   .regex(
-    /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/,
+    /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-(?:0|[1-9]\d*|[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|[A-Za-z-][0-9A-Za-z-]*))*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/,
     "must be a semantic version",
   );
 

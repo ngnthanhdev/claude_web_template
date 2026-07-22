@@ -7,6 +7,7 @@ export {
 export {
   buildAdapterIdentitySchema,
   parseTemplateManifest,
+  semanticVersionSchema,
   templateCategorySchema,
   templateManifestSchema,
   type BuildAdapterIdentity,
@@ -19,6 +20,8 @@ export {
   getNextPipelineStage,
   type ImmutablePublication,
   type ImmutablePublicationInput,
+  type CompletedPipelineGate,
+  type PipelineGateEvidence,
   type PipelineStage,
   type PipelineStageId,
 } from "./pipeline.js";

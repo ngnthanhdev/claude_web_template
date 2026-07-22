@@ -8,6 +8,7 @@ import {
   CONTROLLED_PIPELINE,
   createImmutablePublication,
   getNextPipelineStage,
+  type CompletedPipelineGate,
 } from "./pipeline.js";
 
 const fixtureUrl = new URL(
@@ -15,11 +16,36 @@ const fixtureUrl = new URL(
   import.meta.url,
 );
 
+async function readValidFixture(): Promise<unknown> {
+  return JSON.parse(await readFile(fileURLToPath(fixtureUrl), "utf8"));
+}
+
+const completedGates = CONTROLLED_PIPELINE.slice(0, -1).map((stage) => ({
+  stageId: stage.id,
+  completedAt: "2026-07-22T06:00:00.000Z",
+  evidence: stage.evidence.map((kind) => ({
+    kind,
+    evidenceId: `evidence-${stage.id}-${kind}`,
+    outcome: "passed",
+  })),
+})) satisfies readonly CompletedPipelineGate[];
+
+const invalidPublicationFields = [
+  ["artifactId", ""],
+  ["approvedBy", "   "],
+  ["approvedAt", "yesterday"],
+  ["version", "1.2.0-01"],
+  ["sha256", "not-a-checksum"],
+] satisfies ReadonlyArray<
+  readonly [
+    "artifactId" | "approvedBy" | "approvedAt" | "version" | "sha256",
+    string,
+  ]
+>;
+
 describe("template manifest v1", () => {
   it("validates the provider-neutral manifest fixture", async () => {
-    const fixture: unknown = JSON.parse(
-      await readFile(fileURLToPath(fixtureUrl), "utf8"),
-    );
+    const fixture = await readValidFixture();
 
     const manifest = parseTemplateManifest(fixture);
 
@@ -29,6 +55,41 @@ describe("template manifest v1", () => {
     expect(manifest.licenses.extended.identifier).toBe("Extended");
     expect(manifest.demoPages).toHaveLength(2);
     expect(manifest.buildAdapter.id).toBe("static-site");
+  });
+
+  it("rejects invalid SemVer in template and adapter versions", async () => {
+    const fixture = parseTemplateManifest(await readValidFixture());
+    const invalidVersions = [
+      "1.0.0-01",
+      "1.0.0-alpha..1",
+      "1.0.0+build..x",
+      "1.0.0-.",
+    ];
+
+    for (const version of invalidVersions) {
+      expect(
+        templateManifestSchema.safeParse({ ...fixture, version }).success,
+        `template version ${version}`,
+      ).toBe(false);
+      expect(
+        templateManifestSchema.safeParse({
+          ...fixture,
+          buildAdapter: { ...fixture.buildAdapter, version },
+        }).success,
+        `adapter version ${version}`,
+      ).toBe(false);
+    }
+
+    expect(
+      templateManifestSchema.safeParse({
+        ...fixture,
+        version: "1.0.0-alpha.1+build.01",
+        buildAdapter: {
+          ...fixture.buildAdapter,
+          version: "2.3.4-rc.0+adapter.7",
+        },
+      }).success,
+    ).toBe(true);
   });
 
   it("reports useful paths for malformed manifests", () => {
@@ -89,11 +150,8 @@ describe("controlled release pipeline", () => {
   });
 
   it("creates an immutable publication only after every prior gate", () => {
-    const completedStages = CONTROLLED_PIPELINE.slice(0, -1).map(
-      (stage) => stage.id,
-    );
     const publication = createImmutablePublication({
-      completedStages,
+      completedGates,
       artifactId: "artifact_studio-grid_1.2.0",
       version: "1.2.0",
       sha256: "a".repeat(64),
@@ -108,7 +166,7 @@ describe("controlled release pipeline", () => {
     expect(Object.isFrozen(publication)).toBe(true);
     expect(() =>
       createImmutablePublication({
-        completedStages: ["validate-manifest"],
+        completedGates: completedGates.slice(0, 1),
         artifactId: "artifact_studio-grid_1.2.0",
         version: "1.2.0",
         sha256: "a".repeat(64),
@@ -119,4 +177,45 @@ describe("controlled release pipeline", () => {
       }),
     ).toThrow(/expected build-install-test/i);
   });
+
+  it("rejects missing gate evidence", () => {
+    const gatesWithMissingEvidence = completedGates.map((gate) =>
+      gate.stageId === "security-license-scan"
+        ? { ...gate, evidence: [] }
+        : gate,
+    );
+
+    expect(() =>
+      createImmutablePublication({
+        completedGates: gatesWithMissingEvidence,
+        artifactId: "artifact_studio-grid_1.2.0",
+        version: "1.2.0",
+        sha256: "a".repeat(64),
+        sbomId: "sbom_studio-grid_1.2.0",
+        documentationId: "docs_studio-grid_1.2.0",
+        approvedBy: "reviewer_42",
+        approvedAt: "2026-07-22T06:30:00.000Z",
+      }),
+    ).toThrow(/evidence/i);
+  });
+
+  it.each(invalidPublicationFields)(
+    "rejects invalid publication %s",
+    (field, value) => {
+      const validInput = {
+        completedGates,
+        artifactId: "artifact_studio-grid_1.2.0",
+        version: "1.2.0",
+        sha256: "a".repeat(64),
+        sbomId: "sbom_studio-grid_1.2.0",
+        documentationId: "docs_studio-grid_1.2.0",
+        approvedBy: "reviewer_42",
+        approvedAt: "2026-07-22T06:30:00.000Z",
+      };
+
+      expect(() =>
+        createImmutablePublication({ ...validInput, [field]: value }),
+      ).toThrow();
+    },
+  );
 });

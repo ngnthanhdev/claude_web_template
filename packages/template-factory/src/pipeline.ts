@@ -1,3 +1,9 @@
+import { z } from "zod";
+
+import { semanticVersionSchema } from "./manifest.js";
+
+const isoDatetimeSchema = z.string().datetime({ offset: true });
+
 export const CONTROLLED_PIPELINE = [
   {
     id: "validate-manifest",
@@ -61,6 +67,18 @@ export const CONTROLLED_PIPELINE = [
 export type PipelineStage = (typeof CONTROLLED_PIPELINE)[number];
 export type PipelineStageId = PipelineStage["id"];
 
+export interface PipelineGateEvidence {
+  readonly kind: string;
+  readonly evidenceId: string;
+  readonly outcome: "passed";
+}
+
+export interface CompletedPipelineGate {
+  readonly stageId: PipelineStageId;
+  readonly completedAt: string;
+  readonly evidence: readonly PipelineGateEvidence[];
+}
+
 export function getNextPipelineStage(
   completedStages: readonly PipelineStageId[],
 ): PipelineStage | null {
@@ -82,7 +100,7 @@ export function getNextPipelineStage(
 }
 
 export interface ImmutablePublicationInput {
-  readonly completedStages: readonly PipelineStageId[];
+  readonly completedGates: readonly CompletedPipelineGate[];
   readonly artifactId: string;
   readonly version: string;
   readonly sha256: string;
@@ -95,6 +113,7 @@ export interface ImmutablePublicationInput {
 export interface ImmutablePublication {
   readonly immutable: true;
   readonly completedStages: readonly PipelineStageId[];
+  readonly completedGates: readonly CompletedPipelineGate[];
   readonly artifactId: string;
   readonly version: string;
   readonly sha256: string;
@@ -107,25 +126,80 @@ export interface ImmutablePublication {
 export function createImmutablePublication(
   input: ImmutablePublicationInput,
 ): ImmutablePublication {
-  const nextStage = getNextPipelineStage(input.completedStages);
+  const completedStages = input.completedGates.map((gate) => gate.stageId);
+  const nextStage = getNextPipelineStage(completedStages);
   if (nextStage?.id !== "immutable-publish") {
     const expected = nextStage?.id ?? "no additional stage";
     throw new Error(`Cannot publish: expected ${expected}`);
+  }
+  for (const [index, gate] of input.completedGates.entries()) {
+    const stage = CONTROLLED_PIPELINE[index];
+    if (!stage) {
+      throw new Error("Cannot publish: unexpected completed gate");
+    }
+    if (!isoDatetimeSchema.safeParse(gate.completedAt).success) {
+      throw new Error(
+        `Cannot publish: ${gate.stageId} completedAt must be an ISO datetime`,
+      );
+    }
+    for (const evidenceKind of stage.evidence) {
+      const evidence = gate.evidence.find(
+        (entry) => entry.kind === evidenceKind,
+      );
+      if (
+        !evidence ||
+        evidence.outcome !== "passed" ||
+        !evidence.evidenceId.trim()
+      ) {
+        throw new Error(
+          `Cannot publish: ${gate.stageId} requires passed evidence for ${evidenceKind}`,
+        );
+      }
+    }
+  }
+
+  if (!input.artifactId.trim()) {
+    throw new Error("Cannot publish: artifactId must not be empty");
+  }
+  if (!input.approvedBy.trim()) {
+    throw new Error("Cannot publish: approvedBy must not be empty");
+  }
+  if (!isoDatetimeSchema.safeParse(input.approvedAt).success) {
+    throw new Error("Cannot publish: approvedAt must be an ISO datetime");
+  }
+  if (!semanticVersionSchema.safeParse(input.version).success) {
+    throw new Error("Cannot publish: version must be valid SemVer");
   }
   if (!/^[a-f0-9]{64}$/.test(input.sha256)) {
     throw new Error(
       "Cannot publish: sha256 must be 64 lowercase hexadecimal characters",
     );
   }
+  if (!input.sbomId.trim() || !input.documentationId.trim()) {
+    throw new Error(
+      "Cannot publish: SBOM and documentation identifiers are required",
+    );
+  }
 
   const immutablePublishStage: PipelineStageId = "immutable-publish";
-  const completedStages = Object.freeze([
-    ...input.completedStages,
+  const publicationStages = Object.freeze([
+    ...completedStages,
     immutablePublishStage,
   ]);
+  const completedGates = Object.freeze(
+    input.completedGates.map((gate) =>
+      Object.freeze({
+        ...gate,
+        evidence: Object.freeze(
+          gate.evidence.map((evidence) => Object.freeze({ ...evidence })),
+        ),
+      }),
+    ),
+  );
   return Object.freeze({
     immutable: true,
-    completedStages,
+    completedStages: publicationStages,
+    completedGates,
     artifactId: input.artifactId,
     version: input.version,
     sha256: input.sha256,

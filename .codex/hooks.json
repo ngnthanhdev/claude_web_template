@@ -1,0 +1,36 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/nguyenthanh/Documents/prj_web_template/.codex/hooks/block-build-output.sh'"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/nguyenthanh/Documents/prj_web_template/.codex/hooks/auto-format.sh'"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/nguyenthanh/Documents/prj_web_template/.codex/hooks/suggest-commit.sh'"
+          }
+        ]
+      }
+    ]
+  }
+}

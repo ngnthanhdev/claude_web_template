@@ -18,7 +18,7 @@ import {
 } from "@marketplace/shared/catalogue";
 import { PublicationState } from "@prisma/client";
 import request from "supertest";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { ZodValidationPipe } from "nestjs-zod";
 import { ZodError } from "zod";
 
@@ -209,6 +209,10 @@ describe("CatalogueService boundaries", () => {
   };
   let catalogue: CatalogueService;
 
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -248,6 +252,30 @@ describe("CatalogueService boundaries", () => {
 
     await expect(catalogue.findProducts(query)).rejects.toMatchObject({
       message: expect.stringMatching(/validation/i),
+    });
+    expect(prisma.$queryRaw).not.toHaveBeenCalled();
+  });
+
+  it("keeps facet vocabularies dimensioned so one tag cannot satisfy two facets", async () => {
+    prisma.tag.findMany
+      .mockResolvedValueOnce([{ slug: "technology-react" }])
+      .mockResolvedValueOnce([]);
+    const query: ProductCollectionQuery = {
+      ...baseQuery,
+      technology: ["react"],
+      industry: ["react"],
+    };
+
+    await expect(catalogue.findProducts(query)).rejects.toMatchObject({
+      message: expect.stringMatching(/validation/i),
+    });
+    expect(prisma.tag.findMany).toHaveBeenNthCalledWith(1, {
+      where: { slug: { in: ["technology-react"] } },
+      select: { slug: true },
+    });
+    expect(prisma.tag.findMany).toHaveBeenNthCalledWith(2, {
+      where: { slug: { in: ["industry-react"] } },
+      select: { slug: true },
     });
     expect(prisma.$queryRaw).not.toHaveBeenCalled();
   });

@@ -161,8 +161,8 @@ claude_web_template/
 
 ## Current Layer / Current Task
 
-- **Current Layer:** Layer 2 — Catalogue Persistence and Public Contract Decisions (not started)
-- **Current Task:** `T-6ed6da` — Persist the public catalogue read model
+- **Current Layer:** Layer 3 — Public Request and Passwordless Auth Prerequisites (not started)
+- **Current Task:** `T-9a705b` — Define catalogue query and passwordless auth contracts
 - After each layer completes, this section is updated by `/next-layer`.
 
 ## Token discipline

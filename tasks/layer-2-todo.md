@@ -1,6 +1,6 @@
 # Layer 2 — Catalogue Persistence and Public Contract Decisions
 
-Status: **in progress**
+Status: **done**
 
 This is the smallest layer that can safely follow the proven Layer 1
 foundations. It persists the complete public catalogue read model against the

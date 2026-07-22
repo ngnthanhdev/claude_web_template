@@ -6,6 +6,37 @@ Each task keeps its original `T-xxxxxx` id and task-block schema (`Status`,
 `Assignee`, `Files`, `Acceptance`, `Skills`, optional `Depends`) unchanged
 except `Status`, which is `done` for everything in this file.
 
+## Layer 2 — Catalogue Persistence and Public Contract Decisions
+
+Completed 2026-07-22. Root lint/typecheck and all 73 tests passed. The
+catalogue migration replayed cleanly from Layer 1 on disposable PostgreSQL,
+seeded exactly ten bilingual public roots with no sample products, and passed
+sequential plus concurrent integrity regressions. The amended approved spec
+now fixes the complete product-query and passwordless-session wire semantics.
+
+### T-6ed6da — Persist the public catalogue read model
+- **Status:** done
+- **Assignee:** ai
+- **Files:** apps/api/prisma/schema.prisma, apps/api/prisma/migrations/20260722010000_catalogue_read_model/migration.sql
+- **Acceptance:**
+  - [x] Prisma models the relational data needed to produce the existing shared category, product-card, and product-detail responses: hierarchical categories and bilingual category translations; seller-owned products and bilingual product translations; tags; compatibility; localized specifications; ordered localized media and demos; semantic product versions with bilingual changelog notes; Regular/Extended licence options; and explicit VND/USD integer-minor-unit prices.
+  - [x] `Product.sellerId` is a required server-controlled relation to the shipped `SellerProfile`; public slugs, locale/currency/licence/publication/media vocabularies align with `@marketplace/shared`, and relational/localized data is not collapsed into opaque JSON blobs.
+  - [x] Database uniqueness, check constraints, referential actions, and indexes prevent duplicate translations, tags, versions, licence/currency prices, and ordered child positions; reject invalid negative prices/positions and self-parented categories; preserve seller and published-product history; and support published category/product lookup plus the approved initial PostgreSQL full-text/trigram search strategy.
+  - [x] The migration upgrades a database containing the Layer 1 identity migration, seeds exactly the ten approved top-level category slugs with complete `vi`/`en` names and summaries, and introduces no sample products, fabricated sales/reviews, release artifacts/build runs, commerce records, provider choices, or future seller workflows.
+  - [x] The migration applies cleanly to a disposable PostgreSQL database with `prisma migrate deploy`; representative database checks prove the seeded taxonomy, seller ownership relation, bilingual uniqueness, ordered-child uniqueness, price constraints, and search indexes; `prisma validate`, Prisma client generation, and `pnpm --filter @marketplace/api typecheck` pass.
+- **Skills:** database-orm, backend-testing, backend-auth-security, shared-contracts, typescript-strict
+
+### T-0c25e6 — Resolve catalogue query and magic-link semantics
+- **Status:** done
+- **Assignee:** human
+- **Files:** docs/specs/2026-07-22-template-marketplace-design.md
+- **Acceptance:**
+  - [x] The approved design specifies the exact `GET /v1/products` request grammar: search term, supported filter facets and value formats, allowed sort keys and defaults, page-size default/maximum, locale/currency handling, and a deterministic opaque-cursor ordering that can restore URL-backed collection state.
+  - [x] The approved design specifies the complete magic-link lifecycle beyond the currently named initiation endpoint: generic anti-enumeration response behavior, browser link target, one-time token redemption endpoint and HTTP shape, session transport, cookie attributes, expiry/rotation/revocation rules, current-session lookup/logout needs, and rate-limit expectations.
+  - [x] Decisions preserve independent locale/currency choice, provider-neutral email delivery, hashed one-time tokens, replay prevention, server-side authorization, and the explicit deferral of payment/checkout implementation; no unresolved placeholder remains that would force shared-contract or endpoint implementers to invent wire behavior.
+  - [x] The amended design remains marked approved with the decision date recorded, so the next scope pass can create separate shared-contract, NestJS catalogue, and NestJS auth tasks without cross-worktree file overlap.
+- **Skills:** brainstorming, api-design, backend-auth-security, web-auth-state, shared-contracts
+
 ## Layer 1 — Core Domain and Locale Foundations
 
 Completed 2026-07-22. Root lint/typecheck and all 73 tests passed. The identity

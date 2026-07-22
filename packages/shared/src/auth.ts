@@ -59,7 +59,7 @@ function hasAllowedPath(pathname: string): boolean {
   return false;
 }
 
-function isAllowedKitveraReturnTo(value: string): boolean {
+function canonicalizeKitveraReturnTo(value: string): string | null {
   if (
     value.length > 2_048 ||
     !value.startsWith("/") ||
@@ -67,25 +67,38 @@ function isAllowedKitveraReturnTo(value: string): boolean {
     value.includes("\\") ||
     /[\u0000-\u001F\u007F]/.test(value)
   ) {
-    return false;
+    return null;
   }
 
   try {
     const url = new URL(value, "https://kitvera.invalid");
-    return (
-      url.origin === "https://kitvera.invalid" &&
-      url.hash === "" &&
-      hasAllowedPath(url.pathname)
-    );
+    if (
+      url.origin !== "https://kitvera.invalid" ||
+      url.hash !== "" ||
+      !hasAllowedPath(url.pathname)
+    ) {
+      return null;
+    }
+    return `${url.pathname}${url.search}`;
   } catch {
-    return false;
+    return null;
   }
 }
 
 export const kitveraReturnToSchema = z
   .string()
   .min(1)
-  .refine(isAllowedKitveraReturnTo, "must be an approved KITVERA route");
+  .transform((value, context) => {
+    const canonicalReturnTo = canonicalizeKitveraReturnTo(value);
+    if (canonicalReturnTo === null) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "must be an approved KITVERA route",
+      });
+      return z.NEVER;
+    }
+    return canonicalReturnTo;
+  });
 export type KitveraReturnTo = z.infer<typeof kitveraReturnToSchema>;
 
 const magicLinkInitiationObjectSchema = z
@@ -96,7 +109,10 @@ const magicLinkInitiationObjectSchema = z
   })
   .strict()
   .superRefine(({ locale, returnTo }, context) => {
-    if (returnTo !== undefined && !returnTo.startsWith(`/${locale}`)) {
+    if (typeof returnTo !== "string") return;
+
+    const [, returnToLocale] = returnTo.split("/");
+    if (returnToLocale !== locale) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         message: "returnTo locale must match locale",

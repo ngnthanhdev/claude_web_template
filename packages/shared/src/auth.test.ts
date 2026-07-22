@@ -57,6 +57,10 @@ describe("passwordless auth contracts", () => {
     "/en/auth/magic-link",
     "/en/account#token=secret",
     "/vi/account",
+    "/en/../vi/account",
+    "/en/%2e%2e/vi/account",
+    "/en/%2E%2E/vi/account",
+    "/en/%2e./vi/account",
   ])("rejects the unsafe or mismatched return target %s", (returnTo) => {
     expect(
       magicLinkInitiationRequestSchema.safeParse({
@@ -65,6 +69,16 @@ describe("passwordless auth contracts", () => {
         returnTo,
       }).success,
     ).toBe(false);
+  });
+
+  it("canonicalizes an approved return target while preserving its query", () => {
+    expect(
+      magicLinkInitiationRequestSchema.parse({
+        email: "customer@example.com",
+        locale: "en",
+        returnTo: "/en/templates/../search?q=landing+page&technology=nextjs",
+      }).returnTo,
+    ).toBe("/en/search?q=landing+page&technology=nextjs");
   });
 
   it("rejects unsupported locales and unknown initiation fields", () => {

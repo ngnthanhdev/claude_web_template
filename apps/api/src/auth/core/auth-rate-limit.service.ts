@@ -59,10 +59,11 @@ export class AuthRateLimitService {
   ): Promise<AuthRateLimitDecision> {
     const sourceIpDigest = this.crypto.digestSourceAddress(request.ip);
     return this.prisma.$transaction(async (transaction) => {
-      await this.acquireLocks(transaction, [
+      const acquired = await this.tryAcquireLocks(transaction, [
         `initiation:email:${normalizedEmail}`,
         `initiation:ip:${sourceIpDigest}`,
       ]);
+      if (!acquired) return { allowed: false, sourceIpDigest };
 
       const now = this.clock.now();
       const fifteenMinutesAgo = new Date(now.getTime() - 15 * MINUTE);
@@ -91,20 +92,21 @@ export class AuthRateLimitService {
         }),
       ]);
 
-      await transaction.authRateEvent.create({
-        data: {
-          action: "magicLinkInitiation",
-          normalizedEmail,
-          sourceIpDigest,
-          occurredAt: now,
-        },
-      });
       await this.prune(transaction, oneDayAgo);
+      const allowed =
+        emailShortCount < 3 && emailDayCount < 10 && ipShortCount < 20;
+      if (allowed) {
+        await transaction.authRateEvent.create({
+          data: {
+            action: "magicLinkInitiation",
+            normalizedEmail,
+            sourceIpDigest,
+            occurredAt: now,
+          },
+        });
+      }
 
-      return {
-        allowed: emailShortCount < 3 && emailDayCount < 10 && ipShortCount < 20,
-        sourceIpDigest,
-      };
+      return { allowed, sourceIpDigest };
     });
   }
 
@@ -113,7 +115,10 @@ export class AuthRateLimitService {
   ): Promise<AuthRateLimitDecision> {
     const sourceIpDigest = this.crypto.digestSourceAddress(request.ip);
     return this.prisma.$transaction(async (transaction) => {
-      await this.acquireLocks(transaction, [`redemption:ip:${sourceIpDigest}`]);
+      const acquired = await this.tryAcquireLocks(transaction, [
+        `redemption:ip:${sourceIpDigest}`,
+      ]);
+      if (!acquired) return { allowed: false, sourceIpDigest };
       const now = this.clock.now();
       const fifteenMinutesAgo = new Date(now.getTime() - 15 * MINUTE);
       const count = await transaction.authRateEvent.count({
@@ -123,28 +128,44 @@ export class AuthRateLimitService {
           occurredAt: { gt: fifteenMinutesAgo },
         },
       });
-      await transaction.authRateEvent.create({
-        data: {
-          action: "magicLinkRedemption",
-          sourceIpDigest,
-          occurredAt: now,
-        },
-      });
       await this.prune(transaction, new Date(now.getTime() - DAY));
-      return { allowed: count < 10, sourceIpDigest };
+      const allowed = count < 10;
+      if (allowed) {
+        await transaction.authRateEvent.create({
+          data: {
+            action: "magicLinkRedemption",
+            sourceIpDigest,
+            occurredAt: now,
+          },
+        });
+      }
+      return { allowed, sourceIpDigest };
     });
   }
 
-  private async acquireLocks(
+  private async tryAcquireLocks(
     transaction: AuthRateTransaction,
     keys: readonly string[],
-  ): Promise<void> {
+  ): Promise<boolean> {
     for (const key of [...keys].sort()) {
-      await transaction.$queryRawUnsafe(
-        "SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))::text AS lock_result",
+      const result = await transaction.$queryRawUnsafe(
+        "SELECT pg_try_advisory_xact_lock(hashtextextended($1::text, 0)) AS acquired",
         key,
       );
+      if (!this.didAcquireLock(result)) return false;
     }
+    return true;
+  }
+
+  private didAcquireLock(result: unknown): boolean {
+    if (!Array.isArray(result) || result.length !== 1) return false;
+    const row = result[0];
+    return (
+      typeof row === "object" &&
+      row !== null &&
+      "acquired" in row &&
+      row.acquired === true
+    );
   }
 
   private async prune(transaction: AuthRateTransaction, cutoff: Date): Promise<void> {

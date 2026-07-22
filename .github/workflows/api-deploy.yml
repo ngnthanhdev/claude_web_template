@@ -12,7 +12,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build API image
-        run: docker build --file apps/api/Dockerfile --tag api:${{ github.sha }} .
+        run: |
+          cp apps/api/.dockerignore .dockerignore
+          docker build --file apps/api/Dockerfile --tag api:${{ github.sha }} .
       # TODO: add your host's deploy step
       # Examples:
       #   - Fly.io:  flyctl deploy --config apps/api/fly.toml

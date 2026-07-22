@@ -12,7 +12,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build web image
-        run: docker build --file apps/web/Dockerfile --tag web:${{ github.sha }} .
+        run: |
+          cp apps/web/.dockerignore .dockerignore
+          docker build --file apps/web/Dockerfile --tag web:${{ github.sha }} .
       # TODO: add your host's deploy step
       # Examples:
       #   - Fly.io:  flyctl deploy --config apps/web/fly.toml

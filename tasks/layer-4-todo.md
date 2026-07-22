@@ -34,7 +34,7 @@ tests the port but does not select a vendor.
 - **Skills:** api-design, nestjs-backend, database-orm, backend-testing, shared-contracts, backend-auth-security, typescript-strict
 
 ### T-c8d2f4 — Extend persistence for secure sessions and auth rate events
-- **Status:** in-progress
+- **Status:** review
 - **Assignee:** ai
 - **Files:** apps/api/prisma/schema.prisma, apps/api/prisma/migrations/20260722030000_auth_session_security/migration.sql
 - **Acceptance:**
@@ -46,7 +46,7 @@ tests the port but does not select a vendor.
 - **Skills:** database-orm, backend-auth-security, backend-testing, typescript-strict
 
 ### T-e6a93c — Build the passwordless auth security core
-- **Status:** todo
+- **Status:** in-progress
 - **Assignee:** ai
 - **Files:** apps/api/package.json, pnpm-lock.yaml, apps/api/.env.example, apps/api/src/config/env.ts, apps/api/src/config/env.test.ts, apps/api/src/common/errors/api-http.exception.ts, apps/api/src/common/filters/api-exception.filter.ts, apps/api/src/common/filters/api-exception.filter.test.ts, apps/api/src/auth/core/auth-core.module.ts, apps/api/src/auth/core/auth-crypto.service.ts, apps/api/src/auth/core/auth-rate-limit.service.ts, apps/api/src/auth/core/auth-session.service.ts, apps/api/src/auth/core/auth-cookie.ts, apps/api/src/auth/core/auth-core.test.ts
 - **Acceptance:**

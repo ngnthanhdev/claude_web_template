@@ -34,11 +34,20 @@ const invalidPublicationFields = [
   ["artifactId", ""],
   ["approvedBy", "   "],
   ["approvedAt", "yesterday"],
+  ["publishedAt", "tomorrow"],
+  ["publishedAt", "2026-07-22T06:15:00.000Z"],
   ["version", "1.2.0-01"],
   ["sha256", "not-a-checksum"],
 ] satisfies ReadonlyArray<
   readonly [
-    "artifactId" | "approvedBy" | "approvedAt" | "version" | "sha256",
+    (
+      | "artifactId"
+      | "approvedBy"
+      | "approvedAt"
+      | "publishedAt"
+      | "version"
+      | "sha256"
+    ),
     string,
   ]
 >;
@@ -90,6 +99,19 @@ describe("template manifest v1", () => {
         },
       }).success,
     ).toBe(true);
+    for (const version of ["1.0.0-1alpha", "1.0.0-123-abc"]) {
+      expect(
+        templateManifestSchema.safeParse({ ...fixture, version }).success,
+        `valid template version ${version}`,
+      ).toBe(true);
+      expect(
+        templateManifestSchema.safeParse({
+          ...fixture,
+          buildAdapter: { ...fixture.buildAdapter, version },
+        }).success,
+        `valid adapter version ${version}`,
+      ).toBe(true);
+    }
   });
 
   it("reports useful paths for malformed manifests", () => {
@@ -159,10 +181,30 @@ describe("controlled release pipeline", () => {
       documentationId: "docs_studio-grid_1.2.0",
       approvedBy: "reviewer_42",
       approvedAt: "2026-07-22T06:30:00.000Z",
+      publishedAt: "2026-07-22T06:45:00.000Z",
     });
 
     expect(publication.immutable).toBe(true);
     expect(publication.completedStages.at(-1)).toBe("immutable-publish");
+    expect(publication.completedGates.map((gate) => gate.stageId)).toEqual(
+      publication.completedStages,
+    );
+    expect(publication.completedGates.at(-1)).toEqual({
+      stageId: "immutable-publish",
+      completedAt: "2026-07-22T06:45:00.000Z",
+      evidence: [
+        {
+          kind: "immutable artifact identifier",
+          evidenceId: "artifact_studio-grid_1.2.0",
+          outcome: "passed",
+        },
+        {
+          kind: "published checksum",
+          evidenceId: "a".repeat(64),
+          outcome: "passed",
+        },
+      ],
+    });
     expect(Object.isFrozen(publication)).toBe(true);
     expect(() =>
       createImmutablePublication({
@@ -174,6 +216,7 @@ describe("controlled release pipeline", () => {
         documentationId: "docs_studio-grid_1.2.0",
         approvedBy: "reviewer_42",
         approvedAt: "2026-07-22T06:30:00.000Z",
+        publishedAt: "2026-07-22T06:45:00.000Z",
       }),
     ).toThrow(/expected build-install-test/i);
   });
@@ -195,6 +238,7 @@ describe("controlled release pipeline", () => {
         documentationId: "docs_studio-grid_1.2.0",
         approvedBy: "reviewer_42",
         approvedAt: "2026-07-22T06:30:00.000Z",
+        publishedAt: "2026-07-22T06:45:00.000Z",
       }),
     ).toThrow(/evidence/i);
   });
@@ -211,6 +255,7 @@ describe("controlled release pipeline", () => {
         documentationId: "docs_studio-grid_1.2.0",
         approvedBy: "reviewer_42",
         approvedAt: "2026-07-22T06:30:00.000Z",
+        publishedAt: "2026-07-22T06:45:00.000Z",
       };
 
       expect(() =>

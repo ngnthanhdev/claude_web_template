@@ -161,8 +161,8 @@ claude_web_template/
 
 ## Current Layer / Current Task
 
-- **Current Layer:** Layer 3 — Public Request and Passwordless Auth Prerequisites (not started)
-- **Current Task:** `T-9a705b` — Define catalogue query and passwordless auth contracts
+- **Current Layer:** Layer 4 — Public Catalogue and Passwordless Authentication API (not started)
+- **Current Task:** `T-b4e1a7` — Implement the database-backed public catalogue resource
 - After each layer completes, this section is updated by `/next-layer`.
 
 ## Token discipline

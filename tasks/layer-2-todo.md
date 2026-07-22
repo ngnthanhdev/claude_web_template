@@ -1,6 +1,6 @@
 # Layer 2 — Catalogue Persistence and Public Contract Decisions
 
-Status: **todo**
+Status: **in progress**
 
 This is the smallest layer that can safely follow the proven Layer 1
 foundations. It persists the complete public catalogue read model against the
@@ -18,7 +18,7 @@ or any cart, checkout, payment, order, entitlement, or download behavior.
 ---
 
 ### T-6ed6da — Persist the public catalogue read model
-- **Status:** todo
+- **Status:** in-progress
 - **Assignee:** ai
 - **Files:** apps/api/prisma/schema.prisma, apps/api/prisma/migrations/20260722010000_catalogue_read_model/migration.sql
 - **Acceptance:**

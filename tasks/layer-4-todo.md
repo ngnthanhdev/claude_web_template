@@ -1,6 +1,6 @@
 # Layer 4 — Public Catalogue and Passwordless Authentication API
 
-Status: **todo**
+Status: **in progress**
 
 This layer implements the first database-backed public NestJS resources against
 the contracts and persistence proven in Layers 1–3. It is deliberately split
@@ -20,7 +20,7 @@ tests the port but does not select a vendor.
 ---
 
 ### T-b4e1a7 — Implement the database-backed public catalogue resource
-- **Status:** todo
+- **Status:** in-progress
 - **Assignee:** ai
 - **Files:** apps/api/src/catalogue/catalogue.module.ts, apps/api/src/catalogue/catalogue.controller.ts, apps/api/src/catalogue/catalogue.service.ts, apps/api/src/catalogue/catalogue-cursor.ts, apps/api/src/catalogue/catalogue.controller.test.ts, apps/api/src/catalogue/catalogue.integration.test.ts
 - **Acceptance:**
@@ -34,7 +34,7 @@ tests the port but does not select a vendor.
 - **Skills:** api-design, nestjs-backend, database-orm, backend-testing, shared-contracts, backend-auth-security, typescript-strict
 
 ### T-c8d2f4 — Extend persistence for secure sessions and auth rate events
-- **Status:** todo
+- **Status:** in-progress
 - **Assignee:** ai
 - **Files:** apps/api/prisma/schema.prisma, apps/api/prisma/migrations/20260722030000_auth_session_security/migration.sql
 - **Acceptance:**

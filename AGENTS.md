@@ -161,7 +161,7 @@ claude_web_template/
 
 ## Current Layer / Current Task
 
-- **Current Layer:** Layer 4 — Public Catalogue and Passwordless Authentication API (not started)
+- **Current Layer:** Layer 4 — Public Catalogue and Passwordless Authentication API (in progress)
 - **Current Task:** `T-b4e1a7` — Implement the database-backed public catalogue resource
 - After each layer completes, this section is updated by `/next-layer`.
 

@@ -1,4 +1,4 @@
-FROM node:22-alpine AS build
+FROM node:22-alpine@sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb9c86130c3e2 AS build
 
 WORKDIR /workspace
 RUN corepack enable && corepack prepare pnpm@9.12.0 --activate
@@ -14,7 +14,7 @@ COPY packages/shared/src packages/shared/src
 COPY packages/shared/tsconfig.json packages/shared/tsconfig.json
 RUN pnpm --filter @marketplace/shared build && pnpm --filter @marketplace/web build
 
-FROM node:22-alpine AS runner
+FROM node:22-alpine@sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb9c86130c3e2 AS runner
 
 WORKDIR /app
 ENV NODE_ENV=production \

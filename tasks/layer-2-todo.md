@@ -18,7 +18,7 @@ or any cart, checkout, payment, order, entitlement, or download behavior.
 ---
 
 ### T-6ed6da — Persist the public catalogue read model
-- **Status:** in-progress
+- **Status:** done
 - **Assignee:** ai
 - **Files:** apps/api/prisma/schema.prisma, apps/api/prisma/migrations/20260722010000_catalogue_read_model/migration.sql
 - **Acceptance:**

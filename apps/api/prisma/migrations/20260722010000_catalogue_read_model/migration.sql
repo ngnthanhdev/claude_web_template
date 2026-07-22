@@ -208,6 +208,9 @@ CREATE UNIQUE INDEX "category_translations_category_id_locale_key" ON "category_
 CREATE UNIQUE INDEX "products_slug_key" ON "products"("slug");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "products_id_current_version_key" ON "products"("id", "current_version");
+
+-- CreateIndex
 CREATE INDEX "products_publication_state_category_id_published_at_id_idx" ON "products"("publication_state", "category_id", "published_at", "id");
 
 -- CreateIndex
@@ -308,6 +311,9 @@ ALTER TABLE "product_demo_page_translations" ADD CONSTRAINT "product_demo_page_t
 
 -- AddForeignKey
 ALTER TABLE "product_versions" ADD CONSTRAINT "product_versions_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "products"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "products" ADD CONSTRAINT "products_id_current_version_fkey" FOREIGN KEY ("id", "current_version") REFERENCES "product_versions"("product_id", "version") ON DELETE RESTRICT ON UPDATE RESTRICT;
 
 -- AddForeignKey
 ALTER TABLE "product_version_translations" ADD CONSTRAINT "product_version_translations_version_id_fkey" FOREIGN KEY ("version_id") REFERENCES "product_versions"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -419,6 +425,342 @@ $$;
 CREATE TRIGGER "products_preserve_published_history_trigger"
 BEFORE UPDATE OR DELETE ON "products"
 FOR EACH ROW EXECUTE FUNCTION "preserve_published_product_history"();
+
+-- Every category may have descendants, but every hierarchy must terminate at
+-- one of the ten stable public roots. The approved roots themselves are
+-- immutable so a product's public category group remains deterministic.
+CREATE FUNCTION "enforce_approved_category_root"() RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    approved_roots CONSTANT TEXT[] := ARRAY[
+        'wordpress', 'elementor', 'html', 'shopify', 'jamstack',
+        'marketing', 'cms', 'ecommerce', 'ui-templates', 'plugins'
+    ];
+    root_slug TEXT;
+    has_cycle BOOLEAN := FALSE;
+BEGIN
+    IF TG_OP = 'DELETE' THEN
+        IF OLD."parent_id" IS NULL AND OLD."slug" = ANY(approved_roots) THEN
+            RAISE EXCEPTION USING ERRCODE = '23514', MESSAGE = 'approved top-level category roots cannot be deleted';
+        END IF;
+        RETURN OLD;
+    END IF;
+
+    IF TG_OP = 'UPDATE'
+       AND OLD."parent_id" IS NULL
+       AND OLD."slug" = ANY(approved_roots)
+       AND (NEW."parent_id" IS NOT NULL OR NEW."slug" <> OLD."slug") THEN
+        RAISE EXCEPTION USING ERRCODE = '23514', MESSAGE = 'approved top-level category roots cannot be renamed or reparented';
+    END IF;
+
+    IF NEW."parent_id" IS NULL THEN
+        root_slug := NEW."slug";
+    ELSE
+        WITH RECURSIVE ancestors AS (
+            SELECT
+                category."id",
+                category."parent_id",
+                category."slug",
+                ARRAY[NEW."id", category."id"]::UUID[] AS path,
+                category."id" = NEW."id" AS cycle
+            FROM "categories" AS category
+            WHERE category."id" = NEW."parent_id"
+
+            UNION ALL
+
+            SELECT
+                parent."id",
+                parent."parent_id",
+                parent."slug",
+                ancestors.path || parent."id",
+                parent."id" = ANY(ancestors.path)
+            FROM "categories" AS parent
+            JOIN ancestors ON parent."id" = ancestors."parent_id"
+            WHERE NOT ancestors.cycle
+        )
+        SELECT
+            COALESCE(bool_or(ancestors.cycle), FALSE),
+            max(ancestors."slug") FILTER (WHERE ancestors."parent_id" IS NULL)
+        INTO has_cycle, root_slug
+        FROM ancestors;
+    END IF;
+
+    IF has_cycle OR root_slug IS NULL OR NOT (root_slug = ANY(approved_roots)) THEN
+        RAISE EXCEPTION USING ERRCODE = '23514', MESSAGE = 'category hierarchy must terminate at an approved top-level root';
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER "categories_enforce_approved_root_trigger"
+BEFORE INSERT OR UPDATE OR DELETE ON "categories"
+FOR EACH ROW EXECUTE FUNCTION "enforce_approved_category_root"();
+
+-- Publication is a database-enforced transition: the complete public card
+-- and detail response must be constructible before a product leaves draft.
+CREATE FUNCTION "assert_product_publication_ready"("target_product_id" UUID) RETURNS void
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    product_state "PublicationState";
+    selected_version VARCHAR(64);
+    row_count BIGINT;
+    vi_count BIGINT;
+    en_count BIGINT;
+    first_position INTEGER;
+    last_position INTEGER;
+BEGIN
+    SELECT "publication_state", "current_version"
+    INTO product_state, selected_version
+    FROM "products"
+    WHERE "id" = target_product_id;
+
+    IF NOT FOUND OR product_state = 'draft' THEN
+        RETURN;
+    END IF;
+
+    IF selected_version IS NULL OR NOT EXISTS (
+        SELECT 1
+        FROM "product_versions"
+        WHERE "product_id" = target_product_id AND "version" = selected_version
+    ) THEN
+        RAISE EXCEPTION USING ERRCODE = '23514', MESSAGE = 'published product requires a current version owned by that product';
+    END IF;
+
+    SELECT
+        count(*),
+        count(*) FILTER (WHERE "locale" = 'vi'),
+        count(*) FILTER (WHERE "locale" = 'en')
+    INTO row_count, vi_count, en_count
+    FROM "product_translations"
+    WHERE "product_id" = target_product_id;
+    IF row_count <> 2 OR vi_count <> 1 OR en_count <> 1 THEN
+        RAISE EXCEPTION USING ERRCODE = '23514', MESSAGE = 'published product requires complete vi/en translations';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM "product_versions" WHERE "product_id" = target_product_id
+    ) OR EXISTS (
+        SELECT 1
+        FROM "product_versions" AS version
+        LEFT JOIN "product_version_translations" AS translation
+            ON translation."version_id" = version."id"
+        WHERE version."product_id" = target_product_id
+        GROUP BY version."id"
+        HAVING count(translation."id") <> 2
+            OR count(translation."id") FILTER (WHERE translation."locale" = 'vi') <> 1
+            OR count(translation."id") FILTER (WHERE translation."locale" = 'en') <> 1
+    ) THEN
+        RAISE EXCEPTION USING ERRCODE = '23514', MESSAGE = 'published product requires bilingual changelog notes for every version';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM "product_compatibility" WHERE "product_id" = target_product_id
+    ) THEN
+        RAISE EXCEPTION USING ERRCODE = '23514', MESSAGE = 'published product requires compatibility data';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM "product_specifications" WHERE "product_id" = target_product_id
+    ) OR EXISTS (
+        SELECT 1
+        FROM "product_specifications" AS specification
+        LEFT JOIN "product_specification_translations" AS translation
+            ON translation."specification_id" = specification."id"
+        WHERE specification."product_id" = target_product_id
+        GROUP BY specification."id"
+        HAVING count(translation."id") <> 2
+            OR count(translation."id") FILTER (WHERE translation."locale" = 'vi') <> 1
+            OR count(translation."id") FILTER (WHERE translation."locale" = 'en') <> 1
+    ) THEN
+        RAISE EXCEPTION USING ERRCODE = '23514', MESSAGE = 'published product requires localized specifications';
+    END IF;
+
+    SELECT count(*), min("position"), max("position")
+    INTO row_count, first_position, last_position
+    FROM "product_media"
+    WHERE "product_id" = target_product_id;
+    IF row_count = 0 OR first_position <> 0 OR last_position <> row_count - 1 OR EXISTS (
+        SELECT 1
+        FROM "product_media" AS media
+        LEFT JOIN "product_media_translations" AS translation
+            ON translation."media_id" = media."id"
+        WHERE media."product_id" = target_product_id
+        GROUP BY media."id"
+        HAVING count(translation."id") <> 2
+            OR count(translation."id") FILTER (WHERE translation."locale" = 'vi') <> 1
+            OR count(translation."id") FILTER (WHERE translation."locale" = 'en') <> 1
+    ) THEN
+        RAISE EXCEPTION USING ERRCODE = '23514', MESSAGE = 'published product requires contiguous localized media';
+    END IF;
+
+    SELECT count(*), min("position"), max("position")
+    INTO row_count, first_position, last_position
+    FROM "product_demo_pages"
+    WHERE "product_id" = target_product_id;
+    IF row_count = 0 OR first_position <> 0 OR last_position <> row_count - 1 OR EXISTS (
+        SELECT 1
+        FROM "product_demo_pages" AS demo
+        LEFT JOIN "product_demo_page_translations" AS translation
+            ON translation."demo_page_id" = demo."id"
+        WHERE demo."product_id" = target_product_id
+        GROUP BY demo."id"
+        HAVING count(translation."id") <> 2
+            OR count(translation."id") FILTER (WHERE translation."locale" = 'vi') <> 1
+            OR count(translation."id") FILTER (WHERE translation."locale" = 'en') <> 1
+    ) THEN
+        RAISE EXCEPTION USING ERRCODE = '23514', MESSAGE = 'published product requires contiguous localized demo pages';
+    END IF;
+
+    IF (SELECT count(*) FROM "licence_options" WHERE "product_id" = target_product_id) <> 2
+       OR EXISTS (
+            SELECT 1
+            FROM "licence_options" AS licence
+            LEFT JOIN "prices" AS price ON price."licence_option_id" = licence."id"
+            WHERE licence."product_id" = target_product_id
+            GROUP BY licence."id"
+            HAVING count(price."id") <> 2
+                OR count(price."id") FILTER (WHERE price."currency" = 'VND') <> 1
+                OR count(price."id") FILTER (WHERE price."currency" = 'USD') <> 1
+       ) THEN
+        RAISE EXCEPTION USING ERRCODE = '23514', MESSAGE = 'published product requires Regular/Extended licences with VND/USD prices';
+    END IF;
+END;
+$$;
+
+-- Resolve the owning product for any catalogue row and re-check readiness at
+-- transaction commit. This prevents post-publication deletes or partial edits
+-- while still allowing an atomic transaction to add a complete new version.
+CREATE FUNCTION "enforce_product_publication_readiness"() RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    old_product_id UUID;
+    new_product_id UUID;
+BEGIN
+    IF TG_TABLE_NAME = 'products' THEN
+        IF TG_OP <> 'INSERT' THEN old_product_id := OLD."id"; END IF;
+        IF TG_OP <> 'DELETE' THEN new_product_id := NEW."id"; END IF;
+    ELSIF TG_TABLE_NAME IN (
+        'product_translations', 'product_compatibility', 'product_specifications',
+        'product_media', 'product_demo_pages', 'product_versions', 'licence_options'
+    ) THEN
+        IF TG_OP <> 'INSERT' THEN old_product_id := OLD."product_id"; END IF;
+        IF TG_OP <> 'DELETE' THEN new_product_id := NEW."product_id"; END IF;
+    ELSIF TG_TABLE_NAME = 'product_specification_translations' THEN
+        IF TG_OP <> 'INSERT' THEN
+            SELECT "product_id" INTO old_product_id FROM "product_specifications" WHERE "id" = OLD."specification_id";
+        END IF;
+        IF TG_OP <> 'DELETE' THEN
+            SELECT "product_id" INTO new_product_id FROM "product_specifications" WHERE "id" = NEW."specification_id";
+        END IF;
+    ELSIF TG_TABLE_NAME = 'product_media_translations' THEN
+        IF TG_OP <> 'INSERT' THEN
+            SELECT "product_id" INTO old_product_id FROM "product_media" WHERE "id" = OLD."media_id";
+        END IF;
+        IF TG_OP <> 'DELETE' THEN
+            SELECT "product_id" INTO new_product_id FROM "product_media" WHERE "id" = NEW."media_id";
+        END IF;
+    ELSIF TG_TABLE_NAME = 'product_demo_page_translations' THEN
+        IF TG_OP <> 'INSERT' THEN
+            SELECT "product_id" INTO old_product_id FROM "product_demo_pages" WHERE "id" = OLD."demo_page_id";
+        END IF;
+        IF TG_OP <> 'DELETE' THEN
+            SELECT "product_id" INTO new_product_id FROM "product_demo_pages" WHERE "id" = NEW."demo_page_id";
+        END IF;
+    ELSIF TG_TABLE_NAME = 'product_version_translations' THEN
+        IF TG_OP <> 'INSERT' THEN
+            SELECT "product_id" INTO old_product_id FROM "product_versions" WHERE "id" = OLD."version_id";
+        END IF;
+        IF TG_OP <> 'DELETE' THEN
+            SELECT "product_id" INTO new_product_id FROM "product_versions" WHERE "id" = NEW."version_id";
+        END IF;
+    ELSIF TG_TABLE_NAME = 'prices' THEN
+        IF TG_OP <> 'INSERT' THEN
+            SELECT "product_id" INTO old_product_id FROM "licence_options" WHERE "id" = OLD."licence_option_id";
+        END IF;
+        IF TG_OP <> 'DELETE' THEN
+            SELECT "product_id" INTO new_product_id FROM "licence_options" WHERE "id" = NEW."licence_option_id";
+        END IF;
+    END IF;
+
+    IF old_product_id IS NOT NULL THEN
+        PERFORM "assert_product_publication_ready"(old_product_id);
+    END IF;
+    IF new_product_id IS NOT NULL AND new_product_id IS DISTINCT FROM old_product_id THEN
+        PERFORM "assert_product_publication_ready"(new_product_id);
+    END IF;
+
+    RETURN NULL;
+END;
+$$;
+
+CREATE CONSTRAINT TRIGGER "products_publication_readiness_trigger"
+AFTER INSERT OR UPDATE OR DELETE ON "products"
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW
+EXECUTE FUNCTION "enforce_product_publication_readiness"();
+
+CREATE CONSTRAINT TRIGGER "product_translations_publication_readiness_trigger"
+AFTER INSERT OR UPDATE OR DELETE ON "product_translations"
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW
+EXECUTE FUNCTION "enforce_product_publication_readiness"();
+
+CREATE CONSTRAINT TRIGGER "product_compatibility_publication_readiness_trigger"
+AFTER INSERT OR UPDATE OR DELETE ON "product_compatibility"
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW
+EXECUTE FUNCTION "enforce_product_publication_readiness"();
+
+CREATE CONSTRAINT TRIGGER "product_specifications_publication_readiness_trigger"
+AFTER INSERT OR UPDATE OR DELETE ON "product_specifications"
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW
+EXECUTE FUNCTION "enforce_product_publication_readiness"();
+
+CREATE CONSTRAINT TRIGGER "product_specification_translations_publication_readiness_trigger"
+AFTER INSERT OR UPDATE OR DELETE ON "product_specification_translations"
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW
+EXECUTE FUNCTION "enforce_product_publication_readiness"();
+
+CREATE CONSTRAINT TRIGGER "product_media_publication_readiness_trigger"
+AFTER INSERT OR UPDATE OR DELETE ON "product_media"
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW
+EXECUTE FUNCTION "enforce_product_publication_readiness"();
+
+CREATE CONSTRAINT TRIGGER "product_media_translations_publication_readiness_trigger"
+AFTER INSERT OR UPDATE OR DELETE ON "product_media_translations"
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW
+EXECUTE FUNCTION "enforce_product_publication_readiness"();
+
+CREATE CONSTRAINT TRIGGER "product_demo_pages_publication_readiness_trigger"
+AFTER INSERT OR UPDATE OR DELETE ON "product_demo_pages"
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW
+EXECUTE FUNCTION "enforce_product_publication_readiness"();
+
+CREATE CONSTRAINT TRIGGER "product_demo_page_translations_publication_readiness_trigger"
+AFTER INSERT OR UPDATE OR DELETE ON "product_demo_page_translations"
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW
+EXECUTE FUNCTION "enforce_product_publication_readiness"();
+
+CREATE CONSTRAINT TRIGGER "product_versions_publication_readiness_trigger"
+AFTER INSERT OR UPDATE OR DELETE ON "product_versions"
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW
+EXECUTE FUNCTION "enforce_product_publication_readiness"();
+
+CREATE CONSTRAINT TRIGGER "product_version_translations_publication_readiness_trigger"
+AFTER INSERT OR UPDATE OR DELETE ON "product_version_translations"
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW
+EXECUTE FUNCTION "enforce_product_publication_readiness"();
+
+CREATE CONSTRAINT TRIGGER "licence_options_publication_readiness_trigger"
+AFTER INSERT OR UPDATE OR DELETE ON "licence_options"
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW
+EXECUTE FUNCTION "enforce_product_publication_readiness"();
+
+CREATE CONSTRAINT TRIGGER "prices_publication_readiness_trigger"
+AFTER INSERT OR UPDATE OR DELETE ON "prices"
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW
+EXECUTE FUNCTION "enforce_product_publication_readiness"();
 
 -- PostgreSQL full-text and typo-tolerant search for bilingual catalogue copy.
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";

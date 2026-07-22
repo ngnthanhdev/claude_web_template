@@ -1,0 +1,49 @@
+{
+  "manifestVersion": "1.0.0",
+  "identity": {
+    "id": "kitvera-studio-grid",
+    "name": "Studio Grid",
+    "category": "HTML"
+  },
+  "version": "1.2.0",
+  "compatibility": [
+    {
+      "target": "node",
+      "constraint": ">=20"
+    },
+    {
+      "target": "modern-browsers",
+      "constraint": "last 2 versions"
+    }
+  ],
+  "licenses": {
+    "regular": {
+      "identifier": "Regular",
+      "termsVersion": "2026-07-22",
+      "termsPath": "/licenses/regular.md",
+      "grants": ["one-end-product"]
+    },
+    "extended": {
+      "identifier": "Extended",
+      "termsVersion": "2026-07-22",
+      "termsPath": "/licenses/extended.md",
+      "grants": ["one-end-product", "customer-chargeable-end-product"]
+    }
+  },
+  "demoPages": [
+    {
+      "id": "home",
+      "title": "Home",
+      "path": "/"
+    },
+    {
+      "id": "projects",
+      "title": "Projects",
+      "path": "/projects"
+    }
+  ],
+  "buildAdapter": {
+    "id": "static-site",
+    "version": "1.0.0"
+  }
+}

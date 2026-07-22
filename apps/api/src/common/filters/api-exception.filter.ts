@@ -10,6 +10,8 @@ import type { ApiError } from "@marketplace/shared/api";
 import type { FastifyReply } from "fastify";
 import { ZodValidationException } from "nestjs-zod";
 
+import { ApiHttpException } from "../errors/api-http.exception.js";
+
 function httpMessage(response: unknown, fallback: string): string {
   if (typeof response === "string") {
     return response;
@@ -44,12 +46,23 @@ export class ApiExceptionFilter implements ExceptionFilter {
       return;
     }
 
+    if (exception instanceof ApiHttpException) {
+      const body = {
+        error: {
+          code: exception.publicCode,
+          message: exception.message,
+        },
+      } satisfies ApiError;
+      void reply.status(exception.getStatus()).send(body);
+      return;
+    }
+
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
       const body = {
         error: {
           code: HttpStatus[status] ?? "HTTP_ERROR",
-          message: httpMessage(exception.getResponse(), exception.message),
+          message: httpMessage(exception.getResponse(), "Request failed"),
         },
       } satisfies ApiError;
       void reply.status(status).send(body);

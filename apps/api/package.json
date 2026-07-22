@@ -7,9 +7,10 @@
     "build": "pnpm --filter @marketplace/shared build && prisma generate && nest build",
     "lint": "eslint \"{src,test}/**/*.ts\"",
     "typecheck": "pnpm --filter @marketplace/shared build && prisma generate && tsc --noEmit && tsc --project tsconfig.test.json",
-    "test": "vitest run"
+    "test": "PUBLIC_WEB_ORIGIN=https://app.kitvera.test CATALOGUE_CURSOR_SIGNING_SECRET=YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE AUTH_MAGIC_LINK_HASH_SECRET=YmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmI AUTH_SESSION_HASH_SECRET=Y2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2M AUTH_CSRF_HASH_SECRET=ZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGQ AUTH_SOURCE_IP_HASH_SECRET=ZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWU vitest run"
   },
   "dependencies": {
+    "@fastify/cookie": "^11.0.2",
     "@fastify/helmet": "^13.0.1",
     "@marketplace/shared": "workspace:*",
     "@nestjs/common": "^11.1.6",

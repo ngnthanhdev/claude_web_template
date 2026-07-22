@@ -339,6 +339,35 @@ describe("catalogue read contracts", () => {
 });
 
 describe("catalogue query contracts", () => {
+  it.each(["constructor", "__proto__", "toString"])(
+    "rejects the prototype-named category query key %s without throwing",
+    (key) => {
+      const query = new URLSearchParams({ locale: "en", [key]: "value" });
+
+      expect(() =>
+        categoryCollectionQuerySchema.safeParse(query),
+      ).not.toThrow();
+      expect(categoryCollectionQuerySchema.safeParse(query).success).toBe(
+        false,
+      );
+    },
+  );
+
+  it.each(["constructor", "__proto__", "toString"])(
+    "rejects the prototype-named product query key %s without throwing",
+    (key) => {
+      const query = new URLSearchParams({
+        locale: "en",
+        currency: "USD",
+        licence: "Regular",
+        [key]: "value",
+      });
+
+      expect(() => productCollectionQuerySchema.safeParse(query)).not.toThrow();
+      expect(productCollectionQuerySchema.safeParse(query).success).toBe(false);
+    },
+  );
+
   it("parses category locale context and its cursor collection response", () => {
     expect(
       categoryCollectionQuerySchema.parse(new URLSearchParams("locale=vi")),

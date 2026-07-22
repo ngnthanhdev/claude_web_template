@@ -59,18 +59,18 @@ const repeatableProductQueryKeys = new Set([
 function collectUrlSearchParams(input: unknown): unknown {
   if (!(input instanceof URLSearchParams)) return input;
 
-  const query: Record<string, string | string[]> = {};
+  const query = new Map<string, string | string[]>();
   input.forEach((value, key) => {
-    const current = query[key];
+    const current = query.get(key);
     if (current === undefined) {
-      query[key] = value;
+      query.set(key, value);
     } else if (typeof current === "string") {
-      query[key] = [current, value];
+      query.set(key, [current, value]);
     } else {
       current.push(value);
     }
   });
-  return query;
+  return Object.fromEntries(query);
 }
 
 function normalizeRepeatableProductQueryValues(input: unknown): unknown {

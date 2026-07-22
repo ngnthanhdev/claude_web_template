@@ -178,6 +178,7 @@ describe("MagicLinksService initiation response equalization", () => {
   };
   const rateLimit = {
     checkMagicLinkInitiation: vi.fn(),
+    checkMagicLinkRedemption: vi.fn(),
   };
   const emailDelivery = {
     sendMagicLink: vi.fn(),
@@ -255,6 +256,9 @@ describe("MagicLinksService initiation response equalization", () => {
       );
       if (branch === "limited") {
         expect(emailDelivery.sendMagicLink).not.toHaveBeenCalled();
+        expect(prisma.$transaction).not.toHaveBeenCalled();
+        expect(prisma.authSecurityEvent.create).not.toHaveBeenCalled();
+        expect(transaction.authSecurityEvent.create).not.toHaveBeenCalled();
       } else {
         expect(emailDelivery.sendMagicLink).toHaveBeenCalledTimes(1);
         expect(equalizer.equalize.mock.invocationCallOrder[0]).toBeGreaterThan(
@@ -263,4 +267,22 @@ describe("MagicLinksService initiation response equalization", () => {
       }
     },
   );
+
+  it("returns the fixed redemption error without audit writes when rate denied", async () => {
+    rateLimit.checkMagicLinkRedemption.mockResolvedValue({
+      allowed: false,
+      sourceIpDigest: Buffer.alloc(32, 6).toString("base64url"),
+    });
+
+    await expect(serviceUnderTest.redeem(
+      { token: Buffer.alloc(32, 7).toString("base64url") },
+      { ip: "127.0.0.1" },
+    )).rejects.toMatchObject({
+      publicCode: "MAGIC_LINK_INVALID_OR_EXPIRED",
+    });
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.authSecurityEvent.create).not.toHaveBeenCalled();
+    expect(transaction.authSecurityEvent.create).not.toHaveBeenCalled();
+  });
 });

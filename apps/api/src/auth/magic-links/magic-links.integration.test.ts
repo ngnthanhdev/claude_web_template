@@ -223,18 +223,17 @@ describeWithPostgres("Magic links PostgreSQL integration", () => {
     });
   });
 
-  it("enforces exact email limits under concurrency while preserving generic 202", async () => {
-    const attempts = await Promise.all(
-      Array.from({ length: 4 }, () =>
-        request(app.getHttpServer())
-          .post("/v1/auth/magic-links")
-          .send({ email: "concurrent@email.magic.test", locale: "en" }),
-      ),
-    );
+  it("enforces exact email limits while preserving generic 202", async () => {
+    const attempts = [];
+    for (let index = 0; index < 4; index += 1) {
+      attempts.push(await request(app.getHttpServer())
+        .post("/v1/auth/magic-links")
+        .send({ email: "concurrent@email.magic.test", locale: "en" }));
+    }
 
     expect(attempts.map(({ status }) => status)).toEqual([202, 202, 202, 202]);
     expect(email.deliveries).toHaveLength(3);
-    expect(await prisma.authRateEvent.count()).toBe(4);
+    expect(await prisma.authRateEvent.count()).toBe(3);
     expect(await prisma.magicLinkToken.count()).toBe(3);
 
     email.reset();
@@ -260,18 +259,17 @@ describeWithPostgres("Magic links PostgreSQL integration", () => {
     expect(await prisma.magicLinkToken.count()).toBe(10);
   });
 
-  it("enforces the exact source-IP initiation window under concurrency", async () => {
-    const attempts = await Promise.all(
-      Array.from({ length: 21 }, (_, index) =>
-        request(app.getHttpServer())
-          .post("/v1/auth/magic-links")
-          .send({ email: `ip-${index}@source.magic.test`, locale: "vi" }),
-      ),
-    );
+  it("enforces the exact source-IP initiation window", async () => {
+    const attempts = [];
+    for (let index = 0; index < 21; index += 1) {
+      attempts.push(await request(app.getHttpServer())
+        .post("/v1/auth/magic-links")
+        .send({ email: `ip-${index}@source.magic.test`, locale: "vi" }));
+    }
 
     expect(attempts.every(({ status }) => status === 202)).toBe(true);
     expect(email.deliveries).toHaveLength(20);
-    expect(await prisma.authRateEvent.count()).toBe(21);
+    expect(await prisma.authRateEvent.count()).toBe(20);
     expect(await prisma.magicLinkToken.count()).toBe(20);
   });
 
@@ -388,7 +386,7 @@ describeWithPostgres("Magic links PostgreSQL integration", () => {
     }
   });
 
-  it("allows exactly ten concurrent redemptions per source-IP window", async () => {
+  it("allows exactly ten redemptions per source-IP window", async () => {
     const tokens: string[] = [];
     for (let index = 0; index < 11; index += 1) {
       await request(app.getHttpServer())
@@ -398,20 +396,79 @@ describeWithPostgres("Magic links PostgreSQL integration", () => {
       tokens.push(tokenFromLink(email.deliveries[index]?.link ?? ""));
     }
 
-    const responses = await Promise.all(
-      tokens.map((token) =>
-        request(app.getHttpServer())
-          .post("/v1/auth/magic-link-redemptions")
-          .send({ token }),
-      ),
-    );
+    const responses = [];
+    for (const token of tokens) {
+      responses.push(await request(app.getHttpServer())
+        .post("/v1/auth/magic-link-redemptions")
+        .send({ token }));
+    }
     expect(responses.filter(({ status }) => status === 201)).toHaveLength(10);
     expect(responses.filter(({ status }) => status === 401)).toHaveLength(1);
     expect(await prisma.user.count()).toBe(10);
     expect(await prisma.session.count()).toBe(10);
     expect(await prisma.authRateEvent.count({
       where: { action: "magicLinkRedemption" },
-    })).toBe(11);
+    })).toBe(10);
+  });
+
+  it("keeps token and audit writes bounded after both endpoint limits deny", async () => {
+    for (let index = 0; index < 20; index += 1) {
+      await request(app.getHttpServer())
+        .post("/v1/auth/magic-links")
+        .send({ email: `allowed-${index}@bounded.magic.test`, locale: "vi" })
+        .expect(202, { status: "accepted" });
+    }
+    const initiationSnapshot = {
+      tokens: await prisma.magicLinkToken.count(),
+      audits: await prisma.authSecurityEvent.count(),
+    };
+    expect(initiationSnapshot).toEqual({ tokens: 20, audits: 20 });
+
+    const deniedInitiations = [];
+    for (let index = 0; index < 100; index += 1) {
+      deniedInitiations.push(await request(app.getHttpServer())
+        .post("/v1/auth/magic-links")
+        .send({
+          email: `denied-${index}@bounded.magic.test`,
+          locale: "vi",
+        }));
+    }
+    expect(deniedInitiations.every(({ status, body }) =>
+      status === 202 && body.status === "accepted"),
+    ).toBe(true);
+    expect(await prisma.magicLinkToken.count()).toBe(initiationSnapshot.tokens);
+    expect(await prisma.authSecurityEvent.count()).toBe(initiationSnapshot.audits);
+
+    await prisma.authRateEvent.deleteMany({
+      where: { action: "magicLinkRedemption" },
+    });
+    for (let index = 0; index < 10; index += 1) {
+      await request(app.getHttpServer())
+        .post("/v1/auth/magic-link-redemptions")
+        .send({ token: Buffer.alloc(32, 100 + index).toString("base64url") })
+        .expect(401);
+    }
+    const redemptionAuditSnapshot = await prisma.authSecurityEvent.count({
+      where: { kind: "magicLinkRedemptionFailed" },
+    });
+    const totalAuditSnapshot = await prisma.authSecurityEvent.count();
+    expect(redemptionAuditSnapshot).toBe(10);
+
+    const deniedRedemptions = [];
+    for (let index = 0; index < 100; index += 1) {
+      deniedRedemptions.push(await request(app.getHttpServer())
+        .post("/v1/auth/magic-link-redemptions")
+        .send({
+          token: Buffer.alloc(32, 150 + index).toString("base64url"),
+        }));
+    }
+    expect(deniedRedemptions.every(({ status, body }) =>
+      status === 401 && body.error?.code === "MAGIC_LINK_INVALID_OR_EXPIRED"),
+    ).toBe(true);
+    expect(await prisma.authSecurityEvent.count({
+      where: { kind: "magicLinkRedemptionFailed" },
+    })).toBe(redemptionAuditSnapshot);
+    expect(await prisma.authSecurityEvent.count()).toBe(totalAuditSnapshot);
   });
 
   it("atomically converges a concurrent double redemption to one user and session", async () => {

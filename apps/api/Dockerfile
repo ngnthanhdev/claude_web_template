@@ -14,7 +14,9 @@ COPY apps/api/src apps/api/src
 COPY packages/shared/src packages/shared/src
 COPY packages/shared/tsconfig.json packages/shared/tsconfig.json
 RUN pnpm --filter @marketplace/api build \
-  && pnpm --filter @marketplace/api deploy --prod /production/api
+  && pnpm --filter @marketplace/api deploy --prod /production/api \
+  && cd /production/api \
+  && /workspace/apps/api/node_modules/.bin/prisma generate --schema=prisma/schema.prisma
 
 FROM node:22-alpine@sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb9c86130c3e2 AS runner
 

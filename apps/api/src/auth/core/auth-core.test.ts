@@ -1,6 +1,7 @@
 import { ConfigService } from "@nestjs/config";
 import { ConfigModule } from "@nestjs/config";
 import { Test } from "@nestjs/testing";
+import { PrismaClient } from "@prisma/client";
 import { describe, expect, expectTypeOf, it } from "vitest";
 
 import type { Env } from "../../config/env.js";
@@ -148,7 +149,7 @@ describe("database-backed authentication state", () => {
         const transaction = {
           $queryRawUnsafe: async (_query: string, parameter: string) => {
             this.locks.push(parameter);
-            return 1;
+            return [{ acquired: true }];
           },
           authRateEvent: {
             count: async ({ where }) =>
@@ -273,6 +274,7 @@ describe("database-backed authentication state", () => {
       ),
     );
     expect(initiation.map(({ allowed }) => allowed)).toEqual([true, true, true, false]);
+    expect(prisma.events).toHaveLength(3);
     expect(JSON.stringify(prisma.events)).not.toContain("203.0.113.10");
     expect(JSON.stringify(prisma.events)).not.toContain("198.51.100.2");
 
@@ -287,6 +289,10 @@ describe("database-backed authentication state", () => {
         limiter.checkMagicLinkInitiation("buyer@example.com", request),
       ).resolves.toMatchObject({ allowed: true });
     }
+    clock.advance(15 * 60_000);
+    await expect(
+      limiter.checkMagicLinkInitiation("buyer@example.com", request),
+    ).resolves.toMatchObject({ allowed: true });
     clock.advance(15 * 60_000);
     await expect(
       limiter.checkMagicLinkInitiation("buyer@example.com", request),
@@ -395,3 +401,125 @@ describe("AuthCoreModule dependency injection", () => {
     await moduleRef.close();
   });
 });
+
+const authCoreDatabaseUrl = process.env.AUTH_CORE_DATABASE_URL;
+
+describe.runIf(authCoreDatabaseUrl !== undefined)(
+  "AuthRateLimitService PostgreSQL contention",
+  () => {
+    it(
+      "fails closed without queueing or appending rows during a 100-request IP flood",
+      async () => {
+        if (authCoreDatabaseUrl === undefined) {
+          throw new Error("AUTH_CORE_DATABASE_URL is required for this test");
+        }
+        const client = new PrismaClient({ datasourceUrl: authCoreDatabaseUrl });
+        const prisma = postgresRatePrisma(client);
+        const clock = { now: () => new Date() } satisfies AuthClock;
+        const crypto = sequentialPostgresCrypto();
+        const limiter = new AuthRateLimitService(prisma, crypto, clock);
+        const sourceAddress = "203.0.113.200";
+        const sourceIpDigest = crypto.digestSourceAddress(sourceAddress);
+        const lockKey = `initiation:ip:${sourceIpDigest}`;
+        let announceReady = (): void => undefined;
+        let releaseLock = (): void => undefined;
+        const ready = new Promise<void>((resolve) => {
+          announceReady = resolve;
+        });
+        const hold = new Promise<void>((resolve) => {
+          releaseLock = resolve;
+        });
+
+        await client.$connect();
+        await client.authRateEvent.deleteMany();
+        const holder = client.$transaction(async (transaction) => {
+          await transaction.$queryRawUnsafe(
+            "SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))::text AS lock_result",
+            lockKey,
+          );
+          announceReady();
+          await hold;
+        });
+        await ready;
+
+        try {
+          const flood = Promise.all(
+            Array.from({ length: 100 }, (_, index) =>
+              limiter.checkMagicLinkInitiation(`flood-${index}@example.com`, {
+                ip: sourceAddress,
+              }),
+            ),
+          );
+          await completesWithin(client.$queryRaw`SELECT 1`, 1_500);
+          const decisions = await completesWithin(flood, 3_000);
+          expect(decisions.every(({ allowed }) => !allowed)).toBe(true);
+          expect(await client.authRateEvent.count()).toBe(0);
+        } finally {
+          releaseLock();
+          await holder;
+        }
+
+        try {
+          const uncontended = [];
+          for (let index = 0; index < 21; index += 1) {
+            uncontended.push(
+              await limiter.checkMagicLinkInitiation(
+                `uncontended-${index}@example.com`,
+                { ip: sourceAddress },
+              ),
+            );
+          }
+          expect(uncontended.filter(({ allowed }) => allowed)).toHaveLength(20);
+          expect(uncontended.at(-1)?.allowed).toBe(false);
+          expect(await client.authRateEvent.count()).toBe(20);
+
+          await limiter.checkMagicLinkInitiation("still-denied@example.com", {
+            ip: sourceAddress,
+          });
+          expect(await client.authRateEvent.count()).toBe(20);
+        } finally {
+          await client.authRateEvent.deleteMany();
+          await client.$disconnect();
+        }
+      },
+      15_000,
+    );
+  },
+);
+
+function postgresRatePrisma(client: PrismaClient): AuthRatePrisma {
+  return {
+    $transaction: (operation) =>
+      client.$transaction((transaction) =>
+        operation({
+          $queryRawUnsafe: (query, parameter) =>
+            transaction.$queryRawUnsafe(query, parameter),
+          authRateEvent: {
+            count: (input) => transaction.authRateEvent.count(input),
+            create: (input) => transaction.authRateEvent.create(input),
+            deleteMany: (input) => transaction.authRateEvent.deleteMany(input),
+          },
+        }),
+      ),
+  };
+}
+
+function sequentialPostgresCrypto(): AuthCryptoService {
+  let byte = 100;
+  return cryptoService({ bytes: () => Buffer.alloc(32, (byte += 1)) });
+}
+
+async function completesWithin<T>(operation: Promise<T>, milliseconds: number): Promise<T> {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<never>((_resolve, reject) => {
+    timeout = setTimeout(
+      () => reject(new Error(`operation exceeded ${milliseconds}ms`)),
+      milliseconds,
+    );
+  });
+  try {
+    return await Promise.race([operation, deadline]);
+  } finally {
+    if (timeout !== undefined) clearTimeout(timeout);
+  }
+}

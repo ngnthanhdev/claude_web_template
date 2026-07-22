@@ -1,6 +1,6 @@
 # Layer 3 — Public Request and Passwordless Auth Prerequisites
 
-Status: **in progress**
+Status: **done**
 
 This is the smallest dependency-safe layer after the proven Layer 2 catalogue
 persistence and approved query/auth amendment. It fixes the persistence seam
@@ -20,7 +20,7 @@ implementation in the next layer, not with these prerequisites.
 ---
 
 ### T-9a705b — Define catalogue query and passwordless auth contracts
-- **Status:** in-progress
+- **Status:** done
 - **Assignee:** ai
 - **Files:** packages/shared/package.json, packages/shared/src/index.ts, packages/shared/src/catalogue.ts, packages/shared/src/catalogue.test.ts, packages/shared/src/auth.ts, packages/shared/src/auth.test.ts
 - **Acceptance:**
@@ -34,7 +34,7 @@ implementation in the next layer, not with these prerequisites.
 - **Skills:** api-design, shared-contracts, backend-auth-security, web-auth-state, typescript-strict
 
 ### T-77259c — Persist pending magic-link redemption context
-- **Status:** in-progress
+- **Status:** done
 - **Assignee:** ai
 - **Files:** apps/api/prisma/schema.prisma, apps/api/prisma/migrations/20260722020000_passwordless_auth_pending_state/migration.sql
 - **Acceptance:**

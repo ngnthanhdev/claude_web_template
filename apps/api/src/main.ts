@@ -1,3 +1,4 @@
+import cookie from "@fastify/cookie";
 import helmet from "@fastify/helmet";
 import { Logger, VersioningType } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
@@ -33,6 +34,7 @@ async function bootstrap(): Promise<void> {
     origin: corsOrigins,
     credentials: true,
   });
+  await app.register(cookie);
   await app.register(helmet);
   app.enableShutdownHooks();
 
@@ -41,6 +43,9 @@ async function bootstrap(): Promise<void> {
 
 bootstrap().catch((error: unknown) => {
   const logger = new Logger("Bootstrap");
-  logger.error("API failed to start", error instanceof Error ? error.stack : undefined);
+  logger.error(
+    "API failed to start",
+    error instanceof Error ? error.stack : undefined,
+  );
   process.exitCode = 1;
 });

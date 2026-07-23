@@ -412,12 +412,11 @@ describeWithPostgres("Composed public API resources", () => {
       .send({ token })
       .expect(201);
     const firstToken = rawTokenFromSetCookie(redeem.headers["set-cookie"]);
-    const csrfToken = magicLinkRedemptionResponseSchema.parse(
+    const redeemBody = magicLinkRedemptionResponseSchema.parse(
       JSON.parse(redeem.text),
-    ).csrfToken;
-    const userId = magicLinkRedemptionResponseSchema.parse(
-      JSON.parse(redeem.text),
-    ).user.id;
+    );
+    const { csrfToken } = redeemBody;
+    const userId = redeemBody.user.id;
 
     // A second, independent session for the same user.
     const second = await sessions.createSession(userId);

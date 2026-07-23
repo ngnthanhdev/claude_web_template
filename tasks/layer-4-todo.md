@@ -1,6 +1,6 @@
 # Layer 4 — Public Catalogue and Passwordless Authentication API
 
-Status: **in progress**
+Status: **done**
 
 This layer implements the first database-backed public NestJS resources against
 the contracts and persistence proven in Layers 1–3. It is deliberately split
@@ -20,6 +20,7 @@ tests the port but does not select a vendor.
 ---
 
 ### T-b4e1a7 — Implement the database-backed public catalogue resource
+
 - **Status:** done
 - **Assignee:** ai
 - **Files:** apps/api/src/catalogue/catalogue.module.ts, apps/api/src/catalogue/catalogue.controller.ts, apps/api/src/catalogue/catalogue.service.ts, apps/api/src/catalogue/catalogue-cursor.ts, apps/api/src/catalogue/catalogue.controller.test.ts, apps/api/src/catalogue/catalogue.integration.test.ts
@@ -34,6 +35,7 @@ tests the port but does not select a vendor.
 - **Skills:** api-design, nestjs-backend, database-orm, backend-testing, shared-contracts, backend-auth-security, typescript-strict
 
 ### T-c8d2f4 — Extend persistence for secure sessions and auth rate events
+
 - **Status:** done
 - **Assignee:** ai
 - **Files:** apps/api/prisma/schema.prisma, apps/api/prisma/migrations/20260722030000_auth_session_security/migration.sql
@@ -46,7 +48,8 @@ tests the port but does not select a vendor.
 - **Skills:** database-orm, backend-auth-security, backend-testing, typescript-strict
 
 ### T-e6a93c — Build the passwordless auth security core
-- **Status:** review
+
+- **Status:** done
 - **Assignee:** ai
 - **Files:** apps/api/package.json, pnpm-lock.yaml, apps/api/.env.example, apps/api/src/config/env.ts, apps/api/src/config/env.test.ts, apps/api/src/common/errors/api-http.exception.ts, apps/api/src/common/filters/api-exception.filter.ts, apps/api/src/common/filters/api-exception.filter.test.ts, apps/api/src/auth/core/auth-core.module.ts, apps/api/src/auth/core/auth-crypto.service.ts, apps/api/src/auth/core/auth-rate-limit.service.ts, apps/api/src/auth/core/auth-session.service.ts, apps/api/src/auth/core/auth-cookie.ts, apps/api/src/auth/core/auth-core.test.ts
 - **Acceptance:**
@@ -60,7 +63,8 @@ tests the port but does not select a vendor.
 - **Depends:** T-c8d2f4
 
 ### T-71f0bd — Implement magic-link initiation and redemption
-- **Status:** review
+
+- **Status:** done
 - **Assignee:** ai
 - **Files:** apps/api/src/auth/magic-links/email-delivery.port.ts, apps/api/src/auth/magic-links/null-email-delivery.adapter.ts, apps/api/src/auth/magic-links/magic-links.module.ts, apps/api/src/auth/magic-links/magic-links.controller.ts, apps/api/src/auth/magic-links/magic-links.service.ts, apps/api/src/auth/magic-links/magic-links.controller.test.ts, apps/api/src/auth/magic-links/magic-links.integration.test.ts
 - **Acceptance:**
@@ -73,7 +77,8 @@ tests the port but does not select a vendor.
 - **Depends:** T-e6a93c
 
 ### T-a2c5e8 — Implement current-session and revocation resources
-- **Status:** review
+
+- **Status:** done
 - **Assignee:** ai
 - **Files:** apps/api/src/auth/sessions/sessions.module.ts, apps/api/src/auth/sessions/session-auth.guard.ts, apps/api/src/auth/sessions/session-csrf.guard.ts, apps/api/src/auth/sessions/session-context.ts, apps/api/src/auth/sessions/sessions.controller.ts, apps/api/src/auth/sessions/sessions.controller.test.ts, apps/api/src/auth/sessions/sessions.integration.test.ts
 - **Acceptance:**
@@ -86,7 +91,8 @@ tests the port but does not select a vendor.
 - **Depends:** T-e6a93c
 
 ### T-3fa9d0 — Compose and verify the public API resources
-- **Status:** todo
+
+- **Status:** done
 - **Assignee:** ai
 - **Files:** apps/api/src/auth/auth.module.ts, apps/api/src/app.module.ts, apps/api/src/main.ts, apps/api/test/public-resources.integration.test.ts
 - **Acceptance:**

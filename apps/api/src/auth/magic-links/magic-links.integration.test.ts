@@ -1,5 +1,3 @@
-import cookie from "@fastify/cookie";
-import { VersioningType } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { Test } from "@nestjs/testing";
 import {
@@ -11,7 +9,6 @@ import {
   magicLinkRedemptionResponseSchema,
 } from "@marketplace/shared/auth";
 import { PrismaClient } from "@prisma/client";
-import { ZodValidationPipe } from "nestjs-zod";
 import request from "supertest";
 import {
   afterAll,
@@ -22,7 +19,7 @@ import {
   it,
 } from "vitest";
 
-import { ApiExceptionFilter } from "../../common/filters/api-exception.filter.js";
+import { configureApp } from "../../bootstrap/configure-app.js";
 import { PrismaModule } from "../../prisma/prisma.module.js";
 import { PrismaService } from "../../prisma/prisma.service.js";
 import { AuthCryptoService } from "../core/auth-crypto.service.js";
@@ -129,10 +126,7 @@ describeWithPostgres("Magic links PostgreSQL integration", () => {
     app = moduleRef.createNestApplication<NestFastifyApplication>(
       new FastifyAdapter({ logger: false }),
     );
-    app.enableVersioning({ type: VersioningType.URI, defaultVersion: "1" });
-    app.useGlobalPipes(new ZodValidationPipe());
-    app.useGlobalFilters(new ApiExceptionFilter());
-    await app.register(cookie);
+    await configureApp(app);
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
   }, 30_000);

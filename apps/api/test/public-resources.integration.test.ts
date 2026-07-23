@@ -1,5 +1,3 @@
-import cookie from "@fastify/cookie";
-import { VersioningType } from "@nestjs/common";
 import {
   FastifyAdapter,
   type NestFastifyApplication,
@@ -22,7 +20,6 @@ import {
   magicLinkInitiationResponseSchema,
   magicLinkRedemptionResponseSchema,
 } from "@marketplace/shared/auth";
-import { ZodValidationPipe } from "nestjs-zod";
 import request from "supertest";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
@@ -39,7 +36,7 @@ import {
   MAGIC_LINK_INITIATION_RESPONSE_EQUALIZER,
   type MagicLinkInitiationResponseEqualizer,
 } from "../src/auth/magic-links/magic-links.service.js";
-import { ApiExceptionFilter } from "../src/common/filters/api-exception.filter.js";
+import { configureApp } from "../src/bootstrap/configure-app.js";
 import { validateEnv } from "../src/config/env.js";
 import { PrismaService } from "../src/prisma/prisma.service.js";
 
@@ -273,10 +270,7 @@ describeWithPostgres("Composed public API resources", () => {
     app = moduleRef.createNestApplication<NestFastifyApplication>(
       new FastifyAdapter({ logger: false }),
     );
-    app.enableVersioning({ type: VersioningType.URI, defaultVersion: "1" });
-    app.useGlobalPipes(new ZodValidationPipe());
-    app.useGlobalFilters(new ApiExceptionFilter());
-    await app.register(cookie);
+    await configureApp(app);
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
     sessions = app.get(AuthSessionService);

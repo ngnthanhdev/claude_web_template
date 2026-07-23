@@ -1,16 +1,14 @@
-import cookie from "@fastify/cookie";
 import helmet from "@fastify/helmet";
-import { Logger, VersioningType } from "@nestjs/common";
+import { Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { NestFactory } from "@nestjs/core";
 import {
   FastifyAdapter,
   type NestFastifyApplication,
 } from "@nestjs/platform-fastify";
-import { ZodValidationPipe } from "nestjs-zod";
 
 import { AppModule } from "./app.module.js";
-import { ApiExceptionFilter } from "./common/filters/api-exception.filter.js";
+import { configureApp } from "./bootstrap/configure-app.js";
 import type { Env } from "./config/env.js";
 
 async function bootstrap(): Promise<void> {
@@ -24,17 +22,11 @@ async function bootstrap(): Promise<void> {
     .split(",")
     .map((origin) => origin.trim());
 
-  app.enableVersioning({
-    type: VersioningType.URI,
-    defaultVersion: "1",
-  });
-  app.useGlobalPipes(new ZodValidationPipe());
-  app.useGlobalFilters(new ApiExceptionFilter());
+  await configureApp(app);
   app.enableCors({
     origin: corsOrigins,
     credentials: true,
   });
-  await app.register(cookie);
   await app.register(helmet);
   app.enableShutdownHooks();
 

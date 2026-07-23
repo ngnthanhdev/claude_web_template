@@ -1,5 +1,4 @@
-import cookie from "@fastify/cookie";
-import { HttpStatus, VersioningType } from "@nestjs/common";
+import { HttpStatus } from "@nestjs/common";
 import {
   FastifyAdapter,
   type NestFastifyApplication,
@@ -11,7 +10,7 @@ import {
 import request from "supertest";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { ApiExceptionFilter } from "../../common/filters/api-exception.filter.js";
+import { configureApp } from "../../bootstrap/configure-app.js";
 import { PrismaService } from "../../prisma/prisma.service.js";
 import { clearSessionCookie, SESSION_COOKIE_NAME } from "../core/auth-cookie.js";
 import { AuthCryptoService } from "../core/auth-crypto.service.js";
@@ -62,9 +61,7 @@ describe("SessionsController", () => {
     app = moduleRef.createNestApplication<NestFastifyApplication>(
       new FastifyAdapter({ logger: false }),
     );
-    app.enableVersioning({ type: VersioningType.URI, defaultVersion: "1" });
-    app.useGlobalFilters(new ApiExceptionFilter());
-    await app.register(cookie);
+    await configureApp(app);
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
   });

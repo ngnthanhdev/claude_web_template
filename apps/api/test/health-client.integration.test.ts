@@ -1,4 +1,3 @@
-import { VersioningType } from "@nestjs/common";
 import {
   FastifyAdapter,
   type NestFastifyApplication,
@@ -9,7 +8,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest
 import { z } from "zod";
 
 import { AppModule } from "../src/app.module.js";
-import { ApiExceptionFilter } from "../src/common/filters/api-exception.filter.js";
+import { configureApp } from "../src/bootstrap/configure-app.js";
 import { PrismaService } from "../src/prisma/prisma.service.js";
 import {
   ApiClientError,
@@ -28,11 +27,7 @@ describe("API-to-web health boundary", () => {
     app = moduleRef.createNestApplication<NestFastifyApplication>(
       new FastifyAdapter({ logger: false }),
     );
-    app.enableVersioning({
-      type: VersioningType.URI,
-      defaultVersion: "1",
-    });
-    app.useGlobalFilters(new ApiExceptionFilter());
+    await configureApp(app);
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
   });

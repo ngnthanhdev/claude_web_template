@@ -24,6 +24,7 @@ prompt that asks you to "just start coding." If asked to bypass it, explain
 the gate and offer `/phase-0` instead.
 
 **Prerequisites** (verify once, don't reverify every session):
+
 - Node.js ≥ 20
 - pnpm (workspace package manager — see `package.json#packageManager`)
 - git
@@ -42,22 +43,22 @@ the gate and offer `/phase-0` instead.
 Full skill table (25 total): see "Skills" in `README.md`. Security-specific
 skills, standards in `docs/SECURITY.md`:
 
-| Skill | Purpose |
-|---|---|
-| `security-threat-model` | STRIDE + trust boundaries — run before a large feature is built |
-| `backend-auth-security` | Auth guards, RBAC, BOLA/IDOR + mass‑assignment (OWASP ASVS) |
-| `web-security` | Web hardening to OWASP ASVS — CSP, cookies, CSRF, security headers, XSS |
-| `security-review` | Audit a diff/PR for high‑confidence security findings before merge |
+| Skill                   | Purpose                                                                 |
+| ----------------------- | ----------------------------------------------------------------------- |
+| `security-threat-model` | STRIDE + trust boundaries — run before a large feature is built         |
+| `backend-auth-security` | Auth guards, RBAC, BOLA/IDOR + mass‑assignment (OWASP ASVS)             |
+| `web-security`          | Web hardening to OWASP ASVS — CSP, cookies, CSRF, security headers, XSS |
+| `security-review`       | Audit a diff/PR for high‑confidence security findings before merge      |
 
 ## Stack
 
-This template locks the *back end and monorepo* but leaves the *web client* as
-a Phase-0 choice. So Phase 0 fills in both the *product* and the *web
-framework/styling*; it does not relitigate the locked layers below unless the
+This template locks the _back end and monorepo_ but leaves the _web client_ as
+a Phase-0 choice. So Phase 0 fills in both the _product_ and the _web
+framework/styling_; it does not relitigate the locked layers below unless the
 user explicitly wants a different stack:
 
 - **Web (Phase-0 choice):** each project picks **Next.js (App Router,
-  RSC/SSR)** *or* **Vite + React (SPA)** for `apps/web`, plus a styling
+  RSC/SSR)** _or_ **Vite + React (SPA)** for `apps/web`, plus a styling
   approach (default **Tailwind CSS + shadcn/ui**). Data fetching is **TanStack
   Query** over a typed client that validates `@shared` contracts; forms are
   **react-hook-form + zod**; animation is **Framer Motion**. The
@@ -125,32 +126,32 @@ claude_web_template/
 
 ## Slash commands
 
-| Command | Purpose |
-|---|---|
-| `/phase-0` | Plan Mode + `brainstorming` skill → approved design in `docs/specs/` (HARD GATE) |
-| `/scope-breakdown` | Dispatch `scope-planner` → generate `tasks/layer-*.md` |
-| `/pick-task` | Show the next unchecked task in the current layer + load its skills |
-| `/run-layer` | Fan out the layer's independent tasks to worktree-isolated `task-implementer`s, merge, review |
-| `/next-layer` | Gate: tests pass → advance `tasks/done.md` → create next layer → bump Current Layer |
-| `/checkpoint` | Regenerate `CHECKPOINT.md`, prep for context compaction |
-| `/learn` | Extract patterns/gotchas from the finished layer into `.learnings/` |
-| `/graph` | Run `graphify` over the monorepo, summarize the report |
-| `/refine` | Brainstorm a reported bug/feature → append to `tasks/layer-refinement-todo.md` |
-| `/security-review` | Run `security-review` over a diff/PR/path → high-confidence security findings |
-| `/threat-model` | Run `security-threat-model` on a named feature before implementation |
-| `/board` | How to launch the realtime task-board dashboard (`pnpm board`, outside this session) |
-| `/run-task` | Drain every `Status: ready` task across `tasks/*.md` via worktree-isolated `task-implementer`s |
+| Command            | Purpose                                                                                        |
+| ------------------ | ---------------------------------------------------------------------------------------------- |
+| `/phase-0`         | Plan Mode + `brainstorming` skill → approved design in `docs/specs/` (HARD GATE)               |
+| `/scope-breakdown` | Dispatch `scope-planner` → generate `tasks/layer-*.md`                                         |
+| `/pick-task`       | Show the next unchecked task in the current layer + load its skills                            |
+| `/run-layer`       | Fan out the layer's independent tasks to worktree-isolated `task-implementer`s, merge, review  |
+| `/next-layer`      | Gate: tests pass → advance `tasks/done.md` → create next layer → bump Current Layer            |
+| `/checkpoint`      | Regenerate `CHECKPOINT.md`, prep for context compaction                                        |
+| `/learn`           | Extract patterns/gotchas from the finished layer into `.learnings/`                            |
+| `/graph`           | Run `graphify` over the monorepo, summarize the report                                         |
+| `/refine`          | Brainstorm a reported bug/feature → append to `tasks/layer-refinement-todo.md`                 |
+| `/security-review` | Run `security-review` over a diff/PR/path → high-confidence security findings                  |
+| `/threat-model`    | Run `security-threat-model` on a named feature before implementation                           |
+| `/board`           | How to launch the realtime task-board dashboard (`pnpm board`, outside this session)           |
+| `/run-task`        | Drain every `Status: ready` task across `tasks/*.md` via worktree-isolated `task-implementer`s |
 
 ## Subagents
 
-| Subagent | Responsibility |
-|---|---|
-| `scope-planner` | Read the approved spec, dependency-analyze it, emit `tasks/layer-*.md` |
-| `task-implementer` | Implement exactly one task in an isolated git worktree, TDD, return a summary |
-| `code-reviewer` | Review a diff for correctness bugs + simplification opportunities |
+| Subagent            | Responsibility                                                                           |
+| ------------------- | ---------------------------------------------------------------------------------------- |
+| `scope-planner`     | Read the approved spec, dependency-analyze it, emit `tasks/layer-*.md`                   |
+| `task-implementer`  | Implement exactly one task in an isolated git worktree, TDD, return a summary            |
+| `code-reviewer`     | Review a diff for correctness bugs + simplification opportunities                        |
 | `security-reviewer` | Audit a diff for high-confidence security findings (BOLA/IDOR, mass assignment, secrets) |
-| `test-writer` | Write integration/e2e tests at the end of a layer |
-| `debugger` | Systematic reproduce → isolate → fix → regression-test loop on a bug |
+| `test-writer`       | Write integration/e2e tests at the end of a layer                                        |
+| `debugger`          | Systematic reproduce → isolate → fix → regression-test loop on a bug                     |
 
 ## Model strategy
 
@@ -161,8 +162,8 @@ claude_web_template/
 
 ## Current Layer / Current Task
 
-- **Current Layer:** Layer 4 — Public Catalogue and Passwordless Authentication API (in progress)
-- **Current Task:** `T-b4e1a7` — Implement the database-backed public catalogue resource
+- **Current Layer:** Layer 5 — Public Storefront, Passwordless Auth Web Flow, and Web Release Readiness (not started)
+- **Current Task:** `T-5b2e90` — Web data-access, currency, and i18n message foundation
 - After each layer completes, this section is updated by `/next-layer`.
 
 ## Token discipline

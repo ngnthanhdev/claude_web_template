@@ -37,18 +37,19 @@ performs no commerce and calls no unbuilt endpoint. The reviews section, if
 shown at all, is a static "no reviews yet" state. No web task may invent,
 call, or mock a commerce/admin/reviews endpoint.
 
-### Cross-cutting design constraint (resolve in `T-5b2e90`, confirm with user)
+### Cross-cutting design constraint (decided — implement in `T-5b2e90`)
 
 The API sets a first-party `__Host-kitvera_session` cookie with
 `SameSite=Lax`. Whether the browser can send that cookie on authenticated
-calls depends on web↔API origin topology, which the spec leaves open (§8 lists
-deployment as a provider-neutral open decision). `T-5b2e90` must **pick and
-document one approach** and every auth/account task must follow it. The
-recommended approach is a **same-origin Next.js Route Handler proxy** so the
-browser only ever talks to the web origin and `__Host-`/`SameSite=Lax` stay
-first-party; the alternative (deploy web + API as sibling subdomains of one
-registrable domain and call the API cross-origin with `credentials:"include"`)
-is noted as an open question below.
+calls depends on web↔API origin topology, which the spec left open (§8 lists
+deployment as a provider-neutral open decision). **Decision (confirmed
+2026-07-23): use a same-origin Next.js Route Handler proxy.** The browser only
+ever talks to the web origin, so `__Host-`/`SameSite=Lax` stay first-party and
+the API origin can deploy on any host without a same-site constraint.
+`T-5b2e90` implements it and every auth/account task follows it; the browser
+must never call the API origin directly. The sibling-subdomain same-site
+alternative was considered and rejected because it constrains deployment to a
+single registrable domain.
 
 ---
 

@@ -169,7 +169,7 @@ single registrable domain.
 
 ### T-b8d260 — Cross-viewport Playwright + axe e2e for browse and auth flows
 
-- **Status:** todo
+- **Status:** in-progress
 - **Assignee:** ai
 - **Files:** apps/web/playwright.config.ts, apps/web/e2e/browse.spec.ts, apps/web/e2e/auth.spec.ts, apps/web/e2e/fixtures/test-catalogue.ts, apps/web/e2e/README.md
 - **Acceptance:**
@@ -209,7 +209,7 @@ single registrable domain.
 
 ### T-9d3c05 — Product-detail error boundary + category-resolver unit coverage
 
-- **Status:** todo
+- **Status:** in-progress
 - **Assignee:** ai
 - **Files:** apps/web/src/app/[locale]/error.tsx, apps/web/src/app/[locale]/categories/[...slug]/route-scope.ts, apps/web/src/app/[locale]/categories/[...slug]/page.tsx, apps/web/src/app/[locale]/categories/[...slug]/route-scope.test.ts, apps/web/messages/vi/common.json, apps/web/messages/en/common.json
 - **Acceptance:**

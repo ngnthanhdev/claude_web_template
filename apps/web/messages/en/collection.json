@@ -1,0 +1,62 @@
+{
+  "Collection": {
+    "licence": {
+      "Regular": "Regular",
+      "Extended": "Extended"
+    },
+    "card": {
+      "tagsLabel": "Tags",
+      "moreTags": "+{count} more",
+      "priceUnavailable": "Price unavailable"
+    },
+    "filters": {
+      "heading": "Filters",
+      "categoryHeading": "Category",
+      "updatedWithinHeading": "Recently updated",
+      "updatedWithin": {
+        "30d": "In the last 30 days",
+        "90d": "In the last 90 days",
+        "1y": "In the last year"
+      },
+      "compatibilityHeading": "Compatibility",
+      "clear": "Clear filters"
+    },
+    "sort": {
+      "label": "Sort by",
+      "options": {
+        "relevance": "Relevance",
+        "newest": "Newest",
+        "recently-updated": "Recently updated",
+        "price-asc": "Price: low to high",
+        "price-desc": "Price: high to low",
+        "title-asc": "Title: A–Z"
+      }
+    },
+    "price": {
+      "heading": "Price range",
+      "licenceHeading": "Licence tier",
+      "minLabel": "Minimum price",
+      "maxLabel": "Maximum price",
+      "apply": "Apply",
+      "rangeError": "The minimum price cannot exceed the maximum price."
+    },
+    "pager": {
+      "regionLabel": "Pagination",
+      "previous": "Previous page",
+      "next": "Next page"
+    },
+    "empty": {
+      "heading": "No templates match these filters",
+      "description": "Try removing a filter or searching a different term.",
+      "action": "Reset filters"
+    },
+    "error": {
+      "heading": "We couldn't load the catalogue",
+      "description": "Something went wrong while loading products. Please try again.",
+      "action": "Try again"
+    },
+    "grid": {
+      "regionLabel": "Product results"
+    }
+  }
+}

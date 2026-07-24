@@ -48,3 +48,14 @@ export function formatMoney(money: Money, locale: Locale): string {
 
   return formatter.format(majorUnitAmount);
 }
+
+/**
+ * Turns a controlled slug (e.g. `"ui-templates"`) into a readable label
+ * (`"Ui Templates"`) — a display fallback for when no translated name exists.
+ */
+export function humanizeSlug(slug: string): string {
+  return slug
+    .split("-")
+    .map((word) => `${word.charAt(0).toUpperCase()}${word.slice(1)}`)
+    .join(" ");
+}

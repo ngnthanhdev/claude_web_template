@@ -3,6 +3,7 @@
 import { useLocale, useTranslations } from "next-intl";
 
 import { buttonVariants } from "@/components/ui/button";
+import { humanizeSlug } from "@/lib/format";
 import type { ProductDetailResponse } from "@shared/catalogue";
 import { localeSchema } from "@shared/localization";
 
@@ -15,14 +16,6 @@ export interface SpecListProps {
   specifications: readonly Specification[];
   changelog: readonly ChangelogEntry[];
   documentationUrl: string;
-}
-
-/** Turns a controlled slug (e.g. `"wordpress"`) into a readable label (`"Wordpress"`). */
-function humanizeSlug(slug: string): string {
-  return slug
-    .split("-")
-    .map((word) => `${word.charAt(0).toUpperCase()}${word.slice(1)}`)
-    .join(" ");
 }
 
 /**

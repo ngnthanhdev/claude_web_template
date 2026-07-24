@@ -2,19 +2,12 @@
 
 import { useLocale, useTranslations } from "next-intl";
 
+import { humanizeSlug } from "@/lib/format";
 import type { ProductDetailResponse } from "@shared/catalogue";
 import { localeSchema } from "@shared/localization";
 
 export interface DetailHeaderProps {
   product: ProductDetailResponse;
-}
-
-/** Turns a controlled slug (e.g. `"ui-templates"`) into a readable label (`"Ui Templates"`) without an extra translated-name lookup. */
-function humanizeSlug(slug: string): string {
-  return slug
-    .split("-")
-    .map((word) => `${word.charAt(0).toUpperCase()}${word.slice(1)}`)
-    .join(" ");
 }
 
 /**

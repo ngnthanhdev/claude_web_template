@@ -8,7 +8,7 @@ import { localeSchema } from "@shared/localization";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { buttonVariants } from "@/components/ui/button";
 import { ApiClientError } from "@/lib/api-client";
@@ -71,8 +71,18 @@ export function RedemptionStatus() {
     status: "verifying",
   });
 
+  // The token is single-use and the fragment is cleared on first read, so
+  // redemption must run exactly once per mount — even under React StrictMode's
+  // dev double-invocation of effects. A `cancelled`-flag cleanup can't achieve
+  // that here: StrictMode's teardown would cancel the real (first) redeem and
+  // the second pass would read the already-cleared fragment and render a false
+  // "invalid/expired" over a session the server actually established. A ref
+  // latch guarantees a single redemption instead.
+  const startedRef = useRef(false);
+
   useEffect(() => {
-    let cancelled = false;
+    if (startedRef.current) return;
+    startedRef.current = true;
 
     async function run() {
       const token = readAndClearTokenFragment();
@@ -80,13 +90,12 @@ export function RedemptionStatus() {
         !token ||
         !magicLinkRedemptionRequestSchema.safeParse({ token }).success
       ) {
-        if (!cancelled) setState({ status: "invalidOrExpired" });
+        setState({ status: "invalidOrExpired" });
         return;
       }
 
       try {
         const response = await redeemMagicLink({ token });
-        if (cancelled) return;
 
         // Held only in component state (never `localStorage`/
         // `sessionStorage`/a URL) for the brief remainder of this
@@ -96,8 +105,6 @@ export function RedemptionStatus() {
         setState({ status: "success", csrfToken: response.csrfToken });
         router.replace(resolveSafeReturnTo(response.returnTo, locale));
       } catch (error) {
-        if (cancelled) return;
-
         if (
           error instanceof ApiClientError &&
           error.status === 401 &&
@@ -111,10 +118,6 @@ export function RedemptionStatus() {
     }
 
     void run();
-
-    return () => {
-      cancelled = true;
-    };
   }, [locale, router]);
 
   if (state.status === "verifying") {

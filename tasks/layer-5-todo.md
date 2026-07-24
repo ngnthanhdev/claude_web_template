@@ -181,7 +181,7 @@ single registrable domain.
 
 ### T-7c4f10 — Web i18n standalone-Docker packaging + Round-1 review follow-ups
 
-- **Status:** in-progress
+- **Status:** review
 - **Assignee:** ai
 - **Files:** apps/web/Dockerfile, apps/web/next.config.ts, apps/web/src/i18n/request.ts, apps/web/src/middleware.ts, apps/web/src/app/api/[...proxy]/route.ts, apps/web/src/lib/api-client.ts
 - **Acceptance:**
@@ -196,7 +196,7 @@ single registrable domain.
 
 ### T-3e7a12 — Server-side product & category fetch with real HTTP 404s
 
-- **Status:** in-progress
+- **Status:** review
 - **Assignee:** ai
 - **Files:** apps/web/src/lib/catalogue-server.ts, apps/web/src/app/[locale]/templates/[slug]/page.tsx, apps/web/src/app/[locale]/categories/[...slug]/page.tsx, apps/web/src/app/[locale]/search/page.tsx, apps/web/src/components/catalogue/collection-view.tsx, apps/web/src/lib/catalogue-server.test.ts
 - **Acceptance:**

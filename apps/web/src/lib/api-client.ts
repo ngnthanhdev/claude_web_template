@@ -1,7 +1,18 @@
-import { apiErrorSchema, healthResponseSchema, type HealthResponse } from "@shared/api";
+import {
+  apiErrorSchema,
+  healthResponseSchema,
+  type HealthResponse,
+} from "@shared/api";
 import type { ZodType } from "zod";
 
-const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL ?? "";
+/**
+ * Same-origin path the typed clients (catalogue-client, auth-client) build
+ * their request paths from. The browser never talks to the API origin
+ * directly — every request stays same-origin and is forwarded by
+ * `apps/web/src/app/api/[...proxy]/route.ts`, which is the only place the
+ * real (server-only) API origin is read.
+ */
+export const apiProxyBasePath = "/api/v1";
 
 export class ApiClientError extends Error {
   constructor(
@@ -15,8 +26,12 @@ export class ApiClientError extends Error {
   }
 }
 
-async function request<T>(path: string, schema: ZodType<T>, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${apiBaseUrl}${path}`, {
+async function request<T>(
+  path: string,
+  schema: ZodType<T>,
+  init?: RequestInit,
+): Promise<T> {
+  const response = await fetch(path, {
     ...init,
     credentials: "include",
     headers: {
@@ -25,7 +40,7 @@ async function request<T>(path: string, schema: ZodType<T>, init?: RequestInit):
     },
   });
   const responseText = await response.text();
-  let body: unknown = null;
+  let body: unknown = undefined;
 
   if (responseText) {
     try {
@@ -58,6 +73,22 @@ async function request<T>(path: string, schema: ZodType<T>, init?: RequestInit):
 }
 
 export const apiClient = {
-  get: <T>(path: string, schema: ZodType<T>) => request(path, schema),
-  health: (): Promise<HealthResponse> => request("/health", healthResponseSchema),
+  get: <T>(path: string, schema: ZodType<T>, init?: RequestInit) =>
+    request(path, schema, init),
+  post: <T>(
+    path: string,
+    schema: ZodType<T>,
+    body?: unknown,
+    init?: RequestInit,
+  ) =>
+    request(path, schema, {
+      ...init,
+      method: "POST",
+      headers: { "content-type": "application/json", ...init?.headers },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    }),
+  delete: <T>(path: string, schema: ZodType<T>, init?: RequestInit) =>
+    request(path, schema, { ...init, method: "DELETE" }),
+  health: (): Promise<HealthResponse> =>
+    request("/health", healthResponseSchema),
 };

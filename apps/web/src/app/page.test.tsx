@@ -12,18 +12,26 @@ import { viewport } from "@/app/layout";
 import HomePage from "@/app/[locale]/page";
 import { AppShell } from "@/components/app-shell";
 import { Providers } from "@/components/providers";
-import { isSupportedLocale, resolvePreferredLocale, routing } from "@/i18n/routing";
+import {
+  isSupportedLocale,
+  resolvePreferredLocale,
+  routing,
+} from "@/i18n/routing";
 import { ApiClientError, apiClient } from "@/lib/api-client";
 import { createContentSecurityPolicy } from "@/middleware";
-import enMessages from "../../messages/en.json";
-import viMessages from "../../messages/vi.json";
+import enMessages from "../../messages/en/common.json";
+import viMessages from "../../messages/vi/common.json";
 
 vi.mock("next-intl/middleware", () => ({ default: () => vi.fn() }));
 
 function QueryProviderProbe() {
   const queryClient = useQueryClient();
 
-  return <span aria-label="Query provider status">{queryClient ? "ready" : "missing"}</span>;
+  return (
+    <span aria-label="Query provider status">
+      {queryClient ? "ready" : "missing"}
+    </span>
+  );
 }
 
 describe("public marketplace shell", () => {
@@ -72,59 +80,79 @@ describe("public marketplace shell", () => {
       status: "Catalogue content will appear here",
       templateGroupsLabel: "Template groups",
     },
-  ])("renders the $locale route inside the accessible shell", async ({
-    browseLabel,
-    heading,
-    homeHref,
-    locale,
-    messages,
-    navigationLabel,
-    categoryLabels,
-    status,
-    templateGroupsLabel,
-  }) => {
-    const user = userEvent.setup();
+  ])(
+    "renders the $locale route inside the accessible shell",
+    async ({
+      browseLabel,
+      heading,
+      homeHref,
+      locale,
+      messages,
+      navigationLabel,
+      categoryLabels,
+      status,
+      templateGroupsLabel,
+    }) => {
+      const user = userEvent.setup();
 
-    render(
-      <NextIntlClientProvider locale={locale} messages={messages}>
-        <Providers>
-          <AppShell>
-            <HomePage />
-            <QueryProviderProbe />
-          </AppShell>
-        </Providers>
-      </NextIntlClientProvider>,
-    );
+      render(
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <Providers>
+            <AppShell>
+              <HomePage />
+              <QueryProviderProbe />
+            </AppShell>
+          </Providers>
+        </NextIntlClientProvider>,
+      );
 
-    expect(screen.getByRole("banner")).toBeInTheDocument();
-    expect(screen.getByRole("navigation", { name: navigationLabel })).toBeInTheDocument();
-    expect(screen.getByRole("main")).toHaveAttribute("id", "main-content");
-    expect(screen.getByRole("contentinfo")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 1, name: heading })).toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveTextContent(status);
-    expect(screen.getByLabelText("Query provider status")).toHaveTextContent("ready");
-    expect(screen.getByRole("link", { name: /KITVERA/ })).toHaveAttribute("href", homeHref);
+      expect(screen.getByRole("banner")).toBeInTheDocument();
+      expect(
+        screen.getByRole("navigation", { name: navigationLabel }),
+      ).toBeInTheDocument();
+      expect(screen.getByRole("main")).toHaveAttribute("id", "main-content");
+      expect(screen.getByRole("contentinfo")).toBeInTheDocument();
+      expect(
+        screen.getByRole("heading", { level: 1, name: heading }),
+      ).toBeInTheDocument();
+      expect(screen.getByRole("status")).toHaveTextContent(status);
+      expect(screen.getByLabelText("Query provider status")).toHaveTextContent(
+        "ready",
+      );
+      expect(screen.getByRole("link", { name: /KITVERA/ })).toHaveAttribute(
+        "href",
+        homeHref,
+      );
 
-    const skipLink = screen.getByRole("link", { name: locale === "vi" ? /chuyển đến nội dung/i : /skip to content/i });
-    skipLink.focus();
-    expect(skipLink).toHaveFocus();
-    expect(skipLink).toHaveClass("skip-link");
+      const skipLink = screen.getByRole("link", {
+        name: locale === "vi" ? /chuyển đến nội dung/i : /skip to content/i,
+      });
+      skipLink.focus();
+      expect(skipLink).toHaveFocus();
+      expect(skipLink).toHaveClass("skip-link");
 
-    const menuButton = screen.getByRole("button", { name: browseLabel });
-    expect(menuButton).toHaveClass("h-11", "min-h-11");
-    expect(menuButton).toHaveAttribute("aria-expanded", "false");
-    await user.click(menuButton);
-    expect(menuButton).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByRole("region", { name: templateGroupsLabel })).toBeInTheDocument();
-    expect(screen.getAllByRole("listitem")).toHaveLength(categorySlugSchema.options.length);
-    for (const categoryLabel of categoryLabels) {
-      expect(screen.getByText(categoryLabel)).toBeInTheDocument();
-    }
+      const menuButton = screen.getByRole("button", { name: browseLabel });
+      expect(menuButton).toHaveClass("h-11", "min-h-11");
+      expect(menuButton).toHaveAttribute("aria-expanded", "false");
+      await user.click(menuButton);
+      expect(menuButton).toHaveAttribute("aria-expanded", "true");
+      expect(
+        screen.getByRole("region", { name: templateGroupsLabel }),
+      ).toBeInTheDocument();
+      expect(screen.getAllByRole("listitem")).toHaveLength(
+        categorySlugSchema.options.length,
+      );
+      for (const categoryLabel of categoryLabels) {
+        expect(screen.getByText(categoryLabel)).toBeInTheDocument();
+      }
 
-    await user.keyboard("{Escape}");
-    expect(menuButton).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByRole("region", { name: /template groups/i })).not.toBeInTheDocument();
-  });
+      await user.keyboard("{Escape}");
+      expect(menuButton).toHaveAttribute("aria-expanded", "false");
+      expect(
+        screen.queryByRole("region", { name: /template groups/i }),
+      ).not.toBeInTheDocument();
+    },
+  );
 });
 
 afterEach(() => cleanup());
@@ -153,11 +181,16 @@ describe("locale routing", () => {
       expectedPathname: "/vi",
       label: "Vietnamese fallback for unsupported preferences",
     },
-  ])("negotiates the root using $label", ({ acceptLanguage, cookie, expectedPathname }) => {
-    const storedLocale = cookie?.split("=").at(1);
+  ])(
+    "negotiates the root using $label",
+    ({ acceptLanguage, cookie, expectedPathname }) => {
+      const storedLocale = cookie?.split("=").at(1);
 
-    expect(`/${resolvePreferredLocale(storedLocale, acceptLanguage)}`).toBe(expectedPathname);
-  });
+      expect(`/${resolvePreferredLocale(storedLocale, acceptLanguage)}`).toBe(
+        expectedPathname,
+      );
+    },
+  );
 
   it("rejects unsupported locale segments", () => {
     expect(isSupportedLocale("vi")).toBe(true);
@@ -167,16 +200,23 @@ describe("locale routing", () => {
 
   it("keeps both message catalogues on exactly the same key set", () => {
     const keys = (value: unknown, prefix = ""): string[] => {
-      if (typeof value !== "object" || value === null || Array.isArray(value)) return [prefix];
+      if (typeof value !== "object" || value === null || Array.isArray(value))
+        return [prefix];
 
-      return Object.entries(value).flatMap(([key, nested]) => keys(nested, prefix ? `${prefix}.${key}` : key));
+      return Object.entries(value).flatMap(([key, nested]) =>
+        keys(nested, prefix ? `${prefix}.${key}` : key),
+      );
     };
 
     expect(keys(viMessages).sort()).toEqual(keys(enMessages).sort());
   });
 
   it("keeps viewport zoom enabled for localized routes", () => {
-    expect(viewport).toMatchObject({ initialScale: 1, viewportFit: "cover", width: "device-width" });
+    expect(viewport).toMatchObject({
+      initialScale: 1,
+      viewportFit: "cover",
+      width: "device-width",
+    });
     expect(viewport).not.toHaveProperty("maximumScale");
     expect(viewport).not.toHaveProperty("userScalable", false);
   });
@@ -184,17 +224,26 @@ describe("locale routing", () => {
 
 describe("content security policy", () => {
   it("allows only the configured API URL origin for cross-origin requests", () => {
-    const policy = createContentSecurityPolicy("test-nonce", "https://api.kitvera.test:8443/v1/health?probe=1");
+    const policy = createContentSecurityPolicy(
+      "test-nonce",
+      "https://api.kitvera.test:8443/v1/health?probe=1",
+    );
 
-    expect(policy).toContain("connect-src 'self' https://api.kitvera.test:8443");
+    expect(policy).toContain(
+      "connect-src 'self' https://api.kitvera.test:8443",
+    );
     expect(policy).not.toContain("/v1/health");
-    expect(policy).toContain("script-src 'self' 'nonce-test-nonce' 'strict-dynamic'");
+    expect(policy).toContain(
+      "script-src 'self' 'nonce-test-nonce' 'strict-dynamic'",
+    );
   });
 
   it.each([undefined, "not a URL", "javascript:alert(1)"])(
     "falls back to self-only connections for an unset or unsafe API URL: %s",
     (configuredApiUrl) => {
-      expect(createContentSecurityPolicy("test-nonce", configuredApiUrl)).toContain("connect-src 'self';");
+      expect(
+        createContentSecurityPolicy("test-nonce", configuredApiUrl),
+      ).toContain("connect-src 'self';");
     },
   );
 });
@@ -231,26 +280,38 @@ describe("typed API boundary", () => {
       status: 503,
       statusText: "",
     },
-  ])("normalizes a $status non-JSON API failure", async ({ body, expectedMessage, status, statusText }) => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockImplementation(() => Promise.resolve(new Response(body, { status, statusText }))),
-    );
+  ])(
+    "normalizes a $status non-JSON API failure",
+    async ({ body, expectedMessage, status, statusText }) => {
+      vi.stubGlobal(
+        "fetch",
+        vi
+          .fn()
+          .mockImplementation(() =>
+            Promise.resolve(new Response(body, { status, statusText })),
+          ),
+      );
 
-    const failure: unknown = await apiClient.health().catch((error: unknown) => error);
+      const failure: unknown = await apiClient
+        .health()
+        .catch((error: unknown) => error);
 
-    expect(failure).toBeInstanceOf(ApiClientError);
-    expect(failure).toEqual(
-      expect.objectContaining({
-        code: "HTTP_ERROR",
-        message: expectedMessage,
-        status,
-      }),
-    );
-  });
+      expect(failure).toBeInstanceOf(ApiClientError);
+      expect(failure).toEqual(
+        expect.objectContaining({
+          code: "HTTP_ERROR",
+          message: expectedMessage,
+          status,
+        }),
+      );
+    },
+  );
 
   it("routes a successful non-JSON response through shared-contract validation", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("not json", { status: 200 })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response("not json", { status: 200 })),
+    );
 
     await expect(apiClient.health()).rejects.toBeInstanceOf(ZodError);
   });

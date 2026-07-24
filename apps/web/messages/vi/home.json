@@ -1,0 +1,28 @@
+{
+  "Home": {
+    "pageTitle": "Khám phá hệ sinh thái mẫu web KITVERA",
+    "pageDescription": "Lựa chọn nổi bật, mẫu mới nhất, và đầy đủ danh mục cùng ngách thị trường ở một nơi.",
+    "editorsPicks": {
+      "heading": "Lựa chọn nổi bật"
+    },
+    "newest": {
+      "heading": "Mẫu mới nhất"
+    },
+    "byCategory": {
+      "heading": "Duyệt theo danh mục",
+      "viewAll": "Xem tất cả"
+    },
+    "byNiche": {
+      "heading": "Theo ngách thị trường",
+      "railHeading": "Ngách: {niche}"
+    },
+    "rail": {
+      "loading": "Đang tải mẫu…",
+      "emptyHeading": "Chưa có mẫu nào",
+      "emptyDescription": "Mục này sẽ xuất hiện khi có mẫu được xuất bản.",
+      "errorHeading": "Không thể tải mục này",
+      "errorDescription": "Đã xảy ra lỗi. Vui lòng thử lại.",
+      "retry": "Thử lại"
+    }
+  }
+}

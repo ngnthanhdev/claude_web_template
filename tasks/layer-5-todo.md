@@ -181,7 +181,7 @@ single registrable domain.
 
 ### T-7c4f10 — Web i18n standalone-Docker packaging + Round-1 review follow-ups
 
-- **Status:** todo
+- **Status:** in-progress
 - **Assignee:** ai
 - **Files:** apps/web/Dockerfile, apps/web/next.config.ts, apps/web/src/i18n/request.ts, apps/web/src/middleware.ts, apps/web/src/app/api/[...proxy]/route.ts, apps/web/src/lib/api-client.ts
 - **Acceptance:**
@@ -189,10 +189,23 @@ single registrable domain.
   - Minor hardening from Round-1 review (all low severity, no live vulnerability): wrap the upstream `fetch` in the `[...proxy]` route so an unreachable API returns the JSON error envelope (e.g. `502`) instead of a bare 500; remove the now-dead `NEXT_PUBLIC_API_URL` CSP-widening branch in `middleware.ts` so `connect-src` stays `'self'`-only (the browser calls only the same-origin proxy); and either route `apiClient.health()` through the proxy base path or delete the dormant helper (it currently targets the web origin's `/health`, unused by app code).
   - Restore the test coverage the shell refactor removed: the CSP (`createContentSecurityPolicy`/`middleware.ts`) and api-client error-envelope (`ApiClientError`) assertions were dropped from `app/page.test.tsx` when it was trimmed to shell/locale scope. Re-add them as colocated `middleware`/`api-client` tests reflecting this task's changes (CSP unconditionally `connect-src 'self'`; the proxy 502 envelope), so neither behavior ships untested.
   - CSP `frame-src` for the product-detail preview: `middleware.ts`'s CSP is `default-src 'self'` with no `frame-src`, so the product-detail sandboxed isolated-preview iframe (a cross-origin preview host) is blocked in a real browser. Add a `frame-src` directive scoped to the configured preview origin(s) — sourced from a server-side config var, never hard-coded — so the preview renders while `connect-src` stays `'self'`-only.
-  - Decide the SSR-404 trade-off (record the decision): product-detail — like every screen — fetches client-side because the Round-1 `api-client` is relative-path-only and unusable from a Server Component, so a bad `/[locale]/templates/[slug]` slug returns HTTP `200` (loading skeleton) before the client swaps to `not-found`. Either give `api-client` a server-context absolute-URL mode (via the server-only API origin) for true SSR `404`/SEO, or deliberately accept the client-side trade-off; note which, since it affects every data-backed route, not just product detail.
+  - SSR-404 for the product & category routes is split into `T-3e7a12` (decided 2026-07-24: switch those two public routes to server-side fetching for real HTTP `404`s/SEO). This task no longer owns that decision.
   - `pnpm --filter @marketplace/web lint`, `typecheck`, and `test` stay green.
 - **Skills:** web-i18n-theme, web-security, web-testing-release, typescript-strict
 - **Depends:** T-5b2e90
+
+### T-3e7a12 — Server-side product & category fetch with real HTTP 404s
+
+- **Status:** in-progress
+- **Assignee:** ai
+- **Files:** apps/web/src/lib/catalogue-server.ts, apps/web/src/app/[locale]/templates/[slug]/page.tsx, apps/web/src/app/[locale]/categories/[...slug]/page.tsx, apps/web/src/app/[locale]/search/page.tsx, apps/web/src/components/catalogue/collection-view.tsx, apps/web/src/lib/catalogue-server.test.ts
+- **Acceptance:**
+  - A server-only data module (`catalogue-server.ts`) fetches the public catalogue reads the product-detail and category pages need directly from the server-only API origin (the same `API_ORIGIN` the proxy already uses server-side), validating every response against the same `@shared/catalogue` schemas the client uses. It is imported ONLY by Server Components, never ships the API origin to the browser bundle, and forwards no browser cookies (these are public, unauthenticated reads). Auth/session reads stay client-side via the same-origin proxy, unchanged — this task moves only the two public, SEO-critical read paths server-side.
+  - `/[locale]/templates/[slug]/page.tsx` becomes a Server Component that awaits the server fetch and calls `notFound()` (a real HTTP 404) for an unknown/draft/delisted slug before rendering; the interactive/currency-dependent pieces stay client child components receiving the validated product as props. No behavior regression versus the reviewed client version (licence/price for both currencies/locales, sandboxed preview, deferred purchase affordance).
+  - `/[locale]/categories/[...slug]/page.tsx` becomes a Server Component that resolves+validates the category path server-side and calls `notFound()` (a real HTTP 404) for an unknown category, then renders the URL-backed client collection surface — extracted into a shared client `collection-view.tsx` — as a child so all filter/sort/price/cursor state stays client and URL-backed. `/[locale]/search` adopts the same `collection-view` (deduping the two routes' near-identical surface) and stays client-only (no 404).
+  - Unit tests prove the server module validates responses (including a rejected malformed payload) and that an API 404 surfaces as `notFound()`; existing product-detail/route tests still pass after the server/client split. `pnpm --filter @marketplace/web lint`, `typecheck`, and `test` stay green. (An SSR smoke check against a served app is outside the agent session per the heavy-build rule.)
+- **Skills:** web-api-integration, web-frameworks, shared-contracts, web-security, typescript-strict
+- **Depends:** T-2d9b6c, T-90e5b8
 
 ---
 

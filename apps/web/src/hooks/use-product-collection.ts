@@ -140,7 +140,10 @@ export function useProductCollection({
     error: query.error,
     refetch: () => void query.refetch(),
     hasPreviousPage: cursorHistory.length > 0,
-    hasNextPage: Boolean(meta?.hasMore),
+    // Gate on both fields the click handler needs: a schema-valid but
+    // inconsistent `{ hasMore: true, nextCursor: null }` must not enable a
+    // Next button whose handler would then bail as a no-op.
+    hasNextPage: Boolean(meta?.hasMore && meta.nextCursor),
     goToNextPage,
     goToPreviousPage,
   };

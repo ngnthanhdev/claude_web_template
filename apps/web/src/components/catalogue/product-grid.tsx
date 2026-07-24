@@ -60,11 +60,26 @@ export function ProductGrid({
         role="region"
       >
         {Array.from({ length: SKELETON_COUNT }, (_, index) => (
+          // Mirrors the loaded card's structure (4/3 media + content block),
+          // not just the media, so the row height is reserved and the
+          // loading→loaded transition doesn't shift layout.
           <div
             aria-hidden="true"
-            className="aspect-[4/3] w-full animate-pulse rounded-[var(--radius-panel)] border border-border bg-muted"
+            className="flex animate-pulse flex-col overflow-hidden rounded-[var(--radius-panel)] border border-border bg-background"
             key={index}
-          />
+          >
+            <div className="aspect-[4/3] w-full bg-muted" />
+            <div className="flex flex-1 flex-col gap-2 p-4">
+              <div className="h-6 w-20 rounded-full bg-muted" />
+              <div className="h-5 w-3/4 rounded bg-muted" />
+              <div className="h-4 w-full rounded bg-muted" />
+              <div className="h-4 w-5/6 rounded bg-muted" />
+              <div className="mt-auto flex items-center justify-between gap-2 pt-2">
+                <div className="h-4 w-16 rounded bg-muted" />
+                <div className="h-5 w-20 rounded bg-muted" />
+              </div>
+            </div>
+          </div>
         ))}
       </div>
     );

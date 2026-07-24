@@ -2,7 +2,12 @@ import {
   productCollectionQuerySchema,
   type ProductCollectionQuery,
 } from "@shared/catalogue";
-import type { Currency, Locale } from "@shared/localization";
+import {
+  currencySchema,
+  localeSchema,
+  type Currency,
+  type Locale,
+} from "@shared/localization";
 import type { ZodError } from "zod";
 
 /**
@@ -160,18 +165,30 @@ export function decodeProductCollectionUrlState(
     if (!isProductCollectionStateKey(key)) known.delete(key);
   }
 
+  // Pin the injected request-context values to schema-valid ones up front.
+  // They live on `candidate`, not `known`, so the loop below can never drop
+  // them — an invalid locale/currency would otherwise stay an offending key
+  // forever and the loop would never converge. Pinned valid, every failing
+  // iteration removes at least one `known` key, guaranteeing convergence.
+  const locale: Locale = localeSchema.safeParse(context.locale).success
+    ? context.locale
+    : localeSchema.options[0];
+  const currency: Currency = currencySchema.safeParse(context.currency).success
+    ? context.currency
+    : currencySchema.options[0];
+
   for (let attempt = 0; attempt < MAX_DECODE_ATTEMPTS; attempt += 1) {
     if (!known.has("licence")) known.set("licence", DEFAULT_PRODUCT_LICENCE);
 
     const candidate = new URLSearchParams(known);
-    candidate.set("locale", context.locale);
-    candidate.set("currency", context.currency);
+    candidate.set("locale", locale);
+    candidate.set("currency", currency);
 
     const parsed = productCollectionQuerySchema.safeParse(candidate);
     if (parsed.success) {
-      const { locale, currency, ...rest } = parsed.data;
-      void locale;
-      void currency;
+      const { locale: _locale, currency: _currency, ...rest } = parsed.data;
+      void _locale;
+      void _currency;
       return rest;
     }
 
@@ -180,13 +197,22 @@ export function decodeProductCollectionUrlState(
     for (const offendingKey of offendingKeys) known.delete(offendingKey);
   }
 
-  // Unreachable in practice: every loop iteration removes at least one
-  // offending key, and a `licence`-only query always parses successfully.
-  // Kept as a last-resort, fully-defaulted state for total type safety.
-  return decodeProductCollectionUrlState(
-    `licence=${DEFAULT_PRODUCT_LICENCE}`,
-    context,
-  );
+  // Unreachable: locale/currency are pinned valid above and every failing
+  // iteration drops at least one `known` key, so the loop always converges.
+  // Build the fully-defaulted state directly instead of recursing, so even a
+  // hypothetical invalid context can never spin this into unbounded recursion.
+  const fallback = new URLSearchParams();
+  fallback.set("licence", DEFAULT_PRODUCT_LICENCE);
+  fallback.set("locale", locale);
+  fallback.set("currency", currency);
+  const {
+    locale: _fallbackLocale,
+    currency: _fallbackCurrency,
+    ...rest
+  } = productCollectionQuerySchema.parse(fallback);
+  void _fallbackLocale;
+  void _fallbackCurrency;
+  return rest;
 }
 
 /**

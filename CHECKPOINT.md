@@ -3,26 +3,26 @@
 ## Recent commits
 
 ```
-04985e7 chore(tasks): lock layer 5 web-API cookie topology decision
-0e1d6de chore(tasks): advance to layer 5
-f652652 chore(tasks): advance layer 4 to done
-2b2d2a3 test(api): parse magic-link redemption body once in revoke-all case
-d383487 docs: capture layer 4 learnings
-0e08bb8 docs: checkpoint layer 4 public API
-26ca67f chore: rename AGENTS.md to CLAUDE.md
-3d14194 chore(tasks): complete layer 4 public API resources
-e0e9328 feat(api): compose and verify public catalogue and auth resources
-3c840e3 Merge bounded denied magic link writes into codex/layer-4-api
-d5a8ad7 fix(auth): bound denied magic-link writes
-16ddedd Merge non-blocking auth rate limit fix into codex/layer-4-api
-7488e1a Merge branch 'codex/layer-4/auth-core' into codex/layer-4/magic-links
-3530504 fix(auth): bound rate-limit contention
-709c59e Merge magic link response timing fix into codex/layer-4-api
-dc8ffb3 fix(auth): equalize magic-link initiation timing
-d5de460 Merge session CSRF ordering fix into codex/layer-4-api
-791b1b5 fix(auth): validate csrf before session mutation
-1d94e17 chore(tasks): queue session resource review
-e3f58ac Merge branch 'codex/layer-4/sessions' into codex/layer-4-api
+0ac30ff chore(tasks): close layer 5 wave 3b; track e2e capture-adapter follow-up
+9a864e5 Merge cross-viewport playwright + axe e2e (T-b8d260) into codex/layer-4-api
+d456f02 Merge error boundary + category resolver test (T-9d3c05) into codex/layer-4-api
+690819b test(web): add cross-viewport playwright + axe e2e for browse and auth
+77718f4 feat(web): add localized error boundary and extract testable category resolver
+358a8ba chore(tasks): start layer 5 wave 3b (T-b8d260 e2e, T-9d3c05 follow-up)
+b43e563 chore(tasks): close layer 5 wave 3a; track error-boundary + resolver-test follow-up
+2474002 test(api): exercise web health boundary via typed get after health() removal
+ea02251 chore(tasks): move layer 5 wave 3a to review
+51cd174 Merge server-side product/category fetch with real 404s (T-3e7a12) into codex/layer-4-api
+4be0fd4 Merge web hardening + i18n docker packaging (T-7c4f10) into codex/layer-4-api
+b161417 refactor(web): server-fetch product & category pages for real 404s
+3a35261 chore(web): package i18n for standalone docker and apply round-1 hardening
+41be1dc chore(tasks): start layer 5 wave 3a (T-3e7a12 ssr-404, T-7c4f10 hardening)
+bdaa808 chore(tasks): close layer 5 wave 2b (5 screens done)
+c6a8cf7 fix(web): address wave 2b review findings
+a32d1e7 chore(tasks): move layer 5 wave 2b to review
+6ebebb2 Merge routes (layer 5 wave 2b) into codex/layer-4-api
+2023c7a Merge home (layer 5 wave 2b) into codex/layer-4-api
+05dcb0e Merge account (layer 5 wave 2b) into codex/layer-4-api
 ```
 
 ## Completed tasks
@@ -334,113 +334,91 @@ configuration and history contained no baked runtime credentials.
 - **Skills:** git-workflow
 - **Depends:** T-a463b5, T-6c8d2e, T-13ab58, T-2f2057, T-9e4c1a
 
+> **Layer 5 (Public Storefront + Passwordless Auth Web) is code-complete on
+> `codex/layer-4-api`** but not yet appended to `tasks/done.md` (that is
+> `/next-layer`'s job). Full workspace gate green: shared 81 · api 59 (+40
+> DB-skipped) · web 173 · lint · typecheck. See `tasks/layer-5-todo.md` for the
+> 13 done tasks; one follow-up (`T-2f8b41`) is still `todo`.
+
 ## Architecture
 
-Layer 4 turned the proven contracts + persistence into the first live public
-HTTP surface. Nothing new was added to the web app this layer.
-
 ```
-packages/shared (zod)  ──imported by──►  apps/api (NestJS on Fastify)
-   catalogue.ts / auth.ts                    AppModule
-                                              ├─ ConfigModule (validateEnv, global)
-                                              ├─ PrismaModule ─► PostgreSQL
-                                              ├─ HealthModule            GET /health
-                                              ├─ CatalogueModule         GET /v1/categories
-                                              │                          GET /v1/products
-                                              │                          GET /v1/products/:slug
-                                              └─ AuthModule
-                                                 ├─ AuthCoreModule  (crypto, rate-limit,
-                                                 │                   session services — shared)
-                                                 ├─ MagicLinksModule  POST /v1/auth/magic-links (202)
-                                                 │                    POST /v1/auth/magic-link-redemptions (201)
-                                                 └─ SessionsModule    GET    /v1/sessions/current
-                                                                      DELETE /v1/sessions/current (204)
-                                                                      DELETE /v1/sessions        (204)
-```
+Browser ── same-origin ONLY ──► apps/web  (Next.js 15 App Router, vi/en)
+  ├─ shell: N11 mega-menu / drawer / locale+currency toggles  [client]
+  ├─ home (Ecosystem Index), /search, /categories/[...slug]    [client, URL-backed via use-product-collection + product-query-url]
+  ├─ /templates/[slug] (product detail) + /categories/[...slug] [SERVER components → real HTTP 404 via catalogue-server.ts]
+  ├─ /auth/sign-in, /auth/magic-link, /account                 [client; magic-link token read from #fragment once]
+  └─ error.tsx (localized retry) + not-found.tsx boundaries
 
-Bootstrap: `configureApp()` (`src/bootstrap/configure-app.ts`, shared by
-`main.ts` and every test) applies URI versioning (`/v1`), the `nestjs-zod`
-global pipe, `ApiExceptionFilter`, and `@fastify/cookie`. `main.ts` adds the
-ConfigService-dependent parts: credentialed explicit-origin CORS, Helmet,
-shutdown hooks, `listen`, with `trustProxy` left at its safe default (off).
+data paths:
+  browser  ──/api/v1/*──►  app/api/[...proxy]/route.ts  ──►  API_ORIGIN/v1/*   (cookies/__Host-/CSRF forwarded)
+  RSC/server ─────────────────── direct ───────────────►  API_ORIGIN/v1/*   (catalogue-server.ts, NO cookies, public reads)
+
+lib: api-client (proxy transport, GET/POST/DELETE) · catalogue-client + auth-client (browser)
+     catalogue-server (RSC) · currency (context) · format (money + humanizeSlug)
+shared: packages/shared zod contracts = single source of truth (web + api validate the same schemas)
+CI: ci.yml gates lint/typecheck/test + 4 disposable-Postgres integration suites
+```
 
 ## Key decisions (WHY)
 
-- **Catalogue split from auth within the layer.** Catalogue is read-only over
-  the migration-seeded taxonomy and had no auth dependency, so it shipped in
-  parallel with the auth core; magic-links and sessions both depend on the auth
-  core, so that landed first, then the two feature modules.
-- **Passwordless is anti-enumeration by construction.** Initiation always
-  returns the same generic `202 {status:"accepted"}` for new/existing/limited/
-  suppressed/failed cases and never creates a user; timing is equalized so
-  existence cannot be inferred from latency. Only redemption of a valid hashed,
-  expiring, one-time token creates the user + session.
-- **Session transport = `__Host-`-prefixed httpOnly/Secure/SameSite=Lax cookie**
-  holding the raw bearer, never localStorage; CSRF is a separate derived token
-  presented via `x-csrf-token` on mutating routes. Idle + 90-day absolute
-  expiry, rotation at 24h that preserves the original absolute deadline, replay
-  rejected.
-- **Rate limits key on hashed email + hashed `request.ip`.** `trustProxy` stays
-  off so a spoofed `X-Forwarded-For` cannot bypass the IP limit — the safe
-  default until a real proxy hop count is configured (see gotchas).
-- **Provider-neutral email via `EMAIL_DELIVERY_PORT` DI** (default
-  `NullEmailDeliveryAdapter`); no vendor SDK. Composed test swaps a capture
-  adapter, proving replaceability.
-- **Fixed public error vocabulary.** `422 VALIDATION_ERROR` (zod) vs the closed
-  set `MAGIC_LINK_INVALID_OR_EXPIRED` (401), `SESSION_UNAUTHENTICATED` (401),
-  `CSRF_INVALID` (403) — no internal detail or token material leaks.
-- **`@fastify/cookie` registration was missing in `main.ts`** and added this
-  layer; without it cookie-based session auth would have failed at runtime even
-  though unit tests (which register cookie themselves) passed.
-- **Layer 5 web↔API cookie topology = same-origin Next.js Route Handler proxy**
-  (confirmed 2026-07-23). Keeps `__Host-`/`SameSite=Lax` first-party without
-  constraining the API to a same-site domain.
+- **Same-origin proxy, browser never calls the API origin** — keeps the
+  `__Host-kitvera_session` cookie (`SameSite=Lax`) first-party and lets the API
+  deploy on any host. Server Components instead fetch `API_ORIGIN` **directly**
+  (server-side, no cookies) for the public product/category reads, which is what
+  makes real SSR HTTP 404s / SEO possible. The server fetch is an **additive
+  module** (`catalogue-server.ts`), NOT an isomorphic rewrite of the shared
+  `api-client` — lowest risk, leaves the browser/cookie posture untouched.
+- **i18n directory-merge** — `request.ts` auto-discovers every
+  `messages/<locale>/*.json`, so a feature task drops in a namespace file
+  without editing `request.ts` (avoids cross-task conflicts). Content is bundled
+  via an analyzable `import()`; the `standalone` Docker image ships `messages/`
+  via a triple backstop (build `COPY` + runner `COPY` + `outputFileTracingIncludes`).
+- **CSP** — `connect-src 'self'` (browser only talks to the proxy); `frame-src`
+  fail-closes to `'none'` unless a single vetted `PREVIEW_ORIGIN` is set, so a
+  seller-controlled preview URL can never frame itself into the storefront origin.
+- **Currency independent of locale** — context + `localStorage` (non-sensitive);
+  money minor-unit digits come from `Intl.NumberFormat` (no hand-kept table).
+- **Auth hygiene** — token lives only in the URL `#fragment`, read once and
+  stripped via `replaceState` before any network call; CSRF held in memory only;
+  `returnTo` validated by `kitveraReturnToSchema`; sign-in outcome is generic
+  (no account enumeration); redemption effect uses a `useRef` latch so React
+  StrictMode's dev double-invoke can't false-"expire" a valid link.
 
 ## API contracts (signatures only)
 
-`packages/shared` — catalogue (`@marketplace/shared/catalogue`):
+Web consumes these `packages/shared` schemas (bodies live in `packages/shared/src`):
 
-```
-categoryCollectionQuerySchema        { locale }
-categoryCollectionResponseSchema     { data: Category[], meta: CursorPage }
-productCollectionQuerySchema         { locale, currency, licence, q?, <facets…>,
-                                       compatibility?, updatedWithin?, minPrice?,
-                                       maxPrice?, sort?, limit=24, cursor? }
-productCollectionResponseSchema      { data: ProductCard[], meta: CursorPage }
-productDetailResponseSchema          ProductDetail
-```
-
-`packages/shared` — auth (`@marketplace/shared/auth`):
-
-```
-magicLinkInitiationRequestSchema     { email, locale, returnTo? }
-magicLinkInitiationResponseSchema    { status: "accepted" }                     // 202
-magicLinkRedemptionRequestSchema     { token: base64url-256bit }
-magicLinkRedemptionResponseSchema    { user, session, csrfToken, returnTo }     // 201 + Set-Cookie
-currentSessionResponseSchema         { user, session, csrfToken }               // 200
-// DELETE /v1/sessions/current and DELETE /v1/sessions → 204, no body
-```
+- `@shared/catalogue`: `categoryCollectionResponseSchema`, `localizedCategorySummarySchema`,
+  `productCollectionQuerySchema` / `productCollectionResponseSchema`, `productCardSchema`,
+  `productDetailResponseSchema`, `categorySlugSchema`, `slugSchema`, `productSortSchema`,
+  `updatedWithinSchema`, `compatibilityFilterSchema`, `licenceOptionsSchema`.
+- `@shared/auth`: `magicLinkInitiationRequestSchema` / `…ResponseSchema`,
+  `magicLinkRedemptionRequestSchema` / `…ResponseSchema`, `currentSessionResponseSchema`,
+  `safeSessionSchema`, `sessionUserSchema`, `kitveraReturnToSchema`,
+  `currentSessionRevocationResponseSchema` & `allSessionsRevocationResponseSchema` (`z.undefined()` → 204).
+- `@shared/localization`: `localeSchema` (`vi|en`), `currencySchema` (`VND|USD`).
+  `@shared/money`: `Money` (integer minor units). `@shared/api`: `apiErrorSchema`,
+  `healthResponseSchema`, `cursorPageMetaSchema`.
+- Import alias in `apps/web` is `@shared/*` → `packages/shared/src/*` (NOT the package name).
 
 ## Known issues & gotchas
 
-- **Integration tests need one dedicated PostgreSQL database per test file.**
-  Sharing a DB across files collides: the catalogue seed leaves products that
-  block the sessions test's `sellerProfile` cleanup (FK
-  `products_seller_id_fkey`). Each suite gates on its own env var
-  (`CATALOGUE_INTEGRATION_DATABASE_URL`, `MAGIC_LINK_INTEGRATION_DATABASE_URL`,
-  `SESSIONS_INTEGRATION_DATABASE_URL`, `PUBLIC_RESOURCES_INTEGRATION_DATABASE_URL`)
-  and `describe.skip`s when unset.
-- **CI does not run the integration tests.** `ci.yml` sets none of those env
-  vars, so only unit/controller tests gate merges. Layer 5 task `T-6a1d84`
-  wires a Postgres service + the four URLs into `ci.yml` to close this gap.
-- **The 10 root categories + bilingual translations are seeded by the
-  `catalogue_read_model` migration**, not by tests. Tests seed only child
-  categories and products under an existing root — don't re-seed roots.
-- **`trustProxy` is off by design.** Behind a real proxy/load balancer,
-  `request.ip` becomes the proxy address and IP rate-limiting degrades; set an
-  explicit, safe trust configuration (fixed hop count / known proxy IPs) before
-  deploying behind one — never blanket `trustProxy: true`.
-- **Bootstrap wiring is centralized in `configureApp()`** (`apps/api/src/bootstrap/configure-app.ts`),
-  shared by `main.ts` and every api test. Add any new global pipe/filter/guard/
-  interceptor **there**, not in `main.ts`, or the tests stop exercising it.
-  CORS/Helmet/`listen` stay in `main.ts` because they depend on ConfigService.
+- **Two verifications are OUTSIDE-session** (heavy-build rule, not yet run):
+  `docker build -f apps/web/Dockerfile .` (confirm the standalone image serves
+  `vi`/`en`) and `pnpm --filter @marketplace/web exec playwright test`.
+- **Auth e2e is `test.skip`-gated** until `T-2f8b41` ships a capture-only email
+  adapter in `apps/api` (today only `NullEmailDeliveryAdapter` suppresses
+  everything, so nothing outside the API can learn a magic-link URL).
+- **Run the FULL workspace gate, not `--filter web`** — deleting a web export
+  (`apiClient.health()`) silently broke `apps/api/test/health-client.integration.test.ts`
+  (cross-package import). `pnpm turbo run lint typecheck test` is the real gate.
+- `use-product-collection.ts` ships **without a unit test** — cover it in the
+  `/next-layer` `test-writer` step before advancing.
+- `__Host-` cookie needs a **secure context**: serve the web app at
+  `http://localhost:<port>` in e2e (localhost secure exception) or the cookie
+  never sets.
+- **Parallel task-implementers**: a 5-wide fan-out exhausted the session token
+  window mid-run; the salvage pattern (verify + commit the partial worktrees,
+  re-dispatch only the empty ones) recovered it. Prefer ≤2–3 concurrent heavy
+  agents.

@@ -55,7 +55,7 @@ single registrable domain.
 
 ### T-5b2e90 — Web data-access, currency, and i18n message foundation
 
-- **Status:** todo
+- **Status:** in-progress
 - **Assignee:** ai
 - **Files:** apps/web/package.json, pnpm-lock.yaml, apps/web/src/lib/api-client.ts, apps/web/src/lib/catalogue-client.ts, apps/web/src/lib/auth-client.ts, apps/web/src/lib/currency.tsx, apps/web/src/lib/format.ts, apps/web/src/components/providers.tsx, apps/web/src/i18n/request.ts, apps/web/messages/vi/common.json, apps/web/messages/en/common.json, apps/web/src/app/api/[...proxy]/route.ts, apps/web/.env.example, apps/web/src/lib/catalogue-client.test.ts, apps/web/src/lib/currency.test.tsx
 - **Acceptance:**
@@ -68,7 +68,7 @@ single registrable domain.
 
 ### T-6a1d84 — Gate API integration suites in CI with disposable PostgreSQL
 
-- **Status:** todo
+- **Status:** in-progress
 - **Assignee:** ai
 - **Files:** .github/workflows/ci.yml
 - **Acceptance:**

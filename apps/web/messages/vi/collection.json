@@ -1,0 +1,62 @@
+{
+  "Collection": {
+    "licence": {
+      "Regular": "Tiêu chuẩn",
+      "Extended": "Mở rộng"
+    },
+    "card": {
+      "tagsLabel": "Nhãn",
+      "moreTags": "+{count} nhãn khác",
+      "priceUnavailable": "Chưa có giá"
+    },
+    "filters": {
+      "heading": "Bộ lọc",
+      "categoryHeading": "Danh mục",
+      "updatedWithinHeading": "Cập nhật gần đây",
+      "updatedWithin": {
+        "30d": "Trong 30 ngày qua",
+        "90d": "Trong 90 ngày qua",
+        "1y": "Trong 1 năm qua"
+      },
+      "compatibilityHeading": "Khả năng tương thích",
+      "clear": "Xoá bộ lọc"
+    },
+    "sort": {
+      "label": "Sắp xếp theo",
+      "options": {
+        "relevance": "Liên quan nhất",
+        "newest": "Mới nhất",
+        "recently-updated": "Cập nhật gần đây",
+        "price-asc": "Giá: thấp đến cao",
+        "price-desc": "Giá: cao đến thấp",
+        "title-asc": "Tên: A–Z"
+      }
+    },
+    "price": {
+      "heading": "Khoảng giá",
+      "licenceHeading": "Hạng giấy phép",
+      "minLabel": "Giá tối thiểu",
+      "maxLabel": "Giá tối đa",
+      "apply": "Áp dụng",
+      "rangeError": "Giá tối thiểu không được lớn hơn giá tối đa."
+    },
+    "pager": {
+      "regionLabel": "Phân trang",
+      "previous": "Trang trước",
+      "next": "Trang sau"
+    },
+    "empty": {
+      "heading": "Không tìm thấy mẫu phù hợp",
+      "description": "Hãy thử bỏ bớt bộ lọc hoặc tìm kiếm với từ khoá khác.",
+      "action": "Đặt lại bộ lọc"
+    },
+    "error": {
+      "heading": "Không thể tải danh mục",
+      "description": "Đã xảy ra lỗi khi tải sản phẩm. Vui lòng thử lại.",
+      "action": "Thử lại"
+    },
+    "grid": {
+      "regionLabel": "Kết quả sản phẩm"
+    }
+  }
+}

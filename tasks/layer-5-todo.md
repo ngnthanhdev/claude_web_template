@@ -79,7 +79,7 @@ single registrable domain.
 
 ### T-c1a7d3 — Marketplace shell, N11 mega-menu, drawer, and locale/currency toggles
 
-- **Status:** todo
+- **Status:** in-progress
 - **Assignee:** ai
 - **Files:** apps/web/src/components/app-shell.tsx, apps/web/src/components/nav/mega-menu.tsx, apps/web/src/components/nav/mobile-drawer.tsx, apps/web/src/components/nav/locale-currency-toggle.tsx, apps/web/src/app/[locale]/layout.tsx, apps/web/messages/vi/navigation.json, apps/web/messages/en/navigation.json, apps/web/src/app/page.test.tsx, apps/web/src/components/nav/mega-menu.test.tsx
 - **Acceptance:**
@@ -92,7 +92,7 @@ single registrable domain.
 
 ### T-8f43e2 — Shared catalogue collection UI kit and URL-backed query state
 
-- **Status:** todo
+- **Status:** in-progress
 - **Assignee:** ai
 - **Files:** apps/web/src/components/catalogue/product-card.tsx, apps/web/src/components/catalogue/product-grid.tsx, apps/web/src/components/catalogue/filter-rail.tsx, apps/web/src/components/catalogue/sort-control.tsx, apps/web/src/components/catalogue/price-range-control.tsx, apps/web/src/components/catalogue/collection-pager.tsx, apps/web/src/components/catalogue/empty-state.tsx, apps/web/src/lib/product-query-url.ts, apps/web/src/hooks/use-product-collection.ts, apps/web/messages/vi/collection.json, apps/web/messages/en/collection.json, apps/web/src/lib/product-query-url.test.ts, apps/web/src/components/catalogue/product-card.test.tsx
 - **Acceptance:**

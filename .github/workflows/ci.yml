@@ -13,6 +13,21 @@ jobs:
     name: Lint, typecheck, and test
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      CATALOGUE_INTEGRATION_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/catalogue_integration_test?schema=public
+      MAGIC_LINK_INTEGRATION_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/magic_link_integration_test?schema=public
+      SESSIONS_INTEGRATION_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/sessions_integration_test?schema=public
+      PUBLIC_RESOURCES_INTEGRATION_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/public_resources_integration_test?schema=public
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -23,4 +38,22 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Generate Prisma client
+        working-directory: apps/api
+        run: pnpm exec prisma generate
+      - name: Provision per-suite integration databases
+        env:
+          PGPASSWORD: postgres
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends postgresql-client
+          for db in catalogue_integration_test magic_link_integration_test sessions_integration_test public_resources_integration_test; do
+            createdb -h localhost -U postgres "$db"
+          done
+      - name: Apply Prisma migrations to integration databases
+        working-directory: apps/api
+        run: |
+          for url in "$CATALOGUE_INTEGRATION_DATABASE_URL" "$MAGIC_LINK_INTEGRATION_DATABASE_URL" "$SESSIONS_INTEGRATION_DATABASE_URL" "$PUBLIC_RESOURCES_INTEGRATION_DATABASE_URL"; do
+            DATABASE_URL="$url" pnpm exec prisma migrate deploy
+          done
       - run: pnpm turbo run lint typecheck test

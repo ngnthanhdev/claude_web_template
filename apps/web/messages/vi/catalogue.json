@@ -1,0 +1,20 @@
+{
+  "Catalogue": {
+    "category": {
+      "context": "Danh mục"
+    },
+    "notFound": {
+      "heading": "Không tìm thấy danh mục",
+      "description": "Danh mục này không tồn tại hoặc đã được chuyển. Hãy khám phá toàn bộ danh mục sản phẩm.",
+      "cta": "Xem tất cả mẫu giao diện"
+    },
+    "search": {
+      "context": "Tìm kiếm",
+      "heading": "Tìm kiếm mẫu giao diện",
+      "inputLabel": "Từ khoá tìm kiếm",
+      "placeholder": "Tìm theo tên, danh mục hoặc nhãn",
+      "submit": "Tìm kiếm",
+      "activeQuery": "Đang hiển thị kết quả cho “{query}”"
+    }
+  }
+}

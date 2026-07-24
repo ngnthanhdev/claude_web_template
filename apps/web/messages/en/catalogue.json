@@ -1,0 +1,20 @@
+{
+  "Catalogue": {
+    "category": {
+      "context": "Category"
+    },
+    "notFound": {
+      "heading": "Category not found",
+      "description": "This category doesn't exist or may have moved. Browse the full catalogue instead.",
+      "cta": "Browse all templates"
+    },
+    "search": {
+      "context": "Search",
+      "heading": "Search templates",
+      "inputLabel": "Search query",
+      "placeholder": "Search by name, category, or tag",
+      "submit": "Search",
+      "activeQuery": "Showing results for “{query}”"
+    }
+  }
+}

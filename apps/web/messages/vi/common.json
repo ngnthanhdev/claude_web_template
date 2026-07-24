@@ -2,5 +2,10 @@
   "Metadata": {
     "title": "KITVERA — Sàn mẫu web",
     "description": "Sàn song ngữ để khám phá và cấp phép mẫu web."
+  },
+  "Error": {
+    "heading": "Đã xảy ra lỗi",
+    "description": "Trang này gặp lỗi ngoài dự kiến. Vui lòng thử lại.",
+    "retry": "Thử lại"
   }
 }

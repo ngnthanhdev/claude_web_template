@@ -2,5 +2,10 @@
   "Metadata": {
     "title": "KITVERA — Web template marketplace",
     "description": "A bilingual marketplace for discovering and licensing web templates."
+  },
+  "Error": {
+    "heading": "Something went wrong",
+    "description": "This page ran into an unexpected error. Please try again.",
+    "retry": "Try again"
   }
 }

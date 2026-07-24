@@ -1,0 +1,20 @@
+{
+  "Shell": {
+    "skipToContent": "Skip to content",
+    "homeLabel": "KITVERA home",
+    "primaryNavigation": "Primary navigation",
+    "search": "Search",
+    "browse": "Browse",
+    "categoriesPanel": "Template categories",
+    "categoriesLoading": "Loading categories…",
+    "categoriesError": "Categories are unavailable right now.",
+    "closeCategories": "Close template categories",
+    "menu": "Menu",
+    "closeMenu": "Close menu",
+    "mobileNavigation": "Mobile navigation",
+    "categoriesSection": "Categories",
+    "localeToggleLabel": "Language",
+    "currencyToggleLabel": "Currency",
+    "footerFoundation": "Vietnamese and English marketplace foundation"
+  }
+}

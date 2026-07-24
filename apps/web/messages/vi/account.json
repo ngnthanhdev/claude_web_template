@@ -1,0 +1,30 @@
+{
+  "Account": {
+    "page": {
+      "title": "Tài khoản",
+      "heading": "Tài khoản của bạn"
+    },
+    "panel": {
+      "loading": "Đang tải tài khoản của bạn…",
+      "redirecting": "Đang chuyển hướng bạn đến trang đăng nhập…",
+      "identityHeading": "Đã đăng nhập",
+      "emailLabel": "Email",
+      "sessionExpiresLabel": "Phiên đăng nhập hết hạn",
+      "comingSoon": "Thư viện, đơn hàng và cài đặt hồ sơ của bạn sẽ sớm ra mắt.",
+      "error": {
+        "heading": "Không thể tải tài khoản của bạn",
+        "description": "Đã có lỗi xảy ra khi kiểm tra phiên đăng nhập. Vui lòng thử lại.",
+        "action": "Thử lại"
+      }
+    },
+    "actions": {
+      "heading": "Phiên đăng nhập",
+      "description": "Đăng xuất khỏi thiết bị này, hoặc khỏi mọi thiết bị bạn đang đăng nhập.",
+      "signOut": "Đăng xuất",
+      "signOutPending": "Đang đăng xuất…",
+      "signOutAll": "Đăng xuất khỏi mọi thiết bị",
+      "signOutAllPending": "Đang đăng xuất khỏi mọi thiết bị…",
+      "error": "Không thể đăng xuất. Vui lòng thử lại."
+    }
+  }
+}

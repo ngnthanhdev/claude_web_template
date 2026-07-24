@@ -188,4 +188,20 @@ describe("same-origin API proxy", () => {
     expect(response.status).toBe(500);
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  it("returns a 502 JSON error envelope when the upstream API is unreachable", async () => {
+    const fetchMock = vi.fn().mockRejectedValue(new TypeError("fetch failed"));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const request = new NextRequest(
+      "http://web.local.test/api/v1/categories?locale=vi",
+    );
+    const response = await GET(request, routeParams("v1", "categories"));
+
+    expect(response.status).toBe(502);
+    await expect(response.json()).resolves.toEqual({
+      error: { code: "UPSTREAM_UNAVAILABLE", message: expect.any(String) },
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
 });

@@ -10,6 +10,7 @@ RUN pnpm install --frozen-lockfile --filter @marketplace/web...
 
 COPY apps/web/next-env.d.ts apps/web/next.config.ts apps/web/postcss.config.mjs apps/web/tsconfig.json apps/web/
 COPY apps/web/src apps/web/src
+COPY apps/web/messages apps/web/messages
 COPY packages/shared/src packages/shared/src
 COPY packages/shared/tsconfig.json packages/shared/tsconfig.json
 RUN pnpm --filter @marketplace/shared build && pnpm --filter @marketplace/web build
@@ -24,6 +25,13 @@ ENV NODE_ENV=production \
 RUN addgroup --system web && adduser --system --ingroup web web
 COPY --from=build --chown=web:web /workspace/apps/web/.next/standalone ./
 COPY --from=build --chown=web:web /workspace/apps/web/.next/static ./apps/web/.next/static
+# apps/web/src/i18n/request.ts still does a runtime `fs.readdirSync` against
+# `<cwd>/messages/<locale>` to enumerate namespace files (Next's standalone
+# server.js chdir()s into apps/web/ at startup, so <cwd> is apps/web/ here).
+# next.config.ts's outputFileTracingIncludes should already carry this
+# directory into .next/standalone, but copy it explicitly too so the locale
+# catalogue resolves even if tracing misses it.
+COPY --chown=web:web apps/web/messages ./apps/web/messages
 
 USER web
 EXPOSE 3000

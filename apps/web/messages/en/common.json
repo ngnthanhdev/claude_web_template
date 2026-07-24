@@ -2,11 +2,5 @@
   "Metadata": {
     "title": "KITVERA — Web template marketplace",
     "description": "A bilingual marketplace for discovering and licensing web templates."
-  },
-  "Home": {
-    "context": "Public marketplace foundation",
-    "title": "The marketplace is being assembled.",
-    "introduction": "KITVERA will bring together web templates for developers, freelancers, agencies, and business owners in Vietnamese and English.",
-    "status": "Catalogue content will appear here after its contracts and inventory are ready."
   }
 }

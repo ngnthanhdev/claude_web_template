@@ -1,0 +1,28 @@
+{
+  "Home": {
+    "pageTitle": "Explore the KITVERA template ecosystem",
+    "pageDescription": "Editor's picks, newest arrivals, and every category and niche in one place.",
+    "editorsPicks": {
+      "heading": "Editor's picks"
+    },
+    "newest": {
+      "heading": "Newest templates"
+    },
+    "byCategory": {
+      "heading": "Browse by category",
+      "viewAll": "View all"
+    },
+    "byNiche": {
+      "heading": "By niche",
+      "railHeading": "Niche: {niche}"
+    },
+    "rail": {
+      "loading": "Loading templates…",
+      "emptyHeading": "No templates yet",
+      "emptyDescription": "This section will appear once templates are published.",
+      "errorHeading": "Couldn't load this section",
+      "errorDescription": "Something went wrong. Please try again.",
+      "retry": "Try again"
+    }
+  }
+}

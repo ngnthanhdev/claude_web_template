@@ -120,12 +120,21 @@ async function forward(
   const hasBody = request.method !== "GET" && request.method !== "HEAD";
   const rawBody = hasBody ? await request.text() : undefined;
 
-  const upstreamResponse = await fetch(targetUrl, {
-    method: request.method,
-    headers: buildForwardedRequestHeaders(request),
-    body: rawBody === "" ? undefined : rawBody,
-    redirect: "manual",
-  });
+  let upstreamResponse: Response;
+  try {
+    upstreamResponse = await fetch(targetUrl, {
+      method: request.method,
+      headers: buildForwardedRequestHeaders(request),
+      body: rawBody === "" ? undefined : rawBody,
+      redirect: "manual",
+    });
+  } catch {
+    return jsonError(
+      502,
+      "UPSTREAM_UNAVAILABLE",
+      "The upstream API is unreachable.",
+    );
+  }
 
   const responseHeaders = buildForwardedResponseHeaders(upstreamResponse);
   if (NULL_BODY_STATUSES.has(upstreamResponse.status)) {

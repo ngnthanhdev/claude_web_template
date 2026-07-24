@@ -52,6 +52,16 @@ async function loadNamespaceMessages(
  * Loads and deep-merges every JSON file under `messages/<locale>/` into a
  * single message catalogue. Dropping in a new namespace file (e.g.
  * `catalogue.json`) needs no change here — it is discovered automatically.
+ *
+ * The namespace list comes from a live `fs.readdirSync`, so the raw
+ * `messages/` directory must physically exist relative to `process.cwd()`
+ * in every environment this runs in — `next dev`/`vitest` (cwd is
+ * `apps/web/`) and the `output: "standalone"` production image alike
+ * (Next's generated `server.js` `chdir()`s into its own directory, which
+ * for this monorepo's standalone output is also `apps/web/`). See
+ * `apps/web/Dockerfile` and `outputFileTracingIncludes` in
+ * `apps/web/next.config.ts`, which both exist to keep that directory
+ * present in the standalone image.
  */
 export async function loadLocaleMessages(locale: string): Promise<MessageTree> {
   const messagesDirectory = path.join(process.cwd(), "messages", locale);

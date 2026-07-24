@@ -1,8 +1,4 @@
-import {
-  apiErrorSchema,
-  healthResponseSchema,
-  type HealthResponse,
-} from "@shared/api";
+import { apiErrorSchema } from "@shared/api";
 import type { ZodType } from "zod";
 
 /**
@@ -89,6 +85,4 @@ export const apiClient = {
     }),
   delete: <T>(path: string, schema: ZodType<T>, init?: RequestInit) =>
     request(path, schema, { ...init, method: "DELETE" }),
-  health: (): Promise<HealthResponse> =>
-    request("/health", healthResponseSchema),
 };

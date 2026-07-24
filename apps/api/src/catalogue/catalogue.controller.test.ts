@@ -1,4 +1,3 @@
-import { VersioningType } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import {
   FastifyAdapter,
@@ -19,10 +18,9 @@ import {
 import { PublicationState } from "@prisma/client";
 import request from "supertest";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { ZodValidationPipe } from "nestjs-zod";
 import { ZodError } from "zod";
 
-import { ApiExceptionFilter } from "../common/filters/api-exception.filter.js";
+import { configureApp } from "../bootstrap/configure-app.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { CatalogueController } from "./catalogue.controller.js";
 import {
@@ -58,9 +56,7 @@ describe("CatalogueController", () => {
     app = moduleRef.createNestApplication<NestFastifyApplication>(
       new FastifyAdapter({ logger: false }),
     );
-    app.enableVersioning({ type: VersioningType.URI, defaultVersion: "1" });
-    app.useGlobalPipes(new ZodValidationPipe());
-    app.useGlobalFilters(new ApiExceptionFilter());
+    await configureApp(app);
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
   });

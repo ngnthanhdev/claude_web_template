@@ -1,4 +1,3 @@
-import { VersioningType } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { Test } from "@nestjs/testing";
 import {
@@ -22,9 +21,8 @@ import {
 } from "@marketplace/shared/catalogue";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { ZodValidationPipe } from "nestjs-zod";
 
-import { ApiExceptionFilter } from "../common/filters/api-exception.filter.js";
+import { configureApp } from "../bootstrap/configure-app.js";
 import { PrismaModule } from "../prisma/prisma.module.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { CatalogueModule } from "./catalogue.module.js";
@@ -421,9 +419,7 @@ describeWithPostgres("Catalogue PostgreSQL integration", () => {
     app = moduleRef.createNestApplication<NestFastifyApplication>(
       new FastifyAdapter({ logger: false }),
     );
-    app.enableVersioning({ type: VersioningType.URI, defaultVersion: "1" });
-    app.useGlobalPipes(new ZodValidationPipe());
-    app.useGlobalFilters(new ApiExceptionFilter());
+    await configureApp(app);
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
   }, 30_000);

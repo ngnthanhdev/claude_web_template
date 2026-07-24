@@ -1,5 +1,3 @@
-import cookie from "@fastify/cookie";
-import { VersioningType } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Test } from "@nestjs/testing";
 import {
@@ -11,10 +9,9 @@ import {
   magicLinkRedemptionResponseSchema,
 } from "@marketplace/shared/auth";
 import request from "supertest";
-import { ZodValidationPipe } from "nestjs-zod";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { ApiExceptionFilter } from "../../common/filters/api-exception.filter.js";
+import { configureApp } from "../../bootstrap/configure-app.js";
 import type { Env } from "../../config/env.js";
 import { PrismaService } from "../../prisma/prisma.service.js";
 import { SESSION_COOKIE_NAME } from "../core/auth-cookie.js";
@@ -58,10 +55,7 @@ describe("MagicLinksController", () => {
     app = moduleRef.createNestApplication<NestFastifyApplication>(
       new FastifyAdapter({ logger: false }),
     );
-    app.enableVersioning({ type: VersioningType.URI, defaultVersion: "1" });
-    app.useGlobalPipes(new ZodValidationPipe());
-    app.useGlobalFilters(new ApiExceptionFilter());
-    await app.register(cookie);
+    await configureApp(app);
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
   });

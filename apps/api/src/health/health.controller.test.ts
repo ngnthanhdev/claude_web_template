@@ -1,7 +1,6 @@
 import {
   Controller,
   Get,
-  VersioningType,
 } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import {
@@ -16,7 +15,7 @@ import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { AppModule } from "../app.module.js";
-import { ApiExceptionFilter } from "../common/filters/api-exception.filter.js";
+import { configureApp } from "../bootstrap/configure-app.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 
 @Controller("test-errors")
@@ -42,11 +41,7 @@ describe("API foundation", () => {
     app = moduleRef.createNestApplication<NestFastifyApplication>(
       new FastifyAdapter({ logger: false }),
     );
-    app.enableVersioning({
-      type: VersioningType.URI,
-      defaultVersion: "1",
-    });
-    app.useGlobalFilters(new ApiExceptionFilter());
+    await configureApp(app);
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
   });

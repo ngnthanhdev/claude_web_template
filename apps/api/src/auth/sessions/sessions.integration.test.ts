@@ -1,5 +1,4 @@
-import cookie from "@fastify/cookie";
-import { Module, VersioningType } from "@nestjs/common";
+import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import {
   FastifyAdapter,
@@ -14,7 +13,7 @@ import {
 import request from "supertest";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
-import { ApiExceptionFilter } from "../../common/filters/api-exception.filter.js";
+import { configureApp } from "../../bootstrap/configure-app.js";
 import type { Env } from "../../config/env.js";
 import { PrismaModule } from "../../prisma/prisma.module.js";
 import { PrismaService } from "../../prisma/prisma.service.js";
@@ -140,9 +139,7 @@ describeWithPostgres("Sessions resources with PostgreSQL", () => {
     app = moduleRef.createNestApplication<NestFastifyApplication>(
       new FastifyAdapter({ logger: false }),
     );
-    app.enableVersioning({ type: VersioningType.URI, defaultVersion: "1" });
-    app.useGlobalFilters(new ApiExceptionFilter());
-    await app.register(cookie);
+    await configureApp(app);
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
     sessions = app.get(AuthSessionService);

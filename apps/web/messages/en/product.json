@@ -1,0 +1,43 @@
+{
+  "Product": {
+    "loading": "Loading product…",
+    "error": {
+      "heading": "We couldn't load this product",
+      "description": "Something went wrong while loading this product. Please try again.",
+      "action": "Try again"
+    },
+    "header": {
+      "versionLabel": "Version {version}",
+      "tagsLabel": "Tags"
+    },
+    "demo": {
+      "heading": "Live demo",
+      "liveDemoOption": "Live demo",
+      "switcherLabel": "Choose a demo page",
+      "frameLabel": "{title} preview"
+    },
+    "specs": {
+      "specificationsHeading": "Specifications",
+      "compatibilityHeading": "Compatibility",
+      "documentationLabel": "Documentation",
+      "changelogHeading": "Changelog"
+    },
+    "licence": {
+      "heading": "Choose a licence",
+      "Regular": "Regular",
+      "Extended": "Extended",
+      "priceUnavailable": "Price unavailable",
+      "purchaseLabel": "Purchase",
+      "purchaseSandboxNote": "Sandbox preview — purchasing isn't available yet."
+    },
+    "reviews": {
+      "heading": "Reviews",
+      "empty": "No reviews yet."
+    },
+    "notFound": {
+      "heading": "We couldn't find that template",
+      "description": "It may have been unpublished, moved, or the link might be incorrect.",
+      "action": "Browse the catalogue"
+    }
+  }
+}

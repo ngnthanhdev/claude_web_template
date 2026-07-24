@@ -221,7 +221,7 @@ single registrable domain.
 
 ### T-2f8b41 — Capture-only magic-link email adapter for e2e (apps/api)
 
-- **Status:** todo
+- **Status:** done
 - **Assignee:** ai
 - **Files:** apps/api/src/auth/magic-links/*, apps/api/.env.example
 - **Acceptance:**

@@ -169,7 +169,7 @@ single registrable domain.
 
 ### T-b8d260 — Cross-viewport Playwright + axe e2e for browse and auth flows
 
-- **Status:** in-progress
+- **Status:** done
 - **Assignee:** ai
 - **Files:** apps/web/playwright.config.ts, apps/web/e2e/browse.spec.ts, apps/web/e2e/auth.spec.ts, apps/web/e2e/fixtures/test-catalogue.ts, apps/web/e2e/README.md
 - **Acceptance:**
@@ -209,7 +209,7 @@ single registrable domain.
 
 ### T-9d3c05 — Product-detail error boundary + category-resolver unit coverage
 
-- **Status:** in-progress
+- **Status:** done
 - **Assignee:** ai
 - **Files:** apps/web/src/app/[locale]/error.tsx, apps/web/src/app/[locale]/categories/[...slug]/route-scope.ts, apps/web/src/app/[locale]/categories/[...slug]/page.tsx, apps/web/src/app/[locale]/categories/[...slug]/route-scope.test.ts, apps/web/messages/vi/common.json, apps/web/messages/en/common.json
 - **Acceptance:**
@@ -218,6 +218,18 @@ single registrable domain.
   - `pnpm --filter @marketplace/web lint`, `typecheck`, and `test` stay green.
 - **Skills:** web-frameworks, web-i18n-theme, typescript-strict
 - **Depends:** T-3e7a12
+
+### T-2f8b41 — Capture-only magic-link email adapter for e2e (apps/api)
+
+- **Status:** todo
+- **Assignee:** ai
+- **Files:** apps/api/src/auth/magic-links/*, apps/api/.env.example
+- **Acceptance:**
+  - The auth happy-path Playwright flow (`apps/web/e2e/auth.spec.ts`) needs to learn the real magic-link URL from outside the API process, but today only the suppress-everything `NullEmailDeliveryAdapter` is wired — so the seam-gated auth tests currently `test.skip` themselves. Implement a **test-only, capture-only** `EmailDeliveryPort` adapter that, when `E2E_MAGIC_LINK_CAPTURE_FILE` is set, appends one JSONL line per delivery (`{ email, locale, link }`, mirroring the real `MagicLinkDelivery` type) to that file and delivers nothing to any real vendor; when the env var is unset, the existing null/suppress behavior is unchanged. It must be impossible to enable in production config (guard on the explicit env var + a non-production check).
+  - `apps/api/.env.example` documents `E2E_MAGIC_LINK_CAPTURE_FILE` as a test-only var. The `apps/web/e2e/README.md` contract (already written) is satisfied so the seam-gated `auth.spec.ts` block runs green in a real terminal against a served stack.
+  - `pnpm --filter @marketplace/api lint`, `typecheck`, `test` stay green; no real email vendor or credential is introduced.
+- **Skills:** nestjs-backend, backend-auth-security, backend-testing, typescript-strict
+- **Depends:** T-b8d260
 
 ---
 

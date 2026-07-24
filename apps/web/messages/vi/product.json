@@ -1,0 +1,43 @@
+{
+  "Product": {
+    "loading": "Đang tải sản phẩm…",
+    "error": {
+      "heading": "Không thể tải sản phẩm này",
+      "description": "Đã xảy ra lỗi khi tải sản phẩm này. Vui lòng thử lại.",
+      "action": "Thử lại"
+    },
+    "header": {
+      "versionLabel": "Phiên bản {version}",
+      "tagsLabel": "Nhãn"
+    },
+    "demo": {
+      "heading": "Bản demo trực tiếp",
+      "liveDemoOption": "Bản demo trực tiếp",
+      "switcherLabel": "Chọn trang demo",
+      "frameLabel": "Xem trước {title}"
+    },
+    "specs": {
+      "specificationsHeading": "Thông số kỹ thuật",
+      "compatibilityHeading": "Khả năng tương thích",
+      "documentationLabel": "Tài liệu hướng dẫn",
+      "changelogHeading": "Lịch sử cập nhật"
+    },
+    "licence": {
+      "heading": "Chọn giấy phép",
+      "Regular": "Tiêu chuẩn",
+      "Extended": "Mở rộng",
+      "priceUnavailable": "Chưa có giá",
+      "purchaseLabel": "Mua",
+      "purchaseSandboxNote": "Bản xem trước — chức năng mua chưa khả dụng."
+    },
+    "reviews": {
+      "heading": "Đánh giá",
+      "empty": "Chưa có đánh giá nào."
+    },
+    "notFound": {
+      "heading": "Không tìm thấy mẫu này",
+      "description": "Sản phẩm có thể đã bị gỡ, di chuyển, hoặc đường liên kết không đúng.",
+      "action": "Xem danh mục sản phẩm"
+    }
+  }
+}

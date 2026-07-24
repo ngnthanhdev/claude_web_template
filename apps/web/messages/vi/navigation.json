@@ -1,0 +1,20 @@
+{
+  "Shell": {
+    "skipToContent": "Chuyển đến nội dung",
+    "homeLabel": "Trang chủ KITVERA",
+    "primaryNavigation": "Điều hướng chính",
+    "search": "Tìm kiếm",
+    "browse": "Khám phá",
+    "categoriesPanel": "Danh mục mẫu",
+    "categoriesLoading": "Đang tải danh mục…",
+    "categoriesError": "Không thể tải danh mục lúc này.",
+    "closeCategories": "Đóng danh mục mẫu",
+    "menu": "Menu",
+    "closeMenu": "Đóng menu",
+    "mobileNavigation": "Điều hướng di động",
+    "categoriesSection": "Danh mục",
+    "localeToggleLabel": "Ngôn ngữ",
+    "currencyToggleLabel": "Đơn vị tiền tệ",
+    "footerFoundation": "Nền tảng sàn song ngữ Việt và Anh"
+  }
+}

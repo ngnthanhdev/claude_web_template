@@ -181,7 +181,7 @@ single registrable domain.
 
 ### T-7c4f10 — Web i18n standalone-Docker packaging + Round-1 review follow-ups
 
-- **Status:** review
+- **Status:** done
 - **Assignee:** ai
 - **Files:** apps/web/Dockerfile, apps/web/next.config.ts, apps/web/src/i18n/request.ts, apps/web/src/middleware.ts, apps/web/src/app/api/[...proxy]/route.ts, apps/web/src/lib/api-client.ts
 - **Acceptance:**
@@ -196,7 +196,7 @@ single registrable domain.
 
 ### T-3e7a12 — Server-side product & category fetch with real HTTP 404s
 
-- **Status:** review
+- **Status:** done
 - **Assignee:** ai
 - **Files:** apps/web/src/lib/catalogue-server.ts, apps/web/src/app/[locale]/templates/[slug]/page.tsx, apps/web/src/app/[locale]/categories/[...slug]/page.tsx, apps/web/src/app/[locale]/search/page.tsx, apps/web/src/components/catalogue/collection-view.tsx, apps/web/src/lib/catalogue-server.test.ts
 - **Acceptance:**
@@ -206,6 +206,18 @@ single registrable domain.
   - Unit tests prove the server module validates responses (including a rejected malformed payload) and that an API 404 surfaces as `notFound()`; existing product-detail/route tests still pass after the server/client split. `pnpm --filter @marketplace/web lint`, `typecheck`, and `test` stay green. (An SSR smoke check against a served app is outside the agent session per the heavy-build rule.)
 - **Skills:** web-api-integration, web-frameworks, shared-contracts, web-security, typescript-strict
 - **Depends:** T-2d9b6c, T-90e5b8
+
+### T-9d3c05 — Product-detail error boundary + category-resolver unit coverage
+
+- **Status:** todo
+- **Assignee:** ai
+- **Files:** apps/web/src/app/[locale]/error.tsx, apps/web/src/app/[locale]/categories/[...slug]/route-scope.ts, apps/web/src/app/[locale]/categories/[...slug]/page.tsx, apps/web/src/app/[locale]/categories/[...slug]/route-scope.test.ts, apps/web/messages/vi/common.json, apps/web/messages/en/common.json
+- **Acceptance:**
+  - The server-component product/category pages lost the localized retry affordance the old client versions had: a non-404 API failure (500/unreachable/schema mismatch) now unwinds to Next's default error page instead of a friendly, localized "something went wrong + retry" state. Add an `app/[locale]/error.tsx` client error boundary (a `reset()` retry + localized copy) so every localized route degrades gracefully; `notFound()` still routes to the existing `not-found` boundaries unchanged. Copy goes in an `Error` section of `common.json` with identical vi/en keys.
+  - The category page's route-resolution predicate (`[...slug]` → `{category, subcategory} | null`, with unknown slug / extra segments / invalid subcategory → `notFound()`) currently has no unit coverage — it was moved into the async Server Component that RTL can't render, and the dropped "unknown category → not-found" test was not replaced. Extract that pure resolver into `route-scope.ts` and unit-test it (valid single and nested paths, unknown slug, too-many segments, invalid subcategory), so the 404 gating this task exists to deliver is proven without a full SSR run.
+  - `pnpm --filter @marketplace/web lint`, `typecheck`, and `test` stay green.
+- **Skills:** web-frameworks, web-i18n-theme, typescript-strict
+- **Depends:** T-3e7a12
 
 ---
 

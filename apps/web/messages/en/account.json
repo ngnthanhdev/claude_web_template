@@ -1,0 +1,30 @@
+{
+  "Account": {
+    "page": {
+      "title": "Account",
+      "heading": "Your account"
+    },
+    "panel": {
+      "loading": "Loading your account…",
+      "redirecting": "Redirecting you to sign in…",
+      "identityHeading": "Signed in",
+      "emailLabel": "Email",
+      "sessionExpiresLabel": "Session expires",
+      "comingSoon": "Your library, orders, and profile settings are coming soon.",
+      "error": {
+        "heading": "We couldn't load your account",
+        "description": "Something went wrong while checking your session. Please try again.",
+        "action": "Try again"
+      }
+    },
+    "actions": {
+      "heading": "Sessions",
+      "description": "Sign out of this device only, or every device you're signed in on.",
+      "signOut": "Sign out",
+      "signOutPending": "Signing out…",
+      "signOutAll": "Sign out of all devices",
+      "signOutAllPending": "Signing out of all devices…",
+      "error": "We couldn't sign you out. Please try again."
+    }
+  }
+}

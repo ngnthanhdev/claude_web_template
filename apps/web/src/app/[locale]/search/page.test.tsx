@@ -10,13 +10,13 @@ import type {
   ProductCard as ProductCardData,
 } from "@shared/catalogue";
 
+import { CollectionView } from "@/components/catalogue/collection-view";
 import { Providers } from "@/components/providers";
 import { listCategories, listProducts } from "@/lib/catalogue-client";
 import enCatalogue from "../../../../messages/en/catalogue.json";
 import viCatalogue from "../../../../messages/vi/catalogue.json";
 import enCollection from "../../../../messages/en/collection.json";
 import viCollection from "../../../../messages/vi/collection.json";
-import CategoryCollectionPage from "../categories/[...slug]/page";
 import SearchPage from "./page";
 
 vi.mock("@/lib/catalogue-client", () => ({
@@ -26,22 +26,21 @@ vi.mock("@/lib/catalogue-client", () => ({
 
 let mockPathnameValue = "/en/search";
 let mockSearchParamsValue = new URLSearchParams();
-let mockRouteParamsValue: { slug?: string[] } = {};
 // A real `router.replace` changes what the *next* `useSearchParams()` read
 // returns; a no-op spy would leave `use-product-collection`'s route-lock
-// effect (in `CategoryCollectionPage`) permanently "unlocked" and re-firing.
+// effect (in `CollectionView`'s "category" mode) permanently "unlocked" and
+// re-firing.
 const mockRouterReplace = vi.fn((url: string) => {
   const queryIndex = url.indexOf("?");
   mockSearchParamsValue = new URLSearchParams(
     queryIndex === -1 ? "" : url.slice(queryIndex + 1),
   );
 });
-const mockNotFound = vi.fn();
 // `useRouter()` must return the *same* object reference across renders,
 // exactly like Next's real implementation — `use-product-collection.ts`
 // memoizes `replaceUrl`/`updateFilters` off this value, so a fresh object
 // literal per call would invalidate that memoization every render and spin
-// the route-lock effect in `CategoryCollectionPage` into an infinite loop.
+// the route-lock effect into an infinite loop.
 const mockRouter = {
   back: vi.fn(),
   forward: vi.fn(),
@@ -55,8 +54,6 @@ vi.mock("next/navigation", async (importOriginal) => {
   const actual = await importOriginal<typeof import("next/navigation")>();
   return {
     ...actual,
-    notFound: () => mockNotFound(),
-    useParams: () => mockRouteParamsValue,
     usePathname: () => mockPathnameValue,
     useRouter: () => mockRouter,
     useSearchParams: () => mockSearchParamsValue,
@@ -140,11 +137,24 @@ function renderSearchPage(locale: "vi" | "en" = "en") {
   );
 }
 
-function renderCategoryPage(locale: "vi" | "en" = "en") {
+/**
+ * `/[locale]/categories/[...slug]` is now a Server Component (see
+ * `../categories/[...slug]/page.tsx`) that resolves+validates the category
+ * server-side and renders `CollectionView` in "category" mode — it can no
+ * longer be rendered through React Testing Library. These tests exercise
+ * `CollectionView` directly instead, with the same "wordpress" category the
+ * server would have already resolved.
+ */
+function renderCategoryCollectionView(locale: "vi" | "en" = "en") {
   return render(
     <NextIntlClientProvider locale={locale} messages={buildMessages(locale)}>
       <Providers>
-        <CategoryCollectionPage />
+        <CollectionView
+          category="wordpress"
+          categoryName="WordPress"
+          locale={locale}
+          mode="category"
+        />
       </Providers>
     </NextIntlClientProvider>,
   );
@@ -153,7 +163,6 @@ function renderCategoryPage(locale: "vi" | "en" = "en") {
 beforeEach(() => {
   mockPathnameValue = "/en/search";
   mockSearchParamsValue = new URLSearchParams();
-  mockRouteParamsValue = {};
   mockedListCategories.mockResolvedValue({
     data: categoriesFixture,
     meta: emptyMeta,
@@ -170,12 +179,9 @@ afterEach(() => {
   window.localStorage.clear();
 });
 
-describe("CategoryCollectionPage", () => {
+describe("CollectionView (category mode)", () => {
   it("pre-scopes the collection to the resolved category and hides the redundant category filter", async () => {
-    mockPathnameValue = "/en/categories/wordpress";
-    mockRouteParamsValue = { slug: ["wordpress"] };
-
-    renderCategoryPage("en");
+    renderCategoryCollectionView("en");
 
     expect(
       await screen.findByRole("heading", { level: 1, name: "WordPress" }),
@@ -190,29 +196,15 @@ describe("CategoryCollectionPage", () => {
     expect(
       screen.queryByRole("checkbox", { name: "WordPress" }),
     ).not.toBeInTheDocument();
-    expect(mockNotFound).not.toHaveBeenCalled();
-  });
-
-  it("renders the localized not-found state for an unknown category segment", async () => {
-    mockPathnameValue = "/en/categories/unknown-category";
-    mockRouteParamsValue = { slug: ["unknown-category"] };
-
-    renderCategoryPage("en");
-
-    await waitFor(() => expect(mockNotFound).toHaveBeenCalledTimes(1));
-    expect(screen.queryByRole("heading", { level: 1 })).not.toBeInTheDocument();
   });
 
   it("has no detectable accessibility violations in either locale", async () => {
-    mockPathnameValue = "/en/categories/wordpress";
-    mockRouteParamsValue = { slug: ["wordpress"] };
-    const { container: en } = renderCategoryPage("en");
+    const { container: en } = renderCategoryCollectionView("en");
     await screen.findByRole("link", { name: /Lotus Commerce/ });
     expect((await axe(en)).violations).toEqual([]);
     cleanup();
 
-    mockRouteParamsValue = { slug: ["wordpress"] };
-    const { container: vi_ } = renderCategoryPage("vi");
+    const { container: vi_ } = renderCategoryCollectionView("vi");
     await screen.findByRole("link", { name: /Lotus Commerce/ });
     expect((await axe(vi_)).violations).toEqual([]);
   });

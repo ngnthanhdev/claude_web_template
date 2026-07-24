@@ -55,7 +55,7 @@ single registrable domain.
 
 ### T-5b2e90 — Web data-access, currency, and i18n message foundation
 
-- **Status:** review
+- **Status:** done
 - **Assignee:** ai
 - **Files:** apps/web/package.json, pnpm-lock.yaml, apps/web/src/lib/api-client.ts, apps/web/src/lib/catalogue-client.ts, apps/web/src/lib/auth-client.ts, apps/web/src/lib/currency.tsx, apps/web/src/lib/format.ts, apps/web/src/components/providers.tsx, apps/web/src/i18n/request.ts, apps/web/messages/vi/common.json, apps/web/messages/en/common.json, apps/web/src/app/api/[...proxy]/route.ts, apps/web/.env.example, apps/web/src/lib/catalogue-client.test.ts, apps/web/src/lib/currency.test.tsx
 - **Acceptance:**
@@ -68,7 +68,7 @@ single registrable domain.
 
 ### T-6a1d84 — Gate API integration suites in CI with disposable PostgreSQL
 
-- **Status:** review
+- **Status:** done
 - **Assignee:** ai
 - **Files:** .github/workflows/ci.yml
 - **Acceptance:**
@@ -178,6 +178,18 @@ single registrable domain.
   - `playwright.config.ts` and the specs are statically valid and lint/typecheck clean; the full Playwright run (which needs a built/served app) is executed in a real terminal outside the agent session per the heavy-build rule, and `e2e/README.md` documents how to run it and which env/services it needs. No `package.json`/`pnpm-lock.yaml` edits (Playwright deps were added in `T-5b2e90`).
 - **Skills:** web-testing-release, web-responsive, web-security, typescript-strict
 - **Depends:** T-c1a7d3, T-2d9b6c, T-a70f15, T-4e8c2b, T-f39ac7, T-90e5b8
+
+### T-7c4f10 — Web i18n standalone-Docker packaging + Round-1 review follow-ups
+
+- **Status:** todo
+- **Assignee:** ai
+- **Files:** apps/web/Dockerfile, apps/web/next.config.ts, apps/web/src/i18n/request.ts, apps/web/src/middleware.ts, apps/web/src/app/api/[...proxy]/route.ts, apps/web/src/lib/api-client.ts
+- **Acceptance:**
+  - The localized message catalogue resolves correctly in the `output: "standalone"` production image, not only in `next dev`/tests. Today the `Dockerfile` build stage never copies `apps/web/messages/`, and `request.ts` enumerates namespaces via `fs.readdirSync(process.cwd()/messages/<locale>)` — in the standalone runtime `process.cwd()` is `/app` and the raw dir is neither traced nor shipped, so every dynamically rendered localized route would 500. Fix so the catalogue loads in standalone: copy `apps/web/messages` into the Docker build stage (so the analyzable `import()` glob has files to bundle) and into the runner if any runtime read remains; add `outputFileTracingIncludes` for `messages/**` and/or resolve the dir relative to the app root instead of `process.cwd()`; keep namespace auto-discovery so later tasks still drop a namespace file without editing `request.ts`. Verify with a real `docker build apps/web` + container start in a terminal (heavy-build rule — outside the agent session); the fix is not "done" until that real image serves both `vi` and `en`.
+  - Minor hardening from Round-1 review (all low severity, no live vulnerability): wrap the upstream `fetch` in the `[...proxy]` route so an unreachable API returns the JSON error envelope (e.g. `502`) instead of a bare 500; remove the now-dead `NEXT_PUBLIC_API_URL` CSP-widening branch in `middleware.ts` so `connect-src` stays `'self'`-only (the browser calls only the same-origin proxy); and either route `apiClient.health()` through the proxy base path or delete the dormant helper (it currently targets the web origin's `/health`, unused by app code).
+  - `pnpm --filter @marketplace/web lint`, `typecheck`, and `test` stay green.
+- **Skills:** web-i18n-theme, web-security, web-testing-release, typescript-strict
+- **Depends:** T-5b2e90
 
 ---
 

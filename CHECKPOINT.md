@@ -358,9 +358,11 @@ packages/shared (zod)  ──imported by──►  apps/api (NestJS on Fastify)
                                                                       DELETE /v1/sessions        (204)
 ```
 
-Bootstrap (`main.ts`): URI versioning (`/v1`), `nestjs-zod` global pipe,
-`ApiExceptionFilter`, `@fastify/cookie`, credentialed explicit-origin CORS,
-Helmet, shutdown hooks, `trustProxy` left at its safe default (off).
+Bootstrap: `configureApp()` (`src/bootstrap/configure-app.ts`, shared by
+`main.ts` and every test) applies URI versioning (`/v1`), the `nestjs-zod`
+global pipe, `ApiExceptionFilter`, and `@fastify/cookie`. `main.ts` adds the
+ConfigService-dependent parts: credentialed explicit-origin CORS, Helmet,
+shutdown hooks, `listen`, with `trustProxy` left at its safe default (off).
 
 ## Key decisions (WHY)
 
@@ -438,7 +440,7 @@ currentSessionResponseSchema         { user, session, csrfToken }               
   `request.ip` becomes the proxy address and IP rate-limiting degrades; set an
   explicit, safe trust configuration (fixed hop count / known proxy IPs) before
   deploying behind one — never blanket `trustProxy: true`.
-- **Bootstrap wiring is duplicated** between `main.ts` and the api integration
-  test files (a follow-up task extracts a shared `configureApp()` helper); until
-  it lands, a new global guard/interceptor added to `main.ts` must be mirrored
-  into the tests or they give false confidence.
+- **Bootstrap wiring is centralized in `configureApp()`** (`apps/api/src/bootstrap/configure-app.ts`),
+  shared by `main.ts` and every api test. Add any new global pipe/filter/guard/
+  interceptor **there**, not in `main.ts`, or the tests stop exercising it.
+  CORS/Helmet/`listen` stay in `main.ts` because they depend on ConfigService.

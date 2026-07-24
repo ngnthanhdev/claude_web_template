@@ -11,6 +11,17 @@ does **not** — the gap only surfaces at runtime. Bootstrap must
 
 Source: apps/api/src/main.ts, apps/api/src/auth/core/auth-cookie.ts (T-3fa9d0)
 
+## 2026-07-24 — Global request wiring belongs in configureApp(), not main.ts
+
+The class of bug above (prod-only gap because tests wire themselves) is now
+structurally prevented: `apps/api/src/bootstrap/configure-app.ts` holds the
+shared request-handling wiring (URI versioning, Zod pipe, exception filter,
+cookie) and is called by `main.ts` **and** every api test. Add any new global
+pipe/filter/guard/interceptor there. Only ConfigService-dependent, network-level
+concerns (CORS, Helmet, `listen`) stay in `main.ts`.
+
+Source: apps/api/src/bootstrap/configure-app.ts
+
 ## 2026-07-23 — Keep trustProxy OFF as the safe default for IP rate-limiting
 
 Auth rate limits key on a hash of `request.ip`. With `trustProxy` off (Fastify

@@ -4,16 +4,21 @@ import {
 } from "@nestjs/platform-fastify";
 import { Test } from "@nestjs/testing";
 import request from "supertest";
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import { z } from "zod";
 
 import { AppModule } from "../src/app.module.js";
 import { configureApp } from "../src/bootstrap/configure-app.js";
 import { PrismaService } from "../src/prisma/prisma.service.js";
-import {
-  ApiClientError,
-  apiClient,
-} from "../../web/src/lib/api-client.js";
+import { ApiClientError, apiClient } from "../../web/src/lib/api-client.js";
 
 describe("API-to-web health boundary", () => {
   let app: NestFastifyApplication;
@@ -54,7 +59,9 @@ describe("API-to-web health boundary", () => {
         return new Response(response.text, {
           headers: {
             "content-type":
-              typeof contentType === "string" ? contentType : "application/json",
+              typeof contentType === "string"
+                ? contentType
+                : "application/json",
           },
           status: response.status,
           statusText: response.status === 404 ? "Not Found" : "OK",
@@ -66,7 +73,13 @@ describe("API-to-web health boundary", () => {
   it("lets the web client consume the API health response", async () => {
     routeWebRequestsThroughApi();
 
-    await expect(apiClient.health()).resolves.toEqual({ status: "ok" });
+    // The web client exposes no dedicated `health()` wrapper (the storefront
+    // never calls it, and `/health` is version-neutral so it isn't reachable
+    // through the `/v1`-only same-origin proxy); the boundary is exercised via
+    // the generic typed `get` against the real health endpoint.
+    await expect(
+      apiClient.get("/health", z.object({ status: z.literal("ok") })),
+    ).resolves.toEqual({ status: "ok" });
   });
 
   it("maps an API error envelope into the web client's typed error", async () => {

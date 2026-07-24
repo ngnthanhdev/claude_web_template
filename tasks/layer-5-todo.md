@@ -105,7 +105,7 @@ single registrable domain.
 
 ### T-2d9b6c — Product detail screen (`/[locale]/templates/[slug]`)
 
-- **Status:** in-progress
+- **Status:** review
 - **Assignee:** ai
 - **Files:** apps/web/src/app/[locale]/templates/[slug]/page.tsx, apps/web/src/app/[locale]/templates/[slug]/not-found.tsx, apps/web/src/components/product-detail/detail-header.tsx, apps/web/src/components/product-detail/demo-viewer.tsx, apps/web/src/components/product-detail/spec-list.tsx, apps/web/src/components/product-detail/licence-comparison.tsx, apps/web/messages/vi/product.json, apps/web/messages/en/product.json, apps/web/src/components/product-detail/licence-comparison.test.tsx
 - **Acceptance:**
@@ -118,7 +118,7 @@ single registrable domain.
 
 ### T-a70f15 — Passwordless sign-in and magic-link redemption screens
 
-- **Status:** in-progress
+- **Status:** review
 - **Assignee:** ai
 - **Files:** apps/web/src/app/[locale]/auth/sign-in/page.tsx, apps/web/src/app/[locale]/auth/magic-link/page.tsx, apps/web/src/components/auth/sign-in-form.tsx, apps/web/src/components/auth/redemption-status.tsx, apps/web/messages/vi/auth.json, apps/web/messages/en/auth.json, apps/web/src/components/auth/sign-in-form.test.tsx, apps/web/src/components/auth/redemption-status.test.tsx
 - **Acceptance:**
@@ -131,7 +131,7 @@ single registrable domain.
 
 ### T-4e8c2b — Account landing and session management (`/[locale]/account`)
 
-- **Status:** in-progress
+- **Status:** review
 - **Assignee:** ai
 - **Files:** apps/web/src/app/[locale]/account/page.tsx, apps/web/src/components/account/account-panel.tsx, apps/web/src/components/account/session-actions.tsx, apps/web/src/hooks/use-session.ts, apps/web/messages/vi/account.json, apps/web/messages/en/account.json, apps/web/src/components/account/session-actions.test.tsx
 - **Acceptance:**
@@ -144,7 +144,7 @@ single registrable domain.
 
 ### T-f39ac7 — Home discovery screen (Ecosystem Index, `/[locale]`)
 
-- **Status:** in-progress
+- **Status:** review
 - **Assignee:** ai
 - **Files:** apps/web/src/app/[locale]/page.tsx, apps/web/src/app/[locale]/page.test.tsx, apps/web/src/components/home/discovery-rail.tsx, apps/web/src/components/home/category-index.tsx, apps/web/messages/vi/home.json, apps/web/messages/en/home.json
 - **Acceptance:**
@@ -156,7 +156,7 @@ single registrable domain.
 
 ### T-90e5b8 — Catalogue and search collection routes
 
-- **Status:** in-progress
+- **Status:** review
 - **Assignee:** ai
 - **Files:** apps/web/src/app/[locale]/categories/[...slug]/page.tsx, apps/web/src/app/[locale]/categories/[...slug]/not-found.tsx, apps/web/src/app/[locale]/search/page.tsx, apps/web/messages/vi/catalogue.json, apps/web/messages/en/catalogue.json, apps/web/src/app/[locale]/search/page.test.tsx
 - **Acceptance:**

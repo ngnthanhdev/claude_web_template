@@ -1,4 +1,3 @@
-import { hasLocale } from "next-intl";
 import { defineRouting } from "next-intl/routing";
 
 export const localeCookieName = "NEXT_LOCALE";
@@ -11,19 +10,34 @@ export const routing = defineRouting({
   locales: ["vi", "en"],
 });
 
-export function isSupportedLocale(locale: string) {
-  return hasLocale(routing.locales, locale);
+export function isSupportedLocale(
+  locale: string | undefined,
+): locale is (typeof routing.locales)[number] {
+  return (
+    locale !== undefined &&
+    (routing.locales as readonly string[]).includes(locale)
+  );
 }
 
-export function resolvePreferredLocale(storedLocale: string | undefined, acceptLanguage: string | null) {
+export function resolvePreferredLocale(
+  storedLocale: string | undefined,
+  acceptLanguage: string | null,
+) {
   if (storedLocale && isSupportedLocale(storedLocale)) return storedLocale;
 
   const acceptedLocales = (acceptLanguage ?? "")
     .split(",")
     .map((entry) => {
-      const [languageTag = "", ...parameters] = entry.trim().toLowerCase().split(";");
-      const qualityParameter = parameters.find((parameter) => parameter.trim().startsWith("q="));
-      const quality = qualityParameter ? Number(qualityParameter.trim().slice(2)) : 1;
+      const [languageTag = "", ...parameters] = entry
+        .trim()
+        .toLowerCase()
+        .split(";");
+      const qualityParameter = parameters.find((parameter) =>
+        parameter.trim().startsWith("q="),
+      );
+      const quality = qualityParameter
+        ? Number(qualityParameter.trim().slice(2))
+        : 1;
       return { languageTag, quality: Number.isFinite(quality) ? quality : 0 };
     })
     .filter(({ quality }) => quality > 0)
@@ -31,7 +45,8 @@ export function resolvePreferredLocale(storedLocale: string | undefined, acceptL
 
   for (const { languageTag } of acceptedLocales) {
     const locale = routing.locales.find(
-      (candidate) => languageTag === candidate || languageTag.startsWith(`${candidate}-`),
+      (candidate) =>
+        languageTag === candidate || languageTag.startsWith(`${candidate}-`),
     );
     if (locale) return locale;
   }

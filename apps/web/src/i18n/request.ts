@@ -1,10 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { hasLocale } from "next-intl";
 import { getRequestConfig } from "next-intl/server";
 
-import { routing } from "./routing";
+import { isSupportedLocale, routing } from "./routing";
 
 export type MessageNode = string | { [key: string]: MessageNode };
 export type MessageTree = { [key: string]: MessageNode };
@@ -82,7 +81,7 @@ export async function loadLocaleMessages(locale: string): Promise<MessageTree> {
 
 export default getRequestConfig(async ({ requestLocale }) => {
   const requestedLocale = await requestLocale;
-  const locale = hasLocale(routing.locales, requestedLocale)
+  const locale = isSupportedLocale(requestedLocale)
     ? requestedLocale
     : routing.defaultLocale;
 

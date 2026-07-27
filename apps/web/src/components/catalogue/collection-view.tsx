@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { useEffect, useId, useState, type FormEvent } from "react";
+import { Suspense, useEffect, useId, useState, type FormEvent } from "react";
 
 import { CollectionPager } from "@/components/catalogue/collection-pager";
 import { FilterRail } from "@/components/catalogue/filter-rail";
@@ -64,6 +64,17 @@ function matchesLockedValue(
  * mode: unscoped, with the free-text search box active).
  */
 export function CollectionView(props: CollectionViewProps) {
+  // The inner view reads `useSearchParams()` (via `useProductCollection`).
+  // Next requires that behind a Suspense boundary, otherwise the collection
+  // routes that render this component bail out of static generation at build.
+  return (
+    <Suspense fallback={null}>
+      <CollectionViewContent {...props} />
+    </Suspense>
+  );
+}
+
+function CollectionViewContent(props: CollectionViewProps) {
   const { locale, mode } = props;
   const category = mode === "category" ? props.category : undefined;
   const subcategory = mode === "category" ? props.subcategory : undefined;

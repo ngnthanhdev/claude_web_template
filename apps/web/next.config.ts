@@ -30,6 +30,20 @@ const nextConfig = {
   outputFileTracingIncludes: {
     "/**": ["./messages/**/*"],
   },
+  // The app consumes the shared contracts through the `@shared/*` → source
+  // alias, and that source is authored NodeNext-style with explicit `.js`
+  // import specifiers (e.g. `import "./catalogue.js"` inside a `.ts` file).
+  // Webpack won't remap those to the real `.ts` files on its own, so
+  // `next build` fails with "Can't resolve './catalogue.js'". Teach the
+  // resolver to try the TypeScript source first, then fall back to a real
+  // `.js` (which keeps every `node_modules` `.js` import working).
+  webpack: (config) => {
+    config.resolve.extensionAlias = {
+      ...config.resolve.extensionAlias,
+      ".js": [".ts", ".tsx", ".js"],
+    };
+    return config;
+  },
   async headers() {
     return [{ source: "/:path*", headers: [...securityHeaders] }];
   },

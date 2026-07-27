@@ -62,7 +62,7 @@ export default async function LocaleLayout({
       lang={locale}
     >
       <body>
-        <NextIntlClientProvider messages={messages}>
+        <NextIntlClientProvider locale={locale} messages={messages}>
           <Providers>
             <AppShell>{children}</AppShell>
           </Providers>

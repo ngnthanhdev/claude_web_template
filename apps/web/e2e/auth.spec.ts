@@ -133,8 +133,11 @@ test.describe("Magic-link happy path (requires the capture-only email seam)", ()
       expect(sessionCookie?.sameSite).toBe("Lax");
       await assertNoLeakedSessionMaterial(page);
 
+      // `exact` so "Sign out" doesn't also match the "Sign out of all
+      // devices" button (accessible-name matching is substring by default).
       const signOutButton = page.getByRole("button", {
         name: t(locale, "Account.actions.signOut"),
+        exact: true,
       });
       await pressTabUntilFocused(page, signOutButton);
       await signOutButton.click();

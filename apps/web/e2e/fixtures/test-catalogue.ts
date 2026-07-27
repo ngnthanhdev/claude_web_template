@@ -11,18 +11,18 @@ import AxeBuilder from "@axe-core/playwright";
 import type { CategorySlug } from "@shared/catalogue";
 import type { Currency, Locale } from "@shared/localization";
 
-import enAccount from "../../messages/en/account.json";
-import enAuth from "../../messages/en/auth.json";
-import enCatalogue from "../../messages/en/catalogue.json";
-import enCollection from "../../messages/en/collection.json";
-import enNavigation from "../../messages/en/navigation.json";
-import enProduct from "../../messages/en/product.json";
-import viAccount from "../../messages/vi/account.json";
-import viAuth from "../../messages/vi/auth.json";
-import viCatalogue from "../../messages/vi/catalogue.json";
-import viCollection from "../../messages/vi/collection.json";
-import viNavigation from "../../messages/vi/navigation.json";
-import viProduct from "../../messages/vi/product.json";
+import enAccount from "../../messages/en/account.json" with { type: "json" };
+import enAuth from "../../messages/en/auth.json" with { type: "json" };
+import enCatalogue from "../../messages/en/catalogue.json" with { type: "json" };
+import enCollection from "../../messages/en/collection.json" with { type: "json" };
+import enNavigation from "../../messages/en/navigation.json" with { type: "json" };
+import enProduct from "../../messages/en/product.json" with { type: "json" };
+import viAccount from "../../messages/vi/account.json" with { type: "json" };
+import viAuth from "../../messages/vi/auth.json" with { type: "json" };
+import viCatalogue from "../../messages/vi/catalogue.json" with { type: "json" };
+import viCollection from "../../messages/vi/collection.json" with { type: "json" };
+import viNavigation from "../../messages/vi/navigation.json" with { type: "json" };
+import viProduct from "../../messages/vi/product.json" with { type: "json" };
 
 /**
  * `e2e/fixtures/test-catalogue.ts` — the one shared module `T-b8d260`'s file

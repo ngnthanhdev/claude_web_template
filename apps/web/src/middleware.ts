@@ -74,20 +74,43 @@ export default function middleware(request: NextRequest) {
   requestHeaders.set("content-security-policy", contentSecurityPolicy);
   requestHeaders.set("x-nonce", nonce);
 
-  const response =
-    request.nextUrl.pathname === "/"
-      ? NextResponse.redirect(
-          new URL(
-            `/${resolvePreferredLocale(
-              request.cookies.get(localeCookieName)?.value,
-              request.headers.get("accept-language"),
-            )}${request.nextUrl.search}`,
-            request.url,
-          ),
-        )
-      : handleI18nRouting(
-          new NextRequest(request, { headers: requestHeaders }),
-        );
+  if (request.nextUrl.pathname === "/") {
+    const redirect = NextResponse.redirect(
+      new URL(
+        `/${resolvePreferredLocale(
+          request.cookies.get(localeCookieName)?.value,
+          request.headers.get("accept-language"),
+        )}${request.nextUrl.search}`,
+        request.url,
+      ),
+    );
+    redirect.headers.set("content-security-policy", contentSecurityPolicy);
+    return redirect;
+  }
+
+  // next-intl decides locale routing (cookie, redirects), but its response
+  // does not forward request headers to the render. Next injects the CSP
+  // nonce into its framework scripts only when it sees the nonce on the
+  // *request* headers, so re-emit the request with those headers via
+  // `NextResponse.next` and carry over next-intl's cookies/headers — without
+  // clobbering the `x-middleware-*` request-header override that forwarding
+  // depends on.
+  const intlResponse = handleI18nRouting(request);
+  if (intlResponse.headers.has("location")) {
+    intlResponse.headers.set("content-security-policy", contentSecurityPolicy);
+    return intlResponse;
+  }
+
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
+  intlResponse.headers.forEach((value, key) => {
+    const lowerKey = key.toLowerCase();
+    if (lowerKey.startsWith("x-middleware-")) return;
+    if (lowerKey === "content-security-policy") return;
+    response.headers.set(key, value);
+  });
+  for (const cookie of intlResponse.cookies.getAll()) {
+    response.cookies.set(cookie);
+  }
   response.headers.set("content-security-policy", contentSecurityPolicy);
 
   return response;

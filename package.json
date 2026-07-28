@@ -2,7 +2,9 @@
   "name": "claude-web-template",
   "private": true,
   "packageManager": "pnpm@9.12.0",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
@@ -15,5 +17,22 @@
     "turbo": "^2.1.0",
     "typescript": "^5.6.0",
     "prettier": "^3.3.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "sharp": "^0.35.0",
+      "find-my-way": "^9.7.0",
+      "postcss": "^8.5.18"
+    },
+    "auditConfig": {
+      "ignoreGhsas": [
+        "GHSA-5xrq-8626-4rwp",
+        "GHSA-fx2h-pf6j-xcff",
+        "GHSA-4w7w-66w2-5vf9",
+        "GHSA-v6wh-96g9-6wx3",
+        "GHSA-67mh-4wv8-2f99",
+        "GHSA-mh99-v99m-4gvg"
+      ]
+    }
   }
 }

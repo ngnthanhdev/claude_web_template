@@ -55,22 +55,22 @@ p/owasp-top-ten p/nodejsscan`, and `pnpm audit --audit-level=high` for
    this fits the "no heavy builds in CI" rule this template otherwise
    enforces (`CLAUDE.md`'s Token discipline section).
 
-   **Gate status (2026-07-28):** the **Gitleaks** secret scan now runs
-   _without_ `continue-on-error` — a committed credential fails CI, enforcing
-   the "no hard-coded secrets" discipline gate. **Semgrep** and **`pnpm
-audit`** stay `continue-on-error` pending a confirmed-clean baseline.
-   `pnpm audit --audit-level=high` currently reports 11 distinct advisories
-   (1 critical / 7 high / 3 moderate) — mostly dev tooling (`vitest`, `vite`,
-   `postcss`, `esbuild`, `brace-expansion`), plus two runtime-reachable
-   (`find-my-way`, Fastify's router; `sharp`, Next.js image optimization).
-   Making the audit blocking as-is would fail every PR against a
-   correctly-working tree, so it is deferred to a dedicated
-   dependency-hardening pass that updates what has a patched version and
-   records any residual advisory as a dated `pnpm.auditConfig.ignoreGhsas`
-   exception with rationale — both touch `package.json`/the lockfile, outside
-   this workflow's own scope. Semgrep's baseline stays unconfirmed until the
-   workflow runs once against real source. Escalate each to blocking only
-   against its own clean-or-excepted baseline.
+   **Gate status (2026-07-29):** **Gitleaks** and the **`pnpm audit`**
+   dependency scan both run _without_ `continue-on-error`, so a committed
+   credential or a NEW high/critical dependency advisory fails CI. The audit
+   baseline (assessed 2026-07-28) carried 11 advisories and was cleared as
+   follows: the runtime-reachable ones — `find-my-way` (Fastify's router) and
+   `sharp` (Next.js image optimization) — plus `postcss` were bumped to
+   patched versions via `pnpm.overrides` (root `package.json`); the residual
+   dev-tooling advisories (`vitest`, `vite`, `esbuild`, `brace-expansion` —
+   6 GHSAs), whose fixes are major-version bumps deferred to avoid
+   destabilizing the test/build toolchain and which are not reachable in the
+   production runtime, are recorded as dated `pnpm.auditConfig.ignoreGhsas`
+   exceptions in the root `package.json` and tracked by Dependabot. Revisit
+   those exceptions when the toolchain is next upgraded. **Semgrep** is the one
+   scanner still `continue-on-error`: its ruleset baseline is unconfirmed until
+   the workflow runs once against real source — flip it to blocking after a
+   confirmed-clean (or explicitly-excepted) run.
 
 6. **Deploy, then scan the running app** — OWASP ZAP against the
    deployed/running `apps/web` and `apps/api`, at release time.

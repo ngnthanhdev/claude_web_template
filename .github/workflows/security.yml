@@ -5,12 +5,16 @@
 # continue-on-error — a credential-shaped string in the diff or history fails
 # the check, completing the "no hard-coded secrets" discipline gate.
 #
-# Semgrep (SAST) and the pnpm dependency audit stay continue-on-error for now:
-# the dependency tree carries known high/critical advisories (mostly dev
-# tooling — vitest, vite, postcss, esbuild, brace-expansion — plus the runtime
-# find-my-way and sharp) that must be resolved or explicitly excepted before
-# either can gate merges without failing every PR against a correctly-working
-# tree. See docs/SECURITY.md for the dated finding and the path to blocking.
+# The pnpm dependency audit also GATES merges now: the runtime advisories
+# (find-my-way, sharp) and postcss were bumped to patched versions via
+# pnpm.overrides, and the residual dev-tooling advisories (vitest, vite,
+# esbuild, brace-expansion — major-version bumps deferred) are recorded as
+# dated pnpm.auditConfig.ignoreGhsas exceptions, so the audit fails only on a
+# NEW high/critical advisory. See docs/SECURITY.md.
+#
+# Semgrep (SAST) is the one job still on continue-on-error: its ruleset
+# baseline is unconfirmed until the workflow runs once against real source.
+# Flip it to blocking after a confirmed-clean (or explicitly-excepted) run.
 #
 # ZAP (dynamic scan against a running API) and MobSF (built APK/IPA scan) are
 # deliberately not here — both need a live/built artifact, so they run
@@ -62,4 +66,3 @@ jobs:
       # flag today.
       - name: pnpm audit (dependency vulnerabilities)
         run: pnpm audit --audit-level=high
-        continue-on-error: true

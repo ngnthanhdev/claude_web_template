@@ -40,7 +40,7 @@ the gate and offer `/phase-0` instead.
 
 ## Skills — security
 
-Full skill table (27 total): see "Skills" in `README.md`. Security-specific
+Full skill table (30 total): see "Skills" in `README.md`. Security-specific
 skills, standards in `docs/SECURITY.md`:
 
 | Skill                   | Purpose                                                                 |
@@ -65,6 +65,13 @@ gate. All three defer implementation to `web-styling` (Tailwind + shadcn/ui),
 `web-responsive`, and `web-animations` (Framer Motion) — the stack-wired layer.
 `impeccable` is a lean vendor (playbooks + detector only): run its detector with
 `node .claude/skills/impeccable/scripts/detect.mjs <target>`.
+
+For **animation/motion craft depth**, three Emil Kowalski skills feed that same
+implementation layer: `emil-design-eng` (UI polish + component/animation craft),
+`apple-design` (fluid, physical motion), and `animation-vocabulary` (name an
+effect). They deepen the _how it feels_; `motion-design-principles` stays the
+WHETHER/how-much gate and `web-animations` (Framer Motion) is the only animation
+library — no GSAP/second lib.
 
 ## Stack
 

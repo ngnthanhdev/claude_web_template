@@ -62,11 +62,14 @@ p/owasp-top-ten p/nodejsscan`, and `pnpm audit --audit-level=high` for
    follows: the runtime-reachable ones — `find-my-way` (Fastify's router) and
    `sharp` (Next.js image optimization) — plus `postcss` were bumped to
    patched versions via `pnpm.overrides` (root `package.json`); the residual
-   dev-tooling advisories (`vitest`, `vite`, `esbuild`, `brace-expansion` —
-   6 GHSAs), whose fixes are major-version bumps deferred to avoid
-   destabilizing the test/build toolchain and which are not reachable in the
-   production runtime, are recorded as dated `pnpm.auditConfig.ignoreGhsas`
-   exceptions in the root `package.json` and tracked by Dependabot. Revisit
+   six dev-tooling advisories, whose fixes are major-version bumps deferred to
+   avoid destabilizing the test/build toolchain and which are not reachable in
+   the production runtime, are recorded as dated `pnpm.auditConfig.ignoreGhsas`
+   exceptions in the root `package.json` and tracked by Dependabot —
+   `GHSA-5xrq-8626-4rwp` (`vitest`, critical), `GHSA-fx2h-pf6j-xcff` and
+   `GHSA-4w7w-66w2-5vf9` (`vite`), `GHSA-67mh-4wv8-2f99` (`esbuild`),
+   `GHSA-mh99-v99m-4gvg` (`brace-expansion`), and `GHSA-v6wh-96g9-6wx3`
+   (`launch-editor`, pulled via vite's error overlay). Revisit
    those exceptions when the toolchain is next upgraded. **Semgrep** is the one
    scanner still `continue-on-error`. A full run (2026-07-29, `semgrep ci` with
    the four configured rulesets) reported 52 blocking findings, but triage

@@ -8,7 +8,7 @@
 # The pnpm dependency audit also GATES merges now: the runtime advisories
 # (find-my-way, sharp) and postcss were bumped to patched versions via
 # pnpm.overrides, and the residual dev-tooling advisories (vitest, vite,
-# esbuild, brace-expansion — major-version bumps deferred) are recorded as
+# esbuild, brace-expansion, launch-editor — major bumps deferred) are recorded
 # dated pnpm.auditConfig.ignoreGhsas exceptions, so the audit fails only on a
 # NEW high/critical advisory. See docs/SECURITY.md.
 #
@@ -58,13 +58,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # pnpm version comes from package.json's packageManager field — passing
+      # `version:` here too makes pnpm/action-setup fail on a version conflict.
       - uses: pnpm/action-setup@v4
-        with: { version: 9 }
       - uses: actions/setup-node@v4
         with: { node-version: 20, cache: pnpm }
       - run: pnpm install --frozen-lockfile
-      # Dependency audit — becomes meaningful once apps/web, apps/api, and
-      # packages/shared carry real dependencies; the lockfile has nothing to
-      # flag today.
+      # Dependency audit — blocks the merge on a NEW high/critical advisory.
+      # The six known dev-tooling advisories are excepted via
+      # pnpm.auditConfig.ignoreGhsas (root package.json); see docs/SECURITY.md.
       - name: pnpm audit (dependency vulnerabilities)
         run: pnpm audit --audit-level=high

@@ -10,6 +10,18 @@ import { defineConfig } from "@playwright/test";
  */
 const DEFAULT_BASE_URL = "http://localhost:3001";
 
+/** Viewport widths the browse suite is fanned across (see `projects` below). */
+const BROWSE_VIEWPORTS = [
+  { name: "mobile-320", width: 320, height: 720 },
+  { name: "mobile-375", width: 375, height: 812 },
+  { name: "tablet-768", width: 768, height: 1024 },
+  { name: "laptop-1024", width: 1024, height: 800 },
+  { name: "desktop-1440", width: 1440, height: 900 },
+] as const;
+
+/** The auth spec runs on exactly one project to stay under the API's per-IP magic-link rate limit (see `projects` below). */
+const AUTH_SPEC = /auth\.spec\.ts/;
+
 /**
  * No `webServer` entry here on purpose: this suite needs the API served
  * against a seeded disposable database *and* the web app built and served
@@ -36,10 +48,26 @@ export default defineConfig({
   // surfaces get exercised. One engine (Chromium) is enough: the acceptance
   // asks for cross-viewport coverage, not cross-browser coverage.
   projects: [
-    { name: "mobile-320", use: { viewport: { width: 320, height: 720 } } },
-    { name: "mobile-375", use: { viewport: { width: 375, height: 812 } } },
-    { name: "tablet-768", use: { viewport: { width: 768, height: 1024 } } },
-    { name: "laptop-1024", use: { viewport: { width: 1024, height: 800 } } },
-    { name: "desktop-1440", use: { viewport: { width: 1440, height: 900 } } },
+    // Browse runs on every viewport — cross-viewport coverage is its point.
+    ...BROWSE_VIEWPORTS.map((viewport) => ({
+      name: viewport.name,
+      testIgnore: AUTH_SPEC,
+      use: { viewport: { width: viewport.width, height: viewport.height } },
+    })),
+    // Auth runs on a single viewport on purpose. Every viewport project shares
+    // one source IP (the Playwright process), and apps/api rate-limits
+    // magic-links per IP (auth-rate-limit.service.ts: 20 initiations and 10
+    // redemptions per 15-min window). Fanning auth.spec.ts across all five
+    // viewports multiplies its initiations/redemptions 5x and trips those
+    // caps; auth flows are not viewport-sensitive the way browse layout is
+    // (browse still covers 320-1440px above), so one representative width is
+    // enough. `fullyParallel: false` also serializes them into a predictable,
+    // burst-free order. See e2e/README.md.
+    {
+      name: "auth",
+      testMatch: AUTH_SPEC,
+      fullyParallel: false,
+      use: { viewport: { width: 1024, height: 800 } },
+    },
   ],
 });

@@ -99,11 +99,32 @@ pnpm --filter @marketplace/web exec playwright test e2e/browse.spec.ts
 `E2E_MAGIC_LINK_CAPTURE_FILE` is optional — omit it to run everything except
 the seam-gated happy-path tests (see the gap above).
 
-Rate limiting: apps/api allows 10 magic-link initiations per 15-minute
-window. A full suite run issues roughly six requests total (two non-seam
-sign-in-request tests, plus up to four seam-gated redemption tests) — safely
-under the limit, but avoid re-running the whole suite in a tight loop against
-the same environment.
+## Rate limiting: why auth runs on a single viewport
+
+apps/api rate-limits magic-links **per source IP** (see
+`apps/api/src/auth/core/auth-rate-limit.service.ts`): 20 initiations and 10
+redemptions per 15-minute window (plus per-email caps of 3/15-min and 10/day,
+which the specs never approach because every test uses a fresh
+`uniqueTestEmail`). Every viewport project shares one source IP — the
+Playwright process — so the per-IP window is the binding constraint.
+
+If `auth.spec.ts` fanned across all five viewport projects like `browse.spec.ts`
+does, a single seam-enabled run would issue 25 initiations and 15 redemptions
+(5 viewports × 5 magic-link flows), tripping both per-IP caps and failing tests
+against a correctly-working API. So `playwright.config.ts` pins `auth.spec.ts`
+to one dedicated `auth` project (browse still covers all five viewports; auth
+flows aren't viewport-sensitive the way browse layout is). One full run then
+issues at most 5 initiations and 3 redemptions — comfortably under both caps.
+
+Because the window is cumulative, repeated full runs still add up: roughly three
+seam-enabled runs fit inside a 15-minute window before the caps bite. To re-run
+sooner, either wait out the window or clear the counters on the **disposable**
+database between runs:
+
+```bash
+# Resets the per-IP magic-link windows on the disposable test DB only.
+psql "$DATABASE_URL" -c 'TRUNCATE auth_rate_events;'
+```
 
 ## Verified in this session (task-implementer, no browser run)
 

@@ -50,10 +50,17 @@ test.describe("Browse happy path — vi / VND / mega-menu-or-drawer -> category"
       locale,
       SEEDED_CATEGORY,
     );
-    await Promise.all([
-      page.waitForURL(new RegExp(`/${locale}/categories/${SEEDED_CATEGORY}`)),
-      categoryLink.click(),
-    ]);
+    // The mega-menu/drawer entry is a Next.js <Link>: clicking it triggers an
+    // App Router soft navigation (history.pushState — no document `load`
+    // event re-fires). Racing `page.waitForURL`, whose default
+    // `waitUntil: "load"` never resolves for a same-document navigation,
+    // against the click hangs until the 30s timeout even though the URL does
+    // update. Await the click, then let the auto-retrying URL assertion poll
+    // `page.url()` until the route commits.
+    await categoryLink.click();
+    await expect(page).toHaveURL(
+      new RegExp(`/${locale}/categories/${SEEDED_CATEGORY}`),
+    );
 
     await expect(
       page.getByRole("list", {
@@ -236,10 +243,18 @@ test.describe("Browse happy path — en / USD / search icon -> search", () => {
     // The search-mode-only category checkbox facet (suppressed in category
     // mode — collection-view.tsx). Selected by its `value=` slug attribute,
     // not its seed-data-driven translated label.
-    await page
-      .locator(`input[type="checkbox"][value="${SEEDED_CATEGORY}"]`)
-      .check();
+    // Controlled off the URL: onChange -> updateFilters -> router.replace, so
+    // `checked` only flips once that async navigation re-renders. Locator
+    // .check() asserts the state changed synchronously right after its click
+    // and fails ("Clicking the checkbox did not change its state") before the
+    // URL round-trip lands. Dispatch a plain click, wait for the URL to carry
+    // the category, then confirm the box reflects the settled state.
+    const categoryFacet = page.locator(
+      `input[type="checkbox"][value="${SEEDED_CATEGORY}"]`,
+    );
+    await categoryFacet.click();
     await expect(page).toHaveURL(new RegExp(`category=${SEEDED_CATEGORY}`));
+    await expect(categoryFacet).toBeChecked();
     await assertPageIsHealthy(page, axeBuilder);
 
     const resultHref = await page

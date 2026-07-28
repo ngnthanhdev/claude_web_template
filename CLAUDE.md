@@ -40,7 +40,7 @@ the gate and offer `/phase-0` instead.
 
 ## Skills — security
 
-Full skill table (25 total): see "Skills" in `README.md`. Security-specific
+Full skill table (27 total): see "Skills" in `README.md`. Security-specific
 skills, standards in `docs/SECURITY.md`:
 
 | Skill                   | Purpose                                                                 |
@@ -49,6 +49,22 @@ skills, standards in `docs/SECURITY.md`:
 | `backend-auth-security` | Auth guards, RBAC, BOLA/IDOR + mass‑assignment (OWASP ASVS)             |
 | `web-security`          | Web hardening to OWASP ASVS — CSP, cookies, CSRF, security headers, XSS |
 | `security-review`       | Audit a diff/PR for high‑confidence security findings before merge      |
+
+## Skills — design/UI
+
+Three layers for UI/UX work — pick by role, don't run them as rivals:
+
+| Skill           | Role                                                                          |
+| --------------- | ----------------------------------------------------------------------------- |
+| `taste-skill`   | Aesthetic **direction** for landing/marketing/home + redesigns (anti-slop)    |
+| `ui-ux-pro-max` | **Reference data** for product UI — palettes/fonts, a11y, forms, charts       |
+| `impeccable`    | Audit/critique/harden/polish **gate** (+ deterministic anti-pattern detector) |
+
+`taste-skill` and `ui-ux-pro-max` set direction; `impeccable` is the final
+gate. All three defer implementation to `web-styling` (Tailwind + shadcn/ui),
+`web-responsive`, and `web-animations` (Framer Motion) — the stack-wired layer.
+`impeccable` is a lean vendor (playbooks + detector only): run its detector with
+`node .claude/skills/impeccable/scripts/detect.mjs <target>`.
 
 ## Stack
 

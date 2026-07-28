@@ -164,7 +164,7 @@ tasks touch the same file.
 
 ### T-e72b45 — Promote security.yml scanners from advisory to blocking now the apps are populated
 
-- **Status:** todo
+- **Status:** review
 - **Assignee:** ai
 - **Files:** .github/workflows/security.yml, docs/SECURITY.md
 - **Acceptance:**

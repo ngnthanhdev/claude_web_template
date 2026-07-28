@@ -26,13 +26,13 @@ standard.
 
 ## Tool matrix
 
-| Concern | Tool | Notes |
-|---|---|---|
-| Web + NestJS SAST (static analysis) | Semgrep or CodeQL | Runs against source in CI; catches pattern-level issues (injection, unsafe deserialization, dangerous DOM sinks) `security-review`'s manual trace complements but doesn't replace. |
-| Dependency vulnerabilities | Dependabot or Renovate | Automated PRs for outdated/vulnerable `package.json` dependencies across the workspace. |
-| Committed secrets | Gitleaks | Scans git history/diffs for credential-shaped strings before they land on `main`. |
-| Container/IaC | Trivy | Scans both Docker images (`apps/web` built in `web-build.yml`, `apps/api` built in `api-deploy.yml`) and any IaC for known CVEs/misconfiguration. |
-| Running web app + API | OWASP ZAP | Dynamic scan (DAST) against a **running** `apps/web` and `apps/api` — spiders the deployed web app and probes the API, checking headers/CSP/cookies live. Needs a live target, see workflow note below. |
+| Concern                             | Tool                   | Notes                                                                                                                                                                                                   |
+| ----------------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Web + NestJS SAST (static analysis) | Semgrep or CodeQL      | Runs against source in CI; catches pattern-level issues (injection, unsafe deserialization, dangerous DOM sinks) `security-review`'s manual trace complements but doesn't replace.                      |
+| Dependency vulnerabilities          | Dependabot or Renovate | Automated PRs for outdated/vulnerable `package.json` dependencies across the workspace.                                                                                                                 |
+| Committed secrets                   | Gitleaks               | Scans git history/diffs for credential-shaped strings before they land on `main`.                                                                                                                       |
+| Container/IaC                       | Trivy                  | Scans both Docker images (`apps/web` built in `web-build.yml`, `apps/api` built in `api-deploy.yml`) and any IaC for known CVEs/misconfiguration.                                                       |
+| Running web app + API               | OWASP ZAP              | Dynamic scan (DAST) against a **running** `apps/web` and `apps/api` — spiders the deployed web app and probes the API, checking headers/CSP/cookies live. Needs a live target, see workflow note below. |
 
 ## Workflow — where each step runs
 
@@ -47,16 +47,31 @@ standard.
    complementing `code-reviewer`'s correctness/simplification pass.
 5. **Run scanners in CI** — `.github/workflows/security.yml` (Gitleaks
    secret scan, Semgrep SAST against `p/typescript p/javascript
-   p/owasp-top-ten p/nodejsscan`, and `pnpm audit --audit-level=high` for
+p/owasp-top-ten p/nodejsscan`, and `pnpm audit --audit-level=high` for
    dependency vulnerabilities) plus `.github/dependabot.yml` (weekly `npm`
    updates for the workspace root, `apps/web`, `apps/api`,
    `packages/shared`, and weekly `github-actions` updates). All
    source/dependency-level, no running app or build artifact required, so
    this fits the "no heavy builds in CI" rule this template otherwise
-   enforces (`CLAUDE.md`'s Token discipline section). Each `security.yml`
-   step runs `continue-on-error` today since `apps/*`/`packages/shared` are
-   still empty skeletons — it becomes a real gate once they're scaffolded
-   and you choose to remove that.
+   enforces (`CLAUDE.md`'s Token discipline section).
+
+   **Gate status (2026-07-28):** the **Gitleaks** secret scan now runs
+   _without_ `continue-on-error` — a committed credential fails CI, enforcing
+   the "no hard-coded secrets" discipline gate. **Semgrep** and **`pnpm
+audit`** stay `continue-on-error` pending a confirmed-clean baseline.
+   `pnpm audit --audit-level=high` currently reports 11 distinct advisories
+   (1 critical / 7 high / 3 moderate) — mostly dev tooling (`vitest`, `vite`,
+   `postcss`, `esbuild`, `brace-expansion`), plus two runtime-reachable
+   (`find-my-way`, Fastify's router; `sharp`, Next.js image optimization).
+   Making the audit blocking as-is would fail every PR against a
+   correctly-working tree, so it is deferred to a dedicated
+   dependency-hardening pass that updates what has a patched version and
+   records any residual advisory as a dated `pnpm.auditConfig.ignoreGhsas`
+   exception with rationale — both touch `package.json`/the lockfile, outside
+   this workflow's own scope. Semgrep's baseline stays unconfirmed until the
+   workflow runs once against real source. Escalate each to blocking only
+   against its own clean-or-excepted baseline.
+
 6. **Deploy, then scan the running app** — OWASP ZAP against the
    deployed/running `apps/web` and `apps/api`, at release time.
 

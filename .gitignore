@@ -18,3 +18,5 @@ graphify-out/
 .claude/settings.local.json
 # os
 .DS_Store
+# local e2e completion-gate run log (scripts/e2e-local.sh)
+scripts/.e2e-run.log

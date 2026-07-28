@@ -1,6 +1,6 @@
 # Refinement backlog
 
-Status: **1 task queued**
+Status: **2 tasks queued**
 
 This file holds bug fixes and feature requests reported _after_ the initial
 layers have shipped. It is never hand-written directly — `/refine` brainstorms
@@ -29,6 +29,20 @@ task that a `task-implementer` can't act on.
 - **Skills:** security-review, git-workflow
 
 Follows `T-e72b45` (layer 6, which left Semgrep advisory). A full `semgrep ci` run on 2026-07-29 with the four configured rulesets reported 52 blocking findings that triage showed were all false positives (njsscan noise + vendored `.claude/skills/` scripts) or opinionated supply-chain/CI policy suggestions — no genuine vulnerabilities (see `docs/SECURITY.md` gate-status). This task makes the scan a real, tuned gate rather than flipping it blind.
+
+### T-8b4a1f — Guard that the pnpm audit-ignore exceptions stay on dev-only paths
+
+- **Status:** todo
+- **Assignee:** ai
+- **Files:** scripts/audit-ignores-are-dev-only.mjs (new), .github/workflows/security.yml, docs/SECURITY.md
+- **Acceptance:**
+  - A new script (`scripts/audit-ignores-are-dev-only.mjs`) runs `pnpm audit --json` and, for every advisory listed in the root `package.json` `pnpm.auditConfig.ignoreGhsas`, asserts that **every** dependency path resolving it starts with a known dev-tool root (e.g. `vitest`, `vite`, `esbuild`, `@nestjs/cli`, `@typescript-eslint`, `eslint`) — exiting non-zero the moment an ignored advisory appears on a runtime path of `apps/api` or `apps/web`.
+  - The `security.yml` `dependency-audit` job runs this guard as a step after `pnpm audit`, so a suppressed advisory becoming runtime-reachable fails the merge instead of passing silently through the global-scope `ignoreGhsas`.
+  - `docs/SECURITY.md` documents the guard alongside the exception ledger.
+  - The guard passes today (all six current exceptions are dev-only) and is verifiable against a fixture where an ignored GHSA sits on a runtime path (it must exit non-zero).
+- **Skills:** security-review, git-workflow
+
+From the `T-e72b45` security review (2026-07-29): pnpm's `ignoreGhsas` mutes an advisory across the whole dependency graph, not on the specific dev-only path. Today all six suppressed GHSAs (`vitest`, `vite`, `esbuild`, `brace-expansion`, `launch-editor`) resolve to test/build tooling, but a future runtime dependency pulling a vulnerable version would pass the now-blocking audit silently. This guard closes that gap.
 
 ---
 

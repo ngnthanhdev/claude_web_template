@@ -57,3 +57,25 @@ jobs:
             DATABASE_URL="$url" pnpm exec prisma migrate deploy
           done
       - run: pnpm turbo run lint typecheck test
+
+  design-detector:
+    name: Design anti-pattern detector (non-blocking)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      # Impeccable's deterministic anti-pattern detector (vendored under
+      # .claude/skills/impeccable, zero npm deps). Static scan of apps/web/src,
+      # run from apps/web/ so it loads apps/web/DESIGN.md and flags colors and
+      # fonts that drift off the design system. Contrast / rendered-color checks
+      # need browser mode against a served page, so they stay a manual release
+      # step, not CI. Non-blocking today (continue-on-error) — like the security
+      # scanners; drop continue-on-error once the design system is bespoke and
+      # you want design drift to gate merges.
+      - name: Impeccable detector (apps/web)
+        working-directory: apps/web
+        run: node ../../.claude/skills/impeccable/scripts/detect.mjs src
+        continue-on-error: true

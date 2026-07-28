@@ -187,8 +187,8 @@ claude_web_template/
 
 ## Current Layer / Current Task
 
-- **Current Layer:** Layer 5 — Public Storefront, Passwordless Auth Web Flow, and Web Release Readiness (not started)
-- **Current Task:** `T-5b2e90` — Web data-access, currency, and i18n message foundation
+- **Current Layer:** Layer 6 — Commerce, Seller, and Admin Enablement Gates (not started). Layer 5 completed 2026-07-28 and its completion gate passed (Playwright browse+auth 19/19 + axe cross-viewport, i18n standalone Docker for vi/en, full workspace lint/typecheck/test green); it is now recorded in `tasks/done.md`.
+- **Current Task:** `T-6d0f2c` — Commerce & purchase-surface enablement gate (`/refine` + `/threat-model`). Layer 6 is a decision/gate layer: `T-6d0f2c` / `T-b13e77` / `T-4c8a9e` are human-owned design gates (commerce, seller, admin) that unblock future `/scope-breakdown` passes; `T-e72b45` (promote `security.yml` scanners to blocking) is the one AI-actionable task.
 - After each layer completes, this section is updated by `/next-layer`.
 
 ## Token discipline

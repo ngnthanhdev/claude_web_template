@@ -3,26 +3,26 @@
 ## Recent commits
 
 ```
-0ac30ff chore(tasks): close layer 5 wave 3b; track e2e capture-adapter follow-up
-9a864e5 Merge cross-viewport playwright + axe e2e (T-b8d260) into codex/layer-4-api
-d456f02 Merge error boundary + category resolver test (T-9d3c05) into codex/layer-4-api
-690819b test(web): add cross-viewport playwright + axe e2e for browse and auth
-77718f4 feat(web): add localized error boundary and extract testable category resolver
-358a8ba chore(tasks): start layer 5 wave 3b (T-b8d260 e2e, T-9d3c05 follow-up)
-b43e563 chore(tasks): close layer 5 wave 3a; track error-boundary + resolver-test follow-up
-2474002 test(api): exercise web health boundary via typed get after health() removal
-ea02251 chore(tasks): move layer 5 wave 3a to review
-51cd174 Merge server-side product/category fetch with real 404s (T-3e7a12) into codex/layer-4-api
-4be0fd4 Merge web hardening + i18n docker packaging (T-7c4f10) into codex/layer-4-api
-b161417 refactor(web): server-fetch product & category pages for real 404s
-3a35261 chore(web): package i18n for standalone docker and apply round-1 hardening
-41be1dc chore(tasks): start layer 5 wave 3a (T-3e7a12 ssr-404, T-7c4f10 hardening)
-bdaa808 chore(tasks): close layer 5 wave 2b (5 screens done)
-c6a8cf7 fix(web): address wave 2b review findings
-a32d1e7 chore(tasks): move layer 5 wave 2b to review
-6ebebb2 Merge routes (layer 5 wave 2b) into codex/layer-4-api
-2023c7a Merge home (layer 5 wave 2b) into codex/layer-4-api
-05dcb0e Merge account (layer 5 wave 2b) into codex/layer-4-api
+f06b914 chore(tasks): record Layer 5 done and add the Layer 6 gate layer
+716aeb7 chore: add local completion-gate e2e harness
+c9c5eaa test(web): settle the document title before the axe health check
+e816927 fix(web): render the desktop mega-menu panel full-width
+a3c4839 chore(plans): add code-review, security-review, and session-handoff reports
+9bc796f test(web): harden playwright e2e for App Router nav and auth rate limits
+634b65f ci(design): add non-blocking impeccable anti-pattern detector job
+f8eb59c docs(design): add apps/web/DESIGN.md as the design brief + wire the skills to it
+7a67a89 docs(claude): register Emil animation-craft skills + confirm Framer Motion as the sole animation lib
+3c42371 chore(skills): add Emil Kowalski animation-craft skills (curated subset)
+1f48f05 docs(claude): document the design/UI skill layering (taste / data / gate)
+4db1542 chore(skills): add lean impeccable as the UI audit gate
+0e063d3 chore(skills): add taste-skill for anti-slop landing/marketing direction
+c56e5ce test(web): match the sign-out button by exact accessible name
+d8e7ffc fix(web): give the Clear filters control an accessible-contrast color
+5fe9ad2 fix(web): pass locale to NextIntlClientProvider so client code uses the active locale
+f1ffc49 test(web): add JSON import attributes so the e2e fixtures load under ESM
+f1814db fix(web): render locale subtree dynamically so the CSP nonce reaches scripts
+a595134 fix(web): wrap CollectionView search-param reads in a Suspense boundary
+2929d48 fix(web): decouple i18n routing from the next-intl barrel for the edge runtime
 ```
 
 ## Completed tasks
@@ -34,6 +34,201 @@ Grouped under a `## Layer N` (or `## Refinement`) heading, most recent first.
 Each task keeps its original `T-xxxxxx` id and task-block schema (`Status`,
 `Assignee`, `Files`, `Acceptance`, `Skills`, optional `Depends`) unchanged
 except `Status`, which is `done` for everything in this file.
+
+## Layer 5 — Public Storefront, Passwordless Auth Web Flow, and Web Release Readiness
+
+Completed 2026-07-28. All 14 tasks done; full workspace lint/typecheck/test green
+(15/15 turbo tasks, 178 web tests). Completion gate verified live via
+`scripts/e2e-local.sh` against a disposable Postgres plus the standalone web
+Docker image: the Playwright browse + auth suite (including the capture-only
+magic-link email seam) and axe pass 19/19 across 320–1440px in vi/en and
+VND/USD, and the standalone Docker image serves both locales. Two desktop-only
+defects the first real end-to-end run surfaced were fixed on the way in: the N11
+mega-menu panel rendered at the Browse-button width and overlapped its columns
+(now anchored full-width to the header), and client-rendered routes raced the
+axe document-title check before the App Router applied their title (the health
+check now settles the title first). Cart, checkout, payment, orders,
+entitlements/library, wishlist, reviews, and the admin surface remain explicitly
+deferred pending a future commerce layer (with its own refinement and threat
+model).
+
+### T-5b2e90 — Web data-access, currency, and i18n message foundation
+
+- **Status:** done
+- **Assignee:** ai
+- **Files:** apps/web/package.json, pnpm-lock.yaml, apps/web/src/lib/api-client.ts, apps/web/src/lib/catalogue-client.ts, apps/web/src/lib/auth-client.ts, apps/web/src/lib/currency.tsx, apps/web/src/lib/format.ts, apps/web/src/components/providers.tsx, apps/web/src/i18n/request.ts, apps/web/messages/vi/common.json, apps/web/messages/en/common.json, apps/web/src/app/api/[...proxy]/route.ts, apps/web/.env.example, apps/web/src/lib/catalogue-client.test.ts, apps/web/src/lib/currency.test.tsx
+- **Acceptance:**
+  - Typed client functions cover every Layer-4 read the storefront needs (categories, product collection with the full approved query grammar including opaque cursor, product detail) and every auth/session call (initiate magic link, redeem token, current session, logout current, logout all), building requests only from the shared `@marketplace/shared/catalogue` and `@marketplace/shared/auth` schemas and validating every response with the matching shared Zod schema before returning it. No screen may bypass these clients with a raw `fetch`.
+  - A currency context provides independent `VND`/`USD` selection persisted across navigation, wired into the provider stack without coupling to locale, plus minor-unit money formatting helpers keyed on `{currency, locale}`. `providers.tsx` composes it beside the existing TanStack Query provider.
+  - `i18n/request.ts` loads and deep-merges **all** JSON files under `messages/<locale>/` so later feature tasks add a namespace file without editing `request.ts`; the existing flat `messages/vi.json`/`messages/en.json` keys migrate into `messages/<locale>/common.json` and both locales keep identical key sets. (This task deletes the old flat files it migrates.)
+  - The web↔API session-cookie topology is resolved and documented: implement the same-origin Next.js Route Handler proxy (`app/api/[...proxy]/route.ts`) that forwards allowed `/v1` calls to the configured API origin, forwards `Set-Cookie`/`Cookie` and `X-CSRF-Token`, and never exposes a secret or the API origin's other routes to the browser. `.env.example` documents the server-only API origin variable; no secret or credential is committed or shipped to the browser bundle.
+  - Unit tests prove client response-schema validation (including a rejected malformed payload), currency independence/formatting for both currencies and locales, and the message-directory merge producing equal-keyed catalogues; `pnpm --filter @marketplace/web lint`, `typecheck`, and `test` pass. Any Playwright/axe dev-dependencies the layer needs are added here (sole owner of `package.json`/`pnpm-lock.yaml`) so no downstream task edits them.
+- **Skills:** web-app-foundation, web-api-integration, web-i18n-theme, web-security, shared-contracts, typescript-strict
+
+### T-6a1d84 — Gate API integration suites in CI with disposable PostgreSQL
+
+- **Status:** done
+- **Assignee:** ai
+- **Files:** .github/workflows/ci.yml
+- **Acceptance:**
+  - `ci.yml` adds a PostgreSQL service, runs `prisma migrate deploy` against one freshly created database per integration suite, and exports `CATALOGUE_INTEGRATION_DATABASE_URL`, `MAGIC_LINK_INTEGRATION_DATABASE_URL`, `SESSIONS_INTEGRATION_DATABASE_URL`, and `PUBLIC_RESOURCES_INTEGRATION_DATABASE_URL` (one dedicated DB each, per the recorded gotcha) plus the test-only auth/cursor secrets those suites require, so the previously-skipped real-HTTP-to-database seams actually gate merges.
+  - The existing `pnpm turbo run lint typecheck test` gate, Node 20 + pnpm pinning, and PR/`main`/`develop` triggers are preserved; no production credential is introduced and every secret used is an explicit test value.
+  - Workflow YAML passes static validation. The full CI run is verified in a real terminal outside the agent session, consistent with the repository heavy-build rule; the task changes only `ci.yml`.
+- **Skills:** git-workflow, backend-testing
+
+### T-c1a7d3 — Marketplace shell, N11 mega-menu, drawer, and locale/currency toggles
+
+- **Status:** done
+- **Assignee:** ai
+- **Files:** apps/web/src/components/app-shell.tsx, apps/web/src/components/nav/mega-menu.tsx, apps/web/src/components/nav/mobile-drawer.tsx, apps/web/src/components/nav/locale-currency-toggle.tsx, apps/web/src/app/[locale]/layout.tsx, apps/web/messages/vi/navigation.json, apps/web/messages/en/navigation.json, apps/web/src/app/page.test.tsx, apps/web/src/components/nav/mega-menu.test.tsx
+- **Acceptance:**
+  - The shell renders the approved **N11 mega-menu** (3-column grouped payload sourced from `GET /v1/categories` via the shared client, dim/blur scrim, no invented promo proof) on desktop and an accordion **drawer** on mobile, plus a search entry point and independent locale and `VND`/`USD` currency toggles wired to the Round-1 currency context. It does **not** add cart, wishlist, or any commerce/admin entry point (deferred).
+  - Navigation preserves the active locale on every link, keeps keyboard focus visible with Escape-to-close, honors reduced motion (menu/drawer at 200–300ms otherwise), keeps interactive targets ≥44px, keeps zoom enabled, and produces no page-level horizontal overflow at 320px. All copy and a11y labels come from `messages/<locale>/navigation.json` with identical `vi`/`en` keys.
+  - This task refactors the existing `apps/web/src/app/page.test.tsx` to cover shell presence and root-locale negotiation only (removing any home-content assertions, which move to `T-f39ac7`), so no other task edits that file.
+  - Component tests (including axe) cover mega-menu category rendering from a mocked client, drawer open/close, toggle independence, and locale-preserving links; `pnpm --filter @marketplace/web lint`, `typecheck`, and `test` pass.
+- **Skills:** web-app-foundation, ui-ux-pro-max, web-styling, web-responsive, web-i18n-theme, web-animations, motion-design-principles, web-security, typescript-strict
+- **Depends:** T-5b2e90
+
+### T-8f43e2 — Shared catalogue collection UI kit and URL-backed query state
+
+- **Status:** done
+- **Assignee:** ai
+- **Files:** apps/web/src/components/catalogue/product-card.tsx, apps/web/src/components/catalogue/product-grid.tsx, apps/web/src/components/catalogue/filter-rail.tsx, apps/web/src/components/catalogue/sort-control.tsx, apps/web/src/components/catalogue/price-range-control.tsx, apps/web/src/components/catalogue/collection-pager.tsx, apps/web/src/components/catalogue/empty-state.tsx, apps/web/src/lib/product-query-url.ts, apps/web/src/hooks/use-product-collection.ts, apps/web/messages/vi/collection.json, apps/web/messages/en/collection.json, apps/web/src/lib/product-query-url.test.ts, apps/web/src/components/catalogue/product-card.test.tsx
+- **Acceptance:**
+  - A reusable product card (localized title/summary, category, compatibility badge, selected-currency/licence price via the Round-1 formatter), responsive grid, and the filter/sort/price/pagination controls render the approved facets exactly (category/subcategory, controlled tag facets, compatibility bands, `updatedWithin`, price range, and the approved sort keys) using controlled vocabularies from the API response rather than hard-coded lists.
+  - `product-query-url.ts` + `use-product-collection.ts` serialize the entire non-cursor collection state into the URL (so Back navigation and shared links restore the exact collection), carry the opaque cursor for continuation only, drive fetches through the Round-1 catalogue client, and surface honest empty/loading/error states (no fabricated inventory or bestseller/rating surfaces). Sorts unavailable until real transactions/reviews exist are not offered.
+  - The kit reserves media aspect ratio (no layout shift), keeps ≥44px targets, no 320px horizontal overflow, visible focus, and reduced-motion-safe transitions; all copy from `messages/<locale>/collection.json` with equal `vi`/`en` keys.
+  - Tests cover URL⇄state round-tripping (including cursor handling and rejected/unknown params), facet OR-within/AND-across serialization, price/licence/currency context, and card rendering + axe; `pnpm --filter @marketplace/web lint`, `typecheck`, and `test` pass.
+- **Skills:** web-api-integration, web-data-forms, ui-ux-pro-max, web-styling, web-responsive, web-i18n-theme, shared-contracts, typescript-strict
+- **Depends:** T-5b2e90
+
+### T-2d9b6c — Product detail screen (`/[locale]/templates/[slug]`)
+
+- **Status:** done
+- **Assignee:** ai
+- **Files:** apps/web/src/app/[locale]/templates/[slug]/page.tsx, apps/web/src/app/[locale]/templates/[slug]/not-found.tsx, apps/web/src/components/product-detail/detail-header.tsx, apps/web/src/components/product-detail/demo-viewer.tsx, apps/web/src/components/product-detail/spec-list.tsx, apps/web/src/components/product-detail/licence-comparison.tsx, apps/web/messages/vi/product.json, apps/web/messages/en/product.json, apps/web/src/components/product-detail/licence-comparison.test.tsx
+- **Acceptance:**
+  - The screen fetches `GET /v1/products/:slug` through the Round-1 client (validated against the shared detail schema) and renders live demos + demo pages via the isolated-preview URL, compatibility/specifications, documentation link, changelog, and the Regular/Extended licence comparison with explicit selected-currency prices. An unknown/draft/delisted slug renders the localized not-found (HTTP 404 semantics), never leaking seller-private or persistence-only fields.
+  - The isolated preview is embedded so it **cannot reach storefront session/cookies** (separate origin, sandboxed, no shared credentials), consistent with the spec's preview-origin boundary. The purchase affordance is present but clearly labelled deferred/sandbox and performs no commerce; no reviews or cart endpoint is called.
+  - Responsive from 320–1440px with reserved media aspect ratio, ≥44px targets, visible focus, reduced-motion-safe transitions, and no horizontal overflow; all copy from `messages/<locale>/product.json` with equal `vi`/`en` keys.
+  - Component tests cover licence/price rendering for `VND`/`USD` and both locales, not-found handling, and preview-sandbox attributes (plus axe); `pnpm --filter @marketplace/web lint`, `typecheck`, and `test` pass.
+- **Skills:** web-api-integration, ui-ux-pro-max, web-styling, web-responsive, web-i18n-theme, web-animations, web-security, typescript-strict
+- **Depends:** T-5b2e90
+
+### T-a70f15 — Passwordless sign-in and magic-link redemption screens
+
+- **Status:** done
+- **Assignee:** ai
+- **Files:** apps/web/src/app/[locale]/auth/sign-in/page.tsx, apps/web/src/app/[locale]/auth/magic-link/page.tsx, apps/web/src/components/auth/sign-in-form.tsx, apps/web/src/components/auth/redemption-status.tsx, apps/web/messages/vi/auth.json, apps/web/messages/en/auth.json, apps/web/src/components/auth/sign-in-form.test.tsx, apps/web/src/components/auth/redemption-status.test.tsx
+- **Acceptance:**
+  - The sign-in form validates `{email, locale, returnTo?}` with the shared initiation schema (react-hook-form + zod), submits through the Round-1 auth client, and always shows the same generic "check your email" outcome for accepted/rate-limited/suppressed cases — it never reveals whether an account exists and never branches UI on account state.
+  - `/[locale]/auth/magic-link` reads the `#token=` fragment **once** on the client (never placing the token in a request target, log, analytics, or referrer), posts it to redemption via the auth client, and on HTTP 201 establishes the session (through the Round-1 topology) and redirects to the validated `returnTo` (default `/[locale]/account`). A `MAGIC_LINK_INVALID_OR_EXPIRED` (401) shows a single generic expired/invalid state with a re-request path; malformed input surfaces the shared validation copy. The CSRF token from the redemption response is retained for later mutating calls.
+  - `returnTo` is only ever an allowlisted locale-prefixed relative KITVERA route (never absolute/protocol-relative); the token is never persisted to storage. Responsive/accessible per the layer standard, copy from `messages/<locale>/auth.json` with equal `vi`/`en` keys.
+  - Tests cover generic-initiation UI, fragment-token read + redemption success/expiry/malformed handling, unsafe-`returnTo` rejection, and no-token-leak assertions (plus axe); `pnpm --filter @marketplace/web lint`, `typecheck`, and `test` pass.
+- **Skills:** web-auth-state, web-data-forms, web-security, web-i18n-theme, shared-contracts, ui-ux-pro-max, typescript-strict
+- **Depends:** T-5b2e90
+
+### T-4e8c2b — Account landing and session management (`/[locale]/account`)
+
+- **Status:** done
+- **Assignee:** ai
+- **Files:** apps/web/src/app/[locale]/account/page.tsx, apps/web/src/components/account/account-panel.tsx, apps/web/src/components/account/session-actions.tsx, apps/web/src/hooks/use-session.ts, apps/web/messages/vi/account.json, apps/web/messages/en/account.json, apps/web/src/components/account/session-actions.test.tsx
+- **Acceptance:**
+  - The default post-redemption landing calls `GET /v1/sessions/current` through the Round-1 client, renders the allowlisted signed-in user identity read-only, and redirects unauthenticated visitors to `/[locale]/auth/sign-in`. Library (entitlements), orders, and profile **editing** are explicitly deferred and not shown as functional.
+  - "Sign out" (`DELETE /v1/sessions/current`) and "Sign out of all devices" (`DELETE /v1/sessions`) both send the session-bound CSRF value in `X-CSRF-Token`, clear the session on 204, and return the user to a public locale route; a `use-session` hook centralizes current-session/CSRF state for reuse.
+  - No session/CSRF value is written to `localStorage`, `sessionStorage`, URLs, or JavaScript-readable persistent state. Responsive/accessible per the layer standard, copy from `messages/<locale>/account.json` with equal `vi`/`en` keys.
+  - Tests cover authenticated render, unauthenticated redirect, both revocation actions including CSRF header presence and 204 handling, and no-token-leak assertions (plus axe); `pnpm --filter @marketplace/web lint`, `typecheck`, and `test` pass.
+- **Skills:** web-auth-state, web-api-integration, web-security, web-i18n-theme, ui-ux-pro-max, typescript-strict
+- **Depends:** T-5b2e90
+
+### T-f39ac7 — Home discovery screen (Ecosystem Index, `/[locale]`)
+
+- **Status:** done
+- **Assignee:** ai
+- **Files:** apps/web/src/app/[locale]/page.tsx, apps/web/src/app/[locale]/page.test.tsx, apps/web/src/components/home/discovery-rail.tsx, apps/web/src/components/home/category-index.tsx, apps/web/messages/vi/home.json, apps/web/messages/en/home.json
+- **Acceptance:**
+  - The home page renders the approved **Ecosystem Index** discovery surfaces — editor's picks, newest, by category, and by niche — by composing `GET /v1/categories` and `GET /v1/products` (via the Round-1 client) into rails of the `T-8f43e2` product card, with no centred gradient hero, no three generic feature cards, and no bestseller/sales/review surface (those stay hidden until real data exists).
+  - Dense product rails do **not** animate on scroll; only state/continuity motion is used, reduced-motion-safe. Responsive 320–1440px with reserved media aspect ratio, ≥44px targets, visible focus, and no horizontal overflow; all copy from `messages/<locale>/home.json` with equal `vi`/`en` keys.
+  - A colocated `[locale]/page.test.tsx` (not the shell's `app/page.test.tsx`) covers rail rendering from a mocked client, honest empty state, and axe; `pnpm --filter @marketplace/web lint`, `typecheck`, and `test` pass.
+- **Skills:** web-api-integration, ui-ux-pro-max, web-styling, web-responsive, web-animations, motion-design-principles, web-i18n-theme, typescript-strict
+- **Depends:** T-8f43e2
+
+### T-90e5b8 — Catalogue and search collection routes
+
+- **Status:** done
+- **Assignee:** ai
+- **Files:** apps/web/src/app/[locale]/categories/[...slug]/page.tsx, apps/web/src/app/[locale]/categories/[...slug]/not-found.tsx, apps/web/src/app/[locale]/search/page.tsx, apps/web/messages/vi/catalogue.json, apps/web/messages/en/catalogue.json, apps/web/src/app/[locale]/search/page.test.tsx
+- **Acceptance:**
+  - `/[locale]/categories/[...slug]` renders the approved **Catalogue** macrostructure pre-scoped to the resolved category path (unknown category → localized not-found), and `/[locale]/search` renders the same collection surface with the search box active; both compose the `T-8f43e2` kit + `use-product-collection` so all filter/sort/price/cursor state stays URL-backed and restores on Back navigation.
+  - When `q` is present the UI reflects the `relevance` default and otherwise `newest`, and it never offers sorts that require transactions/reviews. Both routes consume only the Round-1 catalogue client and shared schemas; no commerce affordance beyond linking to product detail.
+  - Responsive/accessible per the layer standard, copy from `messages/<locale>/catalogue.json` with equal `vi`/`en` keys.
+  - Tests cover category scoping, search query seeding + `q`-dependent sort default, URL-state restoration, and empty-result state (plus axe); `pnpm --filter @marketplace/web lint`, `typecheck`, and `test` pass.
+- **Skills:** web-api-integration, web-data-forms, web-responsive, web-i18n-theme, ui-ux-pro-max, typescript-strict
+- **Depends:** T-8f43e2
+
+### T-b8d260 — Cross-viewport Playwright + axe e2e for browse and auth flows
+
+- **Status:** done
+- **Assignee:** ai
+- **Files:** apps/web/playwright.config.ts, apps/web/e2e/browse.spec.ts, apps/web/e2e/auth.spec.ts, apps/web/e2e/fixtures/test-catalogue.ts, apps/web/e2e/README.md
+- **Acceptance:**
+  - Playwright drives the browse happy path (home → mega-menu/category → catalogue/search with filters/sort/pagination → product detail) and the auth happy path (sign-in → fragment-token redemption → account → sign out / sign out all) in both `vi` and `en`, `VND` and `USD`, across representative viewports from 320–1440px, against a seeded disposable catalogue and a capture-only magic-link email seam (no real vendor).
+  - Each visited page passes axe WCAG 2.2 AA, keyboard navigation reaches interactive controls, and there is zero page-level horizontal overflow at every tested width; the specs assert no session/CSRF/token material appears in URLs or client-readable storage.
+  - `playwright.config.ts` and the specs are statically valid and lint/typecheck clean; the full Playwright run (which needs a built/served app) is executed in a real terminal outside the agent session per the heavy-build rule, and `e2e/README.md` documents how to run it and which env/services it needs. No `package.json`/`pnpm-lock.yaml` edits (Playwright deps were added in `T-5b2e90`).
+- **Skills:** web-testing-release, web-responsive, web-security, typescript-strict
+- **Depends:** T-c1a7d3, T-2d9b6c, T-a70f15, T-4e8c2b, T-f39ac7, T-90e5b8
+
+### T-7c4f10 — Web i18n standalone-Docker packaging + Round-1 review follow-ups
+
+- **Status:** done
+- **Assignee:** ai
+- **Files:** apps/web/Dockerfile, apps/web/next.config.ts, apps/web/src/i18n/request.ts, apps/web/src/middleware.ts, apps/web/src/app/api/[...proxy]/route.ts, apps/web/src/lib/api-client.ts
+- **Acceptance:**
+  - The localized message catalogue resolves correctly in the `output: "standalone"` production image, not only in `next dev`/tests. Today the `Dockerfile` build stage never copies `apps/web/messages/`, and `request.ts` enumerates namespaces via `fs.readdirSync(process.cwd()/messages/<locale>)` — in the standalone runtime `process.cwd()` is `/app` and the raw dir is neither traced nor shipped, so every dynamically rendered localized route would 500. Fix so the catalogue loads in standalone: copy `apps/web/messages` into the Docker build stage (so the analyzable `import()` glob has files to bundle) and into the runner if any runtime read remains; add `outputFileTracingIncludes` for `messages/**` and/or resolve the dir relative to the app root instead of `process.cwd()`; keep namespace auto-discovery so later tasks still drop a namespace file without editing `request.ts`. Verify with a real `docker build apps/web` + container start in a terminal (heavy-build rule — outside the agent session); the fix is not "done" until that real image serves both `vi` and `en`.
+  - Minor hardening from Round-1 review (all low severity, no live vulnerability): wrap the upstream `fetch` in the `[...proxy]` route so an unreachable API returns the JSON error envelope (e.g. `502`) instead of a bare 500; remove the now-dead `NEXT_PUBLIC_API_URL` CSP-widening branch in `middleware.ts` so `connect-src` stays `'self'`-only (the browser calls only the same-origin proxy); and either route `apiClient.health()` through the proxy base path or delete the dormant helper (it currently targets the web origin's `/health`, unused by app code).
+  - Restore the test coverage the shell refactor removed: the CSP (`createContentSecurityPolicy`/`middleware.ts`) and api-client error-envelope (`ApiClientError`) assertions were dropped from `app/page.test.tsx` when it was trimmed to shell/locale scope. Re-add them as colocated `middleware`/`api-client` tests reflecting this task's changes (CSP unconditionally `connect-src 'self'`; the proxy 502 envelope), so neither behavior ships untested.
+  - CSP `frame-src` for the product-detail preview: `middleware.ts`'s CSP is `default-src 'self'` with no `frame-src`, so the product-detail sandboxed isolated-preview iframe (a cross-origin preview host) is blocked in a real browser. Add a `frame-src` directive scoped to the configured preview origin(s) — sourced from a server-side config var, never hard-coded — so the preview renders while `connect-src` stays `'self'`-only.
+  - SSR-404 for the product & category routes is split into `T-3e7a12` (decided 2026-07-24: switch those two public routes to server-side fetching for real HTTP `404`s/SEO). This task no longer owns that decision.
+  - `pnpm --filter @marketplace/web lint`, `typecheck`, and `test` stay green.
+- **Skills:** web-i18n-theme, web-security, web-testing-release, typescript-strict
+- **Depends:** T-5b2e90
+
+### T-3e7a12 — Server-side product & category fetch with real HTTP 404s
+
+- **Status:** done
+- **Assignee:** ai
+- **Files:** apps/web/src/lib/catalogue-server.ts, apps/web/src/app/[locale]/templates/[slug]/page.tsx, apps/web/src/app/[locale]/categories/[...slug]/page.tsx, apps/web/src/app/[locale]/search/page.tsx, apps/web/src/components/catalogue/collection-view.tsx, apps/web/src/lib/catalogue-server.test.ts
+- **Acceptance:**
+  - A server-only data module (`catalogue-server.ts`) fetches the public catalogue reads the product-detail and category pages need directly from the server-only API origin (the same `API_ORIGIN` the proxy already uses server-side), validating every response against the same `@shared/catalogue` schemas the client uses. It is imported ONLY by Server Components, never ships the API origin to the browser bundle, and forwards no browser cookies (these are public, unauthenticated reads). Auth/session reads stay client-side via the same-origin proxy, unchanged — this task moves only the two public, SEO-critical read paths server-side.
+  - `/[locale]/templates/[slug]/page.tsx` becomes a Server Component that awaits the server fetch and calls `notFound()` (a real HTTP 404) for an unknown/draft/delisted slug before rendering; the interactive/currency-dependent pieces stay client child components receiving the validated product as props. No behavior regression versus the reviewed client version (licence/price for both currencies/locales, sandboxed preview, deferred purchase affordance).
+  - `/[locale]/categories/[...slug]/page.tsx` becomes a Server Component that resolves+validates the category path server-side and calls `notFound()` (a real HTTP 404) for an unknown category, then renders the URL-backed client collection surface — extracted into a shared client `collection-view.tsx` — as a child so all filter/sort/price/cursor state stays client and URL-backed. `/[locale]/search` adopts the same `collection-view` (deduping the two routes' near-identical surface) and stays client-only (no 404).
+  - Unit tests prove the server module validates responses (including a rejected malformed payload) and that an API 404 surfaces as `notFound()`; existing product-detail/route tests still pass after the server/client split. `pnpm --filter @marketplace/web lint`, `typecheck`, and `test` stay green. (An SSR smoke check against a served app is outside the agent session per the heavy-build rule.)
+- **Skills:** web-api-integration, web-frameworks, shared-contracts, web-security, typescript-strict
+- **Depends:** T-2d9b6c, T-90e5b8
+
+### T-9d3c05 — Product-detail error boundary + category-resolver unit coverage
+
+- **Status:** done
+- **Assignee:** ai
+- **Files:** apps/web/src/app/[locale]/error.tsx, apps/web/src/app/[locale]/categories/[...slug]/route-scope.ts, apps/web/src/app/[locale]/categories/[...slug]/page.tsx, apps/web/src/app/[locale]/categories/[...slug]/route-scope.test.ts, apps/web/messages/vi/common.json, apps/web/messages/en/common.json
+- **Acceptance:**
+  - The server-component product/category pages lost the localized retry affordance the old client versions had: a non-404 API failure (500/unreachable/schema mismatch) now unwinds to Next's default error page instead of a friendly, localized "something went wrong + retry" state. Add an `app/[locale]/error.tsx` client error boundary (a `reset()` retry + localized copy) so every localized route degrades gracefully; `notFound()` still routes to the existing `not-found` boundaries unchanged. Copy goes in an `Error` section of `common.json` with identical vi/en keys.
+  - The category page's route-resolution predicate (`[...slug]` → `{category, subcategory} | null`, with unknown slug / extra segments / invalid subcategory → `notFound()`) currently has no unit coverage — it was moved into the async Server Component that RTL can't render, and the dropped "unknown category → not-found" test was not replaced. Extract that pure resolver into `route-scope.ts` and unit-test it (valid single and nested paths, unknown slug, too-many segments, invalid subcategory), so the 404 gating this task exists to deliver is proven without a full SSR run.
+  - `pnpm --filter @marketplace/web lint`, `typecheck`, and `test` stay green.
+- **Skills:** web-frameworks, web-i18n-theme, typescript-strict
+- **Depends:** T-3e7a12
+
+### T-2f8b41 — Capture-only magic-link email adapter for e2e (apps/api)
+
+- **Status:** done
+- **Assignee:** ai
+- **Files:** apps/api/src/auth/magic-links/*, apps/api/.env.example
+- **Acceptance:**
+  - The auth happy-path Playwright flow (`apps/web/e2e/auth.spec.ts`) needs to learn the real magic-link URL from outside the API process, but today only the suppress-everything `NullEmailDeliveryAdapter` is wired — so the seam-gated auth tests currently `test.skip` themselves. Implement a **test-only, capture-only** `EmailDeliveryPort` adapter that, when `E2E_MAGIC_LINK_CAPTURE_FILE` is set, appends one JSONL line per delivery (`{ email, locale, link }`, mirroring the real `MagicLinkDelivery` type) to that file and delivers nothing to any real vendor; when the env var is unset, the existing null/suppress behavior is unchanged. It must be impossible to enable in production config (guard on the explicit env var + a non-production check).
+  - `apps/api/.env.example` documents `E2E_MAGIC_LINK_CAPTURE_FILE` as a test-only var. The `apps/web/e2e/README.md` contract (already written) is satisfied so the seam-gated `auth.spec.ts` block runs green in a real terminal against a served stack.
+  - `pnpm --filter @marketplace/api lint`, `typecheck`, `test` stay green; no real email vendor or credential is introduced.
+- **Skills:** nestjs-backend, backend-auth-security, backend-testing, typescript-strict
+- **Depends:** T-b8d260
 
 ## Layer 4 — Public Catalogue and Passwordless Authentication API
 
@@ -334,91 +529,76 @@ configuration and history contained no baked runtime credentials.
 - **Skills:** git-workflow
 - **Depends:** T-a463b5, T-6c8d2e, T-13ab58, T-2f2057, T-9e4c1a
 
-> **Layer 5 (Public Storefront + Passwordless Auth Web) is code-complete on
-> `codex/layer-4-api`** but not yet appended to `tasks/done.md` (that is
-> `/next-layer`'s job). Full workspace gate green: shared 81 · api 59 (+40
-> DB-skipped) · web 173 · lint · typecheck. See `tasks/layer-5-todo.md` for the
-> 13 done tasks; one follow-up (`T-2f8b41`) is still `todo`.
-
 ## Architecture
 
 ```
-Browser ── same-origin ONLY ──► apps/web  (Next.js 15 App Router, vi/en)
-  ├─ shell: N11 mega-menu / drawer / locale+currency toggles  [client]
-  ├─ home (Ecosystem Index), /search, /categories/[...slug]    [client, URL-backed via use-product-collection + product-query-url]
-  ├─ /templates/[slug] (product detail) + /categories/[...slug] [SERVER components → real HTTP 404 via catalogue-server.ts]
-  ├─ /auth/sign-in, /auth/magic-link, /account                 [client; magic-link token read from #fragment once]
-  └─ error.tsx (localized retry) + not-found.tsx boundaries
-
-data paths:
-  browser  ──/api/v1/*──►  app/api/[...proxy]/route.ts  ──►  API_ORIGIN/v1/*   (cookies/__Host-/CSRF forwarded)
-  RSC/server ─────────────────── direct ───────────────►  API_ORIGIN/v1/*   (catalogue-server.ts, NO cookies, public reads)
-
-lib: api-client (proxy transport, GET/POST/DELETE) · catalogue-client + auth-client (browser)
-     catalogue-server (RSC) · currency (context) · format (money + humanizeSlug)
-shared: packages/shared zod contracts = single source of truth (web + api validate the same schemas)
-CI: ci.yml gates lint/typecheck/test + 4 disposable-Postgres integration suites
+apps/web (Next.js App Router · output:"standalone")        apps/api (NestJS · Fastify · Prisma)
+  [locale]/  home · search · categories/[...slug]            /v1 catalogue  GET categories | products | products/:slug
+    · templates/[slug] · auth/sign-in · auth/magic-link         (cursor-paginated, signed cursors; category filter by root_slug)
+    · account                                                 /v1 auth       POST magic-links | magic-link-redemptions
+  app/api/[...proxy]  ── same-origin proxy ──────────────►    /v1 sessions   GET|DELETE current | DELETE (all)
+  Server Components fetch API_ORIGIN directly (real SSR 404s)  EMAIL_DELIVERY_PORT: null (default) | capture-only e2e seam
+  browser talks ONLY to the web origin                        __Host-kitvera_session cookie · SameSite=Lax · Secure · HttpOnly
+        │                                                              │
+        └──────────── packages/shared (zod contracts, validated both sides) ────────────┘
+                                    │
+                     Prisma ► PostgreSQL: catalogue read-model (categories+translations,
+                     products+versions/media/specs/demo/licence/prices) · users/sessions ·
+                     magic_link_tokens · auth_rate_events · auth_security_events
 ```
 
 ## Key decisions (WHY)
 
-- **Same-origin proxy, browser never calls the API origin** — keeps the
-  `__Host-kitvera_session` cookie (`SameSite=Lax`) first-party and lets the API
-  deploy on any host. Server Components instead fetch `API_ORIGIN` **directly**
-  (server-side, no cookies) for the public product/category reads, which is what
-  makes real SSR HTTP 404s / SEO possible. The server fetch is an **additive
-  module** (`catalogue-server.ts`), NOT an isomorphic rewrite of the shared
-  `api-client` — lowest risk, leaves the browser/cookie posture untouched.
-- **i18n directory-merge** — `request.ts` auto-discovers every
-  `messages/<locale>/*.json`, so a feature task drops in a namespace file
-  without editing `request.ts` (avoids cross-task conflicts). Content is bundled
-  via an analyzable `import()`; the `standalone` Docker image ships `messages/`
-  via a triple backstop (build `COPY` + runner `COPY` + `outputFileTracingIncludes`).
-- **CSP** — `connect-src 'self'` (browser only talks to the proxy); `frame-src`
-  fail-closes to `'none'` unless a single vetted `PREVIEW_ORIGIN` is set, so a
-  seller-controlled preview URL can never frame itself into the storefront origin.
-- **Currency independent of locale** — context + `localStorage` (non-sensitive);
-  money minor-unit digits come from `Intl.NumberFormat` (no hand-kept table).
-- **Auth hygiene** — token lives only in the URL `#fragment`, read once and
-  stripped via `replaceState` before any network call; CSRF held in memory only;
-  `returnTo` validated by `kitveraReturnToSchema`; sign-in outcome is generic
-  (no account enumeration); redemption effect uses a `useRef` latch so React
-  StrictMode's dev double-invoke can't false-"expire" a valid link.
+- **Same-origin proxy topology** (browser → web `/api/v1/*` → server-only `API_ORIGIN`): keeps
+  `__Host-`/`SameSite=Lax` cookies first-party so the API origin can deploy on any host. Server
+  Components fetch `API_ORIGIN` **directly** (no cookies, public reads) — that's what yields real
+  SSR 404s. The browser must never call `API_ORIGIN` directly; auth reads stay client-side.
+- **Web ships as the standalone Docker image**: `next.config.ts` force-includes `messages/**` in the
+  output trace (+ Dockerfile `COPY`) because `i18n/request.ts` enumerates locale namespaces via a
+  runtime `fs.readdirSync` the tracer can't discover.
+- **Capture-only magic-link adapter** (`E2E_MAGIC_LINK_CAPTURE_FILE`, guarded to non-production) is the
+  cross-process seam the auth e2e uses to redeem a real link; the null/suppress adapter is wired
+  everywhere else, so the capture file can never be produced in production.
+- **e2e stack via `scripts/e2e-local.sh` + `prisma/seed-e2e.mjs`**: the public catalogue API is
+  read-only, so fixtures are inserted at the Prisma level; the 10 root categories (incl. `wordpress`)
+  come from the `catalogue_read_model` migration, so the seed only adds a seller + published products.
+- **Layer 6 is a decision/gate layer**, not a build layer: commerce/seller/admin are spec-gated
+  (§6/§7), each requiring a `/refine` + `/threat-model` pass before any endpoint is scoped.
 
 ## API contracts (signatures only)
 
-Web consumes these `packages/shared` schemas (bodies live in `packages/shared/src`):
+`packages/shared` (imported as `@shared/*` in web, `@marketplace/shared/*` in api):
 
-- `@shared/catalogue`: `categoryCollectionResponseSchema`, `localizedCategorySummarySchema`,
-  `productCollectionQuerySchema` / `productCollectionResponseSchema`, `productCardSchema`,
-  `productDetailResponseSchema`, `categorySlugSchema`, `slugSchema`, `productSortSchema`,
-  `updatedWithinSchema`, `compatibilityFilterSchema`, `licenceOptionsSchema`.
-- `@shared/auth`: `magicLinkInitiationRequestSchema` / `…ResponseSchema`,
-  `magicLinkRedemptionRequestSchema` / `…ResponseSchema`, `currentSessionResponseSchema`,
-  `safeSessionSchema`, `sessionUserSchema`, `kitveraReturnToSchema`,
-  `currentSessionRevocationResponseSchema` & `allSessionsRevocationResponseSchema` (`z.undefined()` → 204).
-- `@shared/localization`: `localeSchema` (`vi|en`), `currencySchema` (`VND|USD`).
-  `@shared/money`: `Money` (integer minor units). `@shared/api`: `apiErrorSchema`,
-  `healthResponseSchema`, `cursorPageMetaSchema`.
-- Import alias in `apps/web` is `@shared/*` → `packages/shared/src/*` (NOT the package name).
+- **catalogue.ts** — `categorySlugSchema`, `slugSchema`, `semanticVersionSchema`,
+  `publicationStateSchema`, `licenceIdentifierSchema`, `licenceOptionsSchema`, `productSortSchema`,
+  `compatibilityFilterSchema`, `updatedWithinSchema`, `localizedCategorySummarySchema`,
+  `productCardSchema`; queries `categoryCollectionQuerySchema` / `productCollectionQuerySchema` →
+  responses `categoryCollectionResponseSchema` / `productCollectionResponseSchema` (cards +
+  `cursorPageMetaSchema`) / `productDetailResponseSchema`.
+- **auth.ts** — `base64Url256BitTokenSchema`, `kitveraReturnToSchema`,
+  `magicLinkInitiationRequestSchema`→`magicLinkInitiationResponseSchema`,
+  `magicLinkRedemptionRequestSchema`→`magicLinkRedemptionResponseSchema`, `sessionUserSchema`,
+  `safeSessionSchema`, `currentSessionResponseSchema`, `currentSessionRevocationResponseSchema`,
+  `allSessionsRevocationResponseSchema`.
+- **localization.ts** — `localeSchema` (`vi`|`en`), `currencySchema` (`VND`|`USD`).
+- **money.ts** — `moneySchema` (integer minor units + currency). **api.ts** — `apiErrorSchema`
+  (`{ error: { code, ... } }` envelope), `healthResponseSchema`, `cursorPageMetaSchema`.
 
 ## Known issues & gotchas
 
-- **Two verifications are OUTSIDE-session** (heavy-build rule, not yet run):
-  `docker build -f apps/web/Dockerfile .` (confirm the standalone image serves
-  `vi`/`en`) and `pnpm --filter @marketplace/web exec playwright test`.
-- **Auth e2e is `test.skip`-gated** until `T-2f8b41` ships a capture-only email
-  adapter in `apps/api` (today only `NullEmailDeliveryAdapter` suppresses
-  everything, so nothing outside the API can learn a magic-link URL).
-- **Run the FULL workspace gate, not `--filter web`** — deleting a web export
-  (`apiClient.health()`) silently broke `apps/api/test/health-client.integration.test.ts`
-  (cross-package import). `pnpm turbo run lint typecheck test` is the real gate.
-- `use-product-collection.ts` ships **without a unit test** — cover it in the
-  `/next-layer` `test-writer` step before advancing.
-- `__Host-` cookie needs a **secure context**: serve the web app at
-  `http://localhost:<port>` in e2e (localhost secure exception) or the cookie
-  never sets.
-- **Parallel task-implementers**: a 5-wide fan-out exhausted the session token
-  window mid-run; the salvage pattern (verify + commit the partial worktrees,
-  re-dispatch only the empty ones) recovered it. Prefer ≤2–3 concurrent heavy
-  agents.
+- **`next start` does NOT work with `output:"standalone"`** — serve via the Docker image (what the
+  e2e uses) or `node .next/standalone/apps/web/server.js` after copying `.next/static` + `messages`.
+- **Prisma `DATABASE_URL` must name the DB user explicitly** (`postgresql://<user>@localhost:5432/...`);
+  libpq's OS-user default gives Prisma `P1010: denied access`.
+- **axe `document-title` races App Router client soft-nav**: client routes (e.g. `/search`) get their
+  `<title>` from layout metadata only after the nav settles — `assertPageIsHealthy` now awaits
+  `toHaveTitle(/.+/)` before scanning.
+- **Header dropdowns that are `position:absolute` must anchor to the full-width positioned ancestor
+  (`.site-header`), not a narrow wrapper, and sit above `.nav-scrim` (z-index)** — otherwise the N11
+  columns collapse to the button width and overlap, leaving links unclickable (desktop-only; the
+  mobile drawer is a separate component). First real e2e run caught this.
+- **Run the FULL workspace gate** (`pnpm turbo run lint typecheck test`), not `--filter web` — a web
+  export deletion once broke an `apps/api` cross-package test.
+- **Playwright auth spec is pinned to one viewport project** (API per-IP magic-link cap: 20 init /
+  10 redeem per 15 min); browse fans across five viewports. The capture file path must be absolute and
+  `NODE_ENV` non-production for the seam to activate.

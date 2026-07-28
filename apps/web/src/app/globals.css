@@ -154,6 +154,9 @@ a {
 
 .mega-panel {
   position: absolute;
+  /* Above the sibling .nav-scrim (--z-dropdown) so the category links stay
+     clickable; the scrim only needs to dim everything *behind* the panel. */
+  z-index: calc(var(--z-dropdown) + 1);
   inset-block-start: 100%;
   inset-inline: 0;
   max-height: calc(100dvh - 4.5rem);

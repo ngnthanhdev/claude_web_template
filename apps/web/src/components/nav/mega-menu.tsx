@@ -66,7 +66,11 @@ export function MegaMenu() {
   );
 
   return (
-    <div className="relative hidden sm:block">
+    // No `relative` here on purpose: the panel is `position: absolute` and must
+    // anchor to the full-width `.site-header` (the nearest positioned ancestor),
+    // not this narrow button wrapper — otherwise `inset-inline: 0` collapses the
+    // N11 panel to the button's width and the category columns overlap.
+    <div className="hidden sm:block">
       <Button
         aria-controls={panelId}
         aria-expanded={open}

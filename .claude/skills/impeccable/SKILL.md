@@ -24,7 +24,7 @@ Core principles:
 
 ## Setup
 
-1. **Lean setup (no `context.mjs` in this vendor).** Read `PRODUCT.md` / `DESIGN.md` if the project has them; otherwise infer the design system from `apps/web/src/app/globals.css` (design tokens) plus the target's incumbent CSS/components before editing. Do not rely on `context.mjs`, `init`, or surface-briefs — they are not vendored here.
+1. **Lean setup (no `context.mjs` in this vendor).** Read **`apps/web/DESIGN.md`** — the design brief + token source of truth this repo maintains (the detector auto-loads it and flags colors outside its palette as drift). Read a `PRODUCT.md` too if one exists. Fall back to `apps/web/src/app/globals.css` only if `DESIGN.md` is missing. Do not rely on `context.mjs`, `init`, or surface-briefs — they are not vendored here.
 2. Before acting, load the one playbook that owns the request: the Commands table's reference for an explicit or clearly implied sub-command, or [reference/new-work.md](reference/new-work.md) for a new surface or replacement visual world. Then inspect the target and at least one representative source of incumbent visual truth (tokens, theme, CSS, component, or asset) before editing.
 3. After analysis and direction are resolved, load [reference/craft-floor.md](reference/craft-floor.md) immediately before editing UI. It carries the quality floor, the absolute bans, and the reflexes no detector catches. Do not load it for planning-only work.
 

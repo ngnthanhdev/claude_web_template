@@ -64,7 +64,9 @@ Three layers for UI/UX work — pick by role, don't run them as rivals:
 gate. All three defer implementation to `web-styling` (Tailwind + shadcn/ui),
 `web-responsive`, and `web-animations` (Framer Motion) — the stack-wired layer.
 `impeccable` is a lean vendor (playbooks + detector only): run its detector with
-`node .claude/skills/impeccable/scripts/detect.mjs <target>`.
+`node .claude/skills/impeccable/scripts/detect.mjs <target>`. **`apps/web/DESIGN.md`**
+is the shared design brief + token source of truth all three read — and the
+detector auto-loads it to flag colors that drift off the palette.
 
 For **animation/motion craft depth**, three Emil Kowalski skills feed that same
 implementation layer: `emil-design-eng` (UI polish + component/animation craft),

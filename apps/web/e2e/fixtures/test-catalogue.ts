@@ -483,6 +483,12 @@ export async function assertPageIsHealthy(
   page: Page,
   axeBuilder: () => AxeBuilder,
 ): Promise<void> {
+  // Client-rendered routes (e.g. /search) receive their <title> from the
+  // layout metadata only once the App Router soft navigation settles; axe's
+  // document-title rule fails if it scans that transient title-less frame.
+  // Wait for a non-empty title first — a genuinely title-less page still fails
+  // (the matcher times out), this only stops racing the metadata commit.
+  await expect(page).toHaveTitle(/.+/);
   await assertNoHorizontalOverflow(page);
   const { violations } = await axeBuilder().analyze();
   expect(violations, describeAxeViolations(violations)).toEqual([]);

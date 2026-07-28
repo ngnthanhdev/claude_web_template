@@ -68,9 +68,18 @@ p/owasp-top-ten p/nodejsscan`, and `pnpm audit --audit-level=high` for
    production runtime, are recorded as dated `pnpm.auditConfig.ignoreGhsas`
    exceptions in the root `package.json` and tracked by Dependabot. Revisit
    those exceptions when the toolchain is next upgraded. **Semgrep** is the one
-   scanner still `continue-on-error`: its ruleset baseline is unconfirmed until
-   the workflow runs once against real source — flip it to blocking after a
-   confirmed-clean (or explicitly-excepted) run.
+   scanner still `continue-on-error`. A full run (2026-07-29, `semgrep ci` with
+   the four configured rulesets) reported 52 blocking findings, but triage
+   found **no genuine vulnerabilities**: they are `p/nodejsscan` (njsscan) false
+   positives (a variable merely named `secret` that is read from config, `===`
+   against `null`, a bounded fixed-length regex read as ReDoS, test-fixture
+   UUIDs), findings inside the vendored `.claude/skills/` scripts, and
+   opinionated supply-chain/CI policy suggestions (pin GitHub Action SHAs,
+   npm/pnpm minimum-release-age cooldowns, pnpm trust policy). Flipping Semgrep
+   to blocking therefore needs a tuning pass — scope the scan to `apps/` +
+   `packages/` (exclude `.claude/skills/`), drop or tune the noisy
+   `p/nodejsscan` ruleset, and decide which supply-chain policy rules to adopt
+   versus exclude — not a straight flip.
 
 6. **Deploy, then scan the running app** — OWASP ZAP against the
    deployed/running `apps/web` and `apps/api`, at release time.

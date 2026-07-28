@@ -12,9 +12,11 @@
 # dated pnpm.auditConfig.ignoreGhsas exceptions, so the audit fails only on a
 # NEW high/critical advisory. See docs/SECURITY.md.
 #
-# Semgrep (SAST) is the one job still on continue-on-error: its ruleset
-# baseline is unconfirmed until the workflow runs once against real source.
-# Flip it to blocking after a confirmed-clean (or explicitly-excepted) run.
+# Semgrep (SAST) is the one job still on continue-on-error: a full run found
+# 52 blocking findings that triage showed are all p/nodejsscan false positives,
+# vendored .claude/skills/ noise, and supply-chain/CI policy suggestions — no
+# real vulnerabilities. Flipping it to blocking needs a tuning pass (scope to
+# apps/ + packages/, tune p/nodejsscan). See docs/SECURITY.md.
 #
 # ZAP (dynamic scan against a running API) and MobSF (built APK/IPA scan) are
 # deliberately not here — both need a live/built artifact, so they run

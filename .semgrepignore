@@ -1,0 +1,18 @@
+# Keep the Semgrep SAST scan on first-party application source. The CI job
+# already scopes the scan by passing `apps packages` as explicit targets; this
+# file is the belt-and-suspenders equivalent for an ad-hoc `semgrep scan` /
+# `semgrep ci` run at the repo root, so those don't drown in the same noise.
+#
+# Everything below is either vendored (`.claude/skills/*` — third-party skill
+# scripts), local tooling (`scripts/`, `tools/`), CI config (`.github/`), or
+# root manifests. Scanning them only ever produced false positives and
+# opinionated supply-chain/CI policy suggestions — never a real application
+# vulnerability (see the 2026-07-29 triage in docs/SECURITY.md).
+.claude/
+scripts/
+tools/
+.github/
+package.json
+pnpm-workspace.yaml
+pnpm-lock.yaml
+turbo.json

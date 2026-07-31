@@ -76,19 +76,21 @@ p/owasp-top-ten p/nodejsscan`, and `pnpm audit --audit-level=high` for
    the production graph with the ignores disabled and fails the build if any
    excepted advisory is ever reachable through a runtime dependency, so a
    global-scope ignore can never silently mask a production vulnerability.
-   **Semgrep** is the one
-   scanner still `continue-on-error`. A full run (2026-07-29, `semgrep ci` with
-   the four configured rulesets) reported 52 blocking findings, but triage
-   found **no genuine vulnerabilities**: they are `p/nodejsscan` (njsscan) false
-   positives (a variable merely named `secret` that is read from config, `===`
+   **Semgrep** now gates too. It was advisory because a full run against the
+   whole repo with `p/nodejsscan` reported 52 findings that triage (2026-07-31)
+   showed were **all false positives** — `p/nodejsscan` (njsscan) noise on
+   first-party code (a variable merely named `secret` read from config, `===`
    against `null`, a bounded fixed-length regex read as ReDoS, test-fixture
    UUIDs), findings inside the vendored `.claude/skills/` scripts, and
    opinionated supply-chain/CI policy suggestions (pin GitHub Action SHAs,
-   npm/pnpm minimum-release-age cooldowns, pnpm trust policy). Flipping Semgrep
-   to blocking therefore needs a tuning pass — scope the scan to `apps/` +
-   `packages/` (exclude `.claude/skills/`), drop or tune the noisy
-   `p/nodejsscan` ruleset, and decide which supply-chain policy rules to adopt
-   versus exclude — not a straight flip.
+   npm/pnpm minimum-release-age cooldowns, pnpm trust policy) — never a real
+   vulnerability. The `semgrep` job now runs `semgrep scan` **without**
+   `continue-on-error`, scoped to `apps/` + `packages/` (explicit targets, plus
+   a repo-root `.semgrepignore`) with `p/nodejsscan` dropped; the remaining
+   rulesets (`p/typescript`, `p/javascript`, `p/owasp-top-ten`) run clean on
+   first-party source, so any new finding blocks the merge. Adopting the
+   supply-chain/CI hardening the excluded policy rules suggest (pinning action
+   SHAs, pnpm release-age/trust policy) stays a separate decision.
 
 6. **Deploy, then scan the running app** — OWASP ZAP against the
    deployed/running `apps/web` and `apps/api`, at release time.

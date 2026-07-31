@@ -12,11 +12,12 @@
 # dated pnpm.auditConfig.ignoreGhsas exceptions, so the audit fails only on a
 # NEW high/critical advisory. See docs/SECURITY.md.
 #
-# Semgrep (SAST) is the one job still on continue-on-error: a full run found
-# 52 blocking findings that triage showed are all p/nodejsscan false positives,
-# vendored .claude/skills/ noise, and supply-chain/CI policy suggestions — no
-# real vulnerabilities. Flipping it to blocking needs a tuning pass (scope to
-# apps/ + packages/, tune p/nodejsscan). See docs/SECURITY.md.
+# Semgrep (SAST) GATES too, now that it is tuned: scoped to apps/ + packages/
+# with p/nodejsscan dropped. That ruleset was the whole reason the scan stayed
+# advisory — its 52 findings were all false positives, vendored .claude/skills/
+# noise, or supply-chain/CI policy suggestions, never a real vulnerability. The
+# remaining rulesets run clean on first-party source, so any NEW finding blocks
+# the merge. See docs/SECURITY.md.
 #
 # ZAP (dynamic scan against a running API) and MobSF (built APK/IPA scan) are
 # deliberately not here — both need a live/built artifact, so they run
@@ -43,16 +44,22 @@ jobs:
       image: semgrep/semgrep
     steps:
       - uses: actions/checkout@v4
-      # SAST — becomes meaningful once apps/api and apps/web have real
-      # TypeScript/JavaScript source for these rulesets to check.
+      # SAST gate over first-party source (apps/ + packages/). p/nodejsscan is
+      # dropped on purpose — on this code it produced only false positives (a
+      # variable named `secret` read from config, `===` against null, a bounded
+      # fixed-length regex read as ReDoS); see the 2026-07-29 triage in
+      # docs/SECURITY.md. The scan is scoped to apps/ + packages/ so vendored
+      # .claude/ scripts, CI YAML, and root manifests (supply-chain policy
+      # noise) never gate merges. --error makes any finding fail the job.
       - name: Semgrep (SAST)
         run: >-
-          semgrep ci
+          semgrep scan
           --config p/typescript
           --config p/javascript
           --config p/owasp-top-ten
-          --config p/nodejsscan
-        continue-on-error: true
+          --error
+          --metrics off
+          apps packages
 
   dependency-audit:
     runs-on: ubuntu-latest

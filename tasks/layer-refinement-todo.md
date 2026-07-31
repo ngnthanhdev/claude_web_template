@@ -17,7 +17,7 @@ task that a `task-implementer` can't act on.
 
 ### T-5c3e8a — Tune Semgrep to a clean baseline and make the SAST scan block merges
 
-- **Status:** todo
+- **Status:** review
 - **Assignee:** ai
 - **Files:** .github/workflows/security.yml, .semgrepignore (new), docs/SECURITY.md
 - **Acceptance:**

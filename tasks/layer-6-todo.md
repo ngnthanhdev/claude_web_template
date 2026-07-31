@@ -74,7 +74,7 @@ tasks touch the same file.
 
 ### T-6d0f2c — Commerce & purchase-surface enablement gate (/refine + /threat-model)
 
-- **Status:** todo
+- **Status:** done
 - **Assignee:** human
 - **Files:** docs/specs/2026-07-28-commerce-purchase-surface-design.md (new approved design doc; the concrete date is the day the gate is run)
 - **Acceptance:**

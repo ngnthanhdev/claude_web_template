@@ -1,6 +1,6 @@
 # Refinement backlog
 
-Status: **2 tasks queued**
+Status: **2 tasks — both done**
 
 This file holds bug fixes and feature requests reported _after_ the initial
 layers have shipped. It is never hand-written directly — `/refine` brainstorms
@@ -17,7 +17,7 @@ task that a `task-implementer` can't act on.
 
 ### T-5c3e8a — Tune Semgrep to a clean baseline and make the SAST scan block merges
 
-- **Status:** review
+- **Status:** done
 - **Assignee:** ai
 - **Files:** .github/workflows/security.yml, .semgrepignore (new), docs/SECURITY.md
 - **Acceptance:**
@@ -32,7 +32,7 @@ Follows `T-e72b45` (layer 6, which left Semgrep advisory). A full `semgrep ci` r
 
 ### T-8b4a1f — Guard that the pnpm audit-ignore exceptions stay on dev-only paths
 
-- **Status:** review
+- **Status:** done
 - **Assignee:** ai
 - **Files:** scripts/audit-ignores-are-dev-only.mjs (new), .github/workflows/security.yml, docs/SECURITY.md
 - **Acceptance:**

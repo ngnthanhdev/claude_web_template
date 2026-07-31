@@ -70,7 +70,13 @@ p/owasp-top-ten p/nodejsscan`, and `pnpm audit --audit-level=high` for
    `GHSA-4w7w-66w2-5vf9` (`vite`), `GHSA-67mh-4wv8-2f99` (`esbuild`),
    `GHSA-mh99-v99m-4gvg` (`brace-expansion`), and `GHSA-v6wh-96g9-6wx3`
    (`launch-editor`, pulled via vite's error overlay). Revisit
-   those exceptions when the toolchain is next upgraded. **Semgrep** is the one
+   those exceptions when the toolchain is next upgraded. Because `ignoreGhsas`
+   mutes a GHSA graph-wide, the `dependency-audit` job also runs
+   `scripts/audit-ignores-are-dev-only.mjs` after the audit: it re-audits only
+   the production graph with the ignores disabled and fails the build if any
+   excepted advisory is ever reachable through a runtime dependency, so a
+   global-scope ignore can never silently mask a production vulnerability.
+   **Semgrep** is the one
    scanner still `continue-on-error`. A full run (2026-07-29, `semgrep ci` with
    the four configured rulesets) reported 52 blocking findings, but triage
    found **no genuine vulnerabilities**: they are `p/nodejsscan` (njsscan) false

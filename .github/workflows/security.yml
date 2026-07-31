@@ -69,3 +69,9 @@ jobs:
       # pnpm.auditConfig.ignoreGhsas (root package.json); see docs/SECURITY.md.
       - name: pnpm audit (dependency vulnerabilities)
         run: pnpm audit --audit-level=high
+      # Guard: a muted advisory (pnpm.auditConfig.ignoreGhsas) must never be
+      # reachable through the production graph — otherwise the global-scope
+      # ignore would hide a real runtime vuln from the audit above. Re-runs the
+      # audit against only prod deps with the ignores disabled. See docs/SECURITY.md.
+      - name: Audit-ignore exceptions stay dev-only
+        run: node scripts/audit-ignores-are-dev-only.mjs

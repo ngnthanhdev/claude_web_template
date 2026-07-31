@@ -32,7 +32,7 @@ Follows `T-e72b45` (layer 6, which left Semgrep advisory). A full `semgrep ci` r
 
 ### T-8b4a1f — Guard that the pnpm audit-ignore exceptions stay on dev-only paths
 
-- **Status:** todo
+- **Status:** review
 - **Assignee:** ai
 - **Files:** scripts/audit-ignores-are-dev-only.mjs (new), .github/workflows/security.yml, docs/SECURITY.md
 - **Acceptance:**

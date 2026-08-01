@@ -106,7 +106,9 @@ discountCode? }`. Validates each item against the published catalogue,
   `Entitlement`s in one transaction. _(Production: this trigger is replaced by
   a signature-verified `PaymentPort` webhook; the fulfilment code is reused.)_
 - `GET /v1/orders`, `GET /v1/orders/:id` — scoped to `userId`; 404 on
-  non-owned id. Returns snapshots + status only.
+  non-owned id. Returns the caller's own order id, status, created date, authoritative
+  total, and item snapshots — no payment reference, provider field,
+  idempotency key, owner id, or subtotal/discount breakdown.
 - `GET /v1/account/library` (entitlements) — scoped to `userId`.
 - `POST /v1/entitlements/:id/download` — verifies the session user owns the
   entitlement, issues a signed URL via `StoragePort`, records a
@@ -177,7 +179,7 @@ to `session.user.id`.
 | `POST /checkout`               | Tampering (replay)         | Double-submit creates duplicate orders/charges                             | Idempotency key with a unique constraint so a retry returns the same order                                                                                  | ASVS Business Logic        |
 | `OrderItemSnapshot`            | Tampering                  | Later catalogue price/licence edits alter a past order                     | Snapshot price/currency/licence/title/version at purchase; immutable, never re-derived                                                                      | ASVS Integrity             |
 | `Order` read                   | Elevation (BOLA/IDOR)      | `GET /orders/:id` for someone else's order                                 | Scope by `userId`; 404 (not 403) on non-owned id                                                                                                            | ASVS 4.1 / 4.2             |
-| `Order` detail                 | Information disclosure     | Response leaks payment refs / internal fields                              | zod response DTO whitelist; snapshot + status only                                                                                                          | ASVS 8.x / 14.x            |
+| `Order` detail                 | Information disclosure     | Response leaks payment refs / internal fields                              | zod DTO whitelist: own id/status/date/total + snapshots, no payment refs or internal breakdown                                                              | ASVS 8.x / 14.x            |
 | Sandbox settle endpoint        | Elevation                  | Endpoint called in production to mint free entitlements                    | **Non-production env guard** + CSRF + order-owner scope; disabled outside sandbox, mirroring the capture-email adapter                                      | ASVS 4.2 / Business Logic  |
 | Sandbox `PaymentAttempt`       | Spoofing                   | Client reports "paid" to unlock for free                                   | Entitlement granted only by the server-side settle transaction; no client-reported success is trusted                                                       | ASVS 4.2                   |
 | Future payment webhook         | Spoofing/Replay            | Forged/replayed event grants entitlement (production boundary)             | HMAC signature + timestamp window + unique `eventId` idempotency before any state change; **go-live blocker, not enabled**                                  | ASVS 13.x                  |

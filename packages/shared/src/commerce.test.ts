@@ -36,6 +36,8 @@ const orderItemSnapshot = {
 const order = {
   id: "8f2f8e14-2b4a-4c8e-9a0e-6e5f1b2c3d4e",
   status: "settled",
+  total: { amount: 1_290_000, currency: "VND" },
+  createdAt: "2026-07-20T08:30:00.000Z",
   items: [orderItemSnapshot],
 };
 
@@ -188,10 +190,17 @@ describe("checkout response contract", () => {
 });
 
 describe("order summary/detail contracts", () => {
-  it("accepts a representative valid order (snapshots + status only)", () => {
+  it("accepts a representative valid order (id, status, date, total, snapshots)", () => {
     expect(orderSummarySchema.parse(order)).toEqual(order);
     expect(orderDetailResponseSchema.parse(order)).toEqual(order);
   });
+
+  for (const requiredField of ["total", "createdAt"] as const) {
+    it(`requires the caller-visible field: ${requiredField}`, () => {
+      const { [requiredField]: _omitted, ...withoutField } = order;
+      expect(orderSummarySchema.safeParse(withoutField).success).toBe(false);
+    });
+  }
 
   it("rejects an unknown currency in an item snapshot", () => {
     expect(

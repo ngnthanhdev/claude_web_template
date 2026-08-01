@@ -69,14 +69,19 @@ export type OrderItemSnapshot = z.infer<typeof orderItemSnapshotSchema>;
 
 /**
  * Shared allowlist for both the order summary (list) and order-detail
- * responses (design §9 "Order detail / Information disclosure"): item
- * snapshots plus status only — no payment reference, provider field,
- * idempotency key, owner id, or any other persistence-only field.
+ * responses (design §5/§9 "Order detail / Information disclosure"): the
+ * caller's own order id, status, creation date, authoritative total, and item
+ * snapshots. `total` and `createdAt` are the requester's own order data (not a
+ * disclosure risk); the subtotal/discount breakdown, payment reference,
+ * provider field, idempotency key, owner id, and every other persistence-only
+ * field stay excluded.
  */
 export const orderSchema = z
   .object({
     id: z.string().uuid(),
     status: orderStatusSchema,
+    total: moneySchema,
+    createdAt: z.string().datetime({ offset: true }),
     items: z.array(orderItemSnapshotSchema).min(1),
   })
   .strict();

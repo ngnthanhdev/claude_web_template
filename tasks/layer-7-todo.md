@@ -205,7 +205,7 @@ and belong to a later `/scope-breakdown` pass over the same approved design:
 
 ### T-e3a9d7 — Cross-viewport Playwright e2e for the purchase happy path
 
-- **Status:** todo
+- **Status:** in-progress
 - **Assignee:** ai
 - **Files:** apps/web/e2e/commerce.spec.ts, apps/web/e2e/fixtures/purchasable-product.ts, apps/web/e2e/README.md, apps/api/prisma/seed-e2e.mjs
 - **Acceptance:**

@@ -3,26 +3,26 @@
 ## Recent commits
 
 ```
+5f400e3 chore(tasks): close the enablement-gate layer and advance to commerce Wave 1
+b5a467c docs(specs): approve the admin surface enablement design
+44d17b5 docs(specs): approve the seller authoring enablement design
+28035f4 docs(tasks): add the commerce Wave-1 implementation layer
+414ada4 docs(specs): approve the commerce purchase-surface design (gate T-6d0f2c)
+443cc93 docs(specs): add the commerce purchase-surface threat model (gate draft)
+e0997ce chore(tasks): mark both refinement tasks done
+3f676ef ci(security): make the Semgrep SAST scan block merges
+63ce7fb ci(security): guard that audit-ignore exceptions stay dev-only
+e739bed chore(tasks): queue the audit-ignore dev-only guard task
+3020ebd ci: drop the pnpm-setup version pin so the quality gate runs
+7faafcc chore(tasks): mark the security-scanner blocking task done
+02001b6 ci(security): fix the pnpm-setup version conflict and correct the advisory ledger
+7b27c60 chore(tasks): queue the Semgrep SAST tuning refinement task
+1b96afc docs(security): record the Semgrep full-run result
+5945fb3 ci(security): harden dependencies and gate merges on pnpm audit
+1b43cd6 ci(security): make the Gitleaks secret scan block merges
+2b12fd4 docs(checkpoint): refresh CHECKPOINT.md after Layer 5
 f06b914 chore(tasks): record Layer 5 done and add the Layer 6 gate layer
 716aeb7 chore: add local completion-gate e2e harness
-c9c5eaa test(web): settle the document title before the axe health check
-e816927 fix(web): render the desktop mega-menu panel full-width
-a3c4839 chore(plans): add code-review, security-review, and session-handoff reports
-9bc796f test(web): harden playwright e2e for App Router nav and auth rate limits
-634b65f ci(design): add non-blocking impeccable anti-pattern detector job
-f8eb59c docs(design): add apps/web/DESIGN.md as the design brief + wire the skills to it
-7a67a89 docs(claude): register Emil animation-craft skills + confirm Framer Motion as the sole animation lib
-3c42371 chore(skills): add Emil Kowalski animation-craft skills (curated subset)
-1f48f05 docs(claude): document the design/UI skill layering (taste / data / gate)
-4db1542 chore(skills): add lean impeccable as the UI audit gate
-0e063d3 chore(skills): add taste-skill for anti-slop landing/marketing direction
-c56e5ce test(web): match the sign-out button by exact accessible name
-d8e7ffc fix(web): give the Clear filters control an accessible-contrast color
-5fe9ad2 fix(web): pass locale to NextIntlClientProvider so client code uses the active locale
-f1ffc49 test(web): add JSON import attributes so the e2e fixtures load under ESM
-f1814db fix(web): render locale subtree dynamically so the CSP nonce reaches scripts
-a595134 fix(web): wrap CollectionView search-param reads in a Suspense boundary
-2929d48 fix(web): decouple i18n routing from the next-intl barrel for the edge runtime
 ```
 
 ## Completed tasks
@@ -34,6 +34,136 @@ Grouped under a `## Layer N` (or `## Refinement`) heading, most recent first.
 Each task keeps its original `T-xxxxxx` id and task-block schema (`Status`,
 `Assignee`, `Files`, `Acceptance`, `Skills`, optional `Depends`) unchanged
 except `Status`, which is `done` for everything in this file.
+
+## Layer 6 — Commerce, Seller, and Admin Enablement Gates
+
+Completed 2026-08-01. Gate/decision layer: shipped no application code, Prisma
+model, shared contract, or endpoint, so there is no package test-suite delta.
+`T-e72b45` promoted the `security.yml` scanners (Gitleaks, Semgrep, `pnpm audit`)
+from advisory to blocking merge gates against a confirmed-clean, tuned baseline,
+plus an `audit-ignores-are-dev-only` guard; the gate config is unchanged since its
+last green CI run. The three human gates each produced a user-approved design doc
+under `docs/specs/` — commerce purchase-surface (`T-6d0f2c`), seller authoring
+(`T-b13e77`), and admin surface (`T-4c8a9e`) — the inputs to separate future
+`/scope-breakdown` passes (commerce Wave 1 is already scoped as Layer 7). Payment
+production and production admin MFA remain explicit go-live blockers.
+
+### T-6d0f2c — Commerce & purchase-surface enablement gate (/refine + /threat-model)
+
+- **Status:** done
+- **Assignee:** human
+- **Files:** docs/specs/2026-07-28-commerce-purchase-surface-design.md (new approved design doc; the concrete date is the day the gate is run)
+- **Acceptance:**
+  - A new approved design document under `docs/specs/` is produced by a `/refine`
+    brainstorm (clarifying questions one at a time, 2–3 approaches with a
+    recommendation) plus a `/threat-model` pass, covering the full deferred
+    customer commerce surface: `Cart`/`CartItem`; checkout (dialog on desktop /
+    full-screen sheet on mobile, following the spec §4 Global/Vietnam + email +
+    name + coupon + referral + continue hierarchy, clearly labelled sandbox);
+    sandbox/mock `PaymentAttempt` (production payment + webhooks remain an
+    explicit go-live blocker per §6/§8); `Order`/`OrderItemSnapshot`;
+    `Entitlement` + `account/library`; signed-URL `DownloadEvent` + download
+    audit; `Wishlist`; `Coupon`/`ReferralCode`/`DiscountRedemption` +
+    `POST /v1/discount-quotes`; and verified-purchase `Review` (which depends on
+    entitlement data existing, so it is designed to sequence after purchase).
+  - The doc turns spec §7's high-level rows into concrete, per-endpoint
+    mitigations before any endpoint is enabled: server-side price/discount
+    calculation with immutable order-item snapshots (no client price/licence/
+    discount authority); server-scoped ownership + entitlement checks with no
+    client-supplied owner id (order/download BOLA/IDOR); private-bucket,
+    short-TTL, redacted-log signed download URLs; and atomic, idempotent,
+    uniquely-capped coupon/referral redemption.
+  - The doc resolves — or explicitly records as still-open behind the
+    sandbox-only boundary — the §8 provider-neutral decisions that gate commerce
+    go-live (payment provider + webhook signing, entitlement/artifact storage),
+    so a later scope pass is not forced to invent them.
+  - The document is marked **approved by the user** and is structured so a
+    follow-on `/scope-breakdown` pass can derive an ordered commerce layer
+    (shared Zod contracts → Prisma models/migrations → NestJS resources → web
+    screens) without re-litigating scope. This task writes **no** application
+    code, Prisma model, shared contract, or endpoint; its checkable "done" is
+    the approved, internally consistent design doc plus a linked follow-on scope
+    pass, not a passing test suite.
+- **Skills:** brainstorming, security-threat-model, api-design, backend-auth-security, database-orm, shared-contracts, web-data-forms
+
+### T-b13e77 — Seller authoring enablement gate (/refine + /threat-model)
+
+- **Status:** done
+- **Assignee:** human
+- **Files:** docs/specs/2026-08-01-seller-authoring-design.md (approved design doc)
+- **Acceptance:**
+  - Per spec §7 ("Future seller features require a new refinement and threat
+    model before any seller-facing endpoint is enabled"), a new approved design
+    doc under `docs/specs/` is produced by a `/refine` brainstorm +
+    `/threat-model` covering the intended seller surface: seller onboarding and
+    seller-scoped product authoring, `ProductVersion`/`Artifact`/`BuildRun`, the
+    QA/publication state machine, and any seller dashboard — building on the
+    existing server-controlled `Product.sellerId` / `SellerProfile` ownership so
+    a later scope pass does not rewrite catalogue authorization.
+  - The doc names the concrete trust boundaries and mitigations: seller RBAC and
+    ownership scoping so one seller cannot read or modify another seller's
+    products/releases, and ephemeral, resource-limited, least-privilege
+    build-runner isolation (spec §7 malicious-code row) before any build runner
+    executes untrusted product code.
+  - The doc explicitly reconciles with spec §6 (public sellers, KYC,
+    commissions, payouts, and seller dashboards are v1 non-goals) by stating
+    which seller capabilities, if any, v1 enables versus defers, so a follow-on
+    `/scope-breakdown` pass inherits an unambiguous boundary.
+  - The document is marked **approved by the user** and structured for a
+    follow-on `/scope-breakdown` pass; this task writes **no** seller-facing
+    endpoint, guard, model, or code. Its checkable "done" is the approved,
+    internally consistent design doc, not a passing test suite.
+- **Skills:** brainstorming, security-threat-model, backend-auth-security, api-design, database-orm, shared-contracts
+
+### T-4c8a9e — Admin surface enablement gate (/refine + /threat-model)
+
+- **Status:** done
+- **Assignee:** human
+- **Files:** docs/specs/2026-08-01-admin-surface-design.md (approved design doc)
+- **Acceptance:**
+  - A new approved design doc under `docs/specs/` is produced by a `/refine`
+    brainstorm + `/threat-model` covering the admin surface the spec calls for
+    (§3 admin resources + §4 `/[locale]/admin/*` pages): catalogue authoring,
+    releases/builds, orders, entitlements, discounts, review moderation, and
+    audit, with guarded publish/delist/approve actions on the dense
+    operate/review/publish shell described in §2.
+  - The doc turns spec §7's admin-API elevation row into concrete mitigations
+    before any admin endpoint is enabled: server-enforced admin RBAC (no
+    client-supplied role/owner authority), production MFA, and an append-only
+    `AdminAuditLog` capturing the acting admin for every release/publication
+    state change (§7 repudiation row).
+  - The document is marked **approved by the user** and structured for a
+    follow-on `/scope-breakdown` pass; this task writes **no** admin endpoint,
+    guard, model, or code. Its checkable "done" is the approved, internally
+    consistent design doc, not a passing test suite.
+- **Skills:** brainstorming, security-threat-model, backend-auth-security, web-security, api-design, database-orm
+
+### T-e72b45 — Promote security.yml scanners from advisory to blocking now the apps are populated
+
+- **Status:** done
+- **Assignee:** ai
+- **Files:** .github/workflows/security.yml, docs/SECURITY.md
+- **Acceptance:**
+  - `docs/CI_CD.md` scopes the `security.yml` scanners' `continue-on-error` to
+    the era when "`apps/*`/`packages/shared` are still empty skeletons" — a
+    condition Layers 1–5 have ended. The Gitleaks secret-scan step therefore no
+    longer runs `continue-on-error`: a detected secret blocks the merge,
+    completing the documented "no hard-coded secrets" discipline gate rather than
+    leaving secret detection advisory.
+  - Semgrep (`p/typescript p/javascript p/owasp-top-ten p/nodejsscan`) and
+    `pnpm audit --audit-level=high` are escalated to blocking **only** against a
+    confirmed-clean baseline. Where a finding cannot yet be resolved, it is
+    recorded as an explicit, narrowly-scoped, dated exception with rationale in
+    `docs/SECURITY.md` (not left as a blanket advisory step). The separate
+    non-blocking `design-detector` job and ZAP's manual, release-time status are
+    unchanged.
+  - The PR / `main` / `develop` triggers, the existing steps and rulesets, and
+    the provider-neutral posture are preserved; no production credential is
+    introduced. `security.yml` passes static YAML validation, and the full
+    security workflow run is verified in a real terminal outside the agent
+    session per the repository heavy-build rule; the task changes only
+    `security.yml` and `docs/SECURITY.md`.
+- **Skills:** security-review, git-workflow, backend-auth-security, web-security
 
 ## Layer 5 — Public Storefront, Passwordless Auth Web Flow, and Web Release Readiness
 
@@ -532,73 +662,90 @@ configuration and history contained no baked runtime credentials.
 ## Architecture
 
 ```
-apps/web (Next.js App Router · output:"standalone")        apps/api (NestJS · Fastify · Prisma)
-  [locale]/  home · search · categories/[...slug]            /v1 catalogue  GET categories | products | products/:slug
-    · templates/[slug] · auth/sign-in · auth/magic-link         (cursor-paginated, signed cursors; category filter by root_slug)
-    · account                                                 /v1 auth       POST magic-links | magic-link-redemptions
-  app/api/[...proxy]  ── same-origin proxy ──────────────►    /v1 sessions   GET|DELETE current | DELETE (all)
-  Server Components fetch API_ORIGIN directly (real SSR 404s)  EMAIL_DELIVERY_PORT: null (default) | capture-only e2e seam
-  browser talks ONLY to the web origin                        __Host-kitvera_session cookie · SameSite=Lax · Secure · HttpOnly
-        │                                                              │
-        └──────────── packages/shared (zod contracts, validated both sides) ────────────┘
-                                    │
-                     Prisma ► PostgreSQL: catalogue read-model (categories+translations,
-                     products+versions/media/specs/demo/licence/prices) · users/sessions ·
-                     magic_link_tokens · auth_rate_events · auth_security_events
+pnpm + Turborepo monorepo (TS strict, no any)
+├── apps/web   Next.js App Router storefront (Layers 1–5): home/Ecosystem-Index,
+│              catalogue + search (URL-backed state), product detail (sandboxed
+│              preview), passwordless sign-in + magic-link redemption, account +
+│              session mgmt. Same-origin /api/[...proxy] → API; SSR 404s for
+│              product/category; standalone Docker (vi/en). No commerce/admin UI yet.
+├── apps/api   NestJS on Fastify + Prisma. Live: GET /v1/categories|products|
+│              products/:slug; POST /v1/auth/magic-links + magic-link-redemptions;
+│              GET|DELETE /v1/sessions/current, DELETE /v1/sessions. __Host-kitvera_session
+│              cookie, HMAC opaque cursors, DB-backed rate limits, session CSRF.
+├── packages/shared   zod contracts (@marketplace/shared/catalogue, /auth) — SSOT.
+└── CI/CD      ci.yml (lint/typecheck/test + Postgres integration gate; advisory
+               design-detector) · security.yml (Gitleaks + Semgrep + pnpm audit — ALL
+               blocking) · web-build.yml / api-deploy.yml (Docker, provider-neutral).
+
+Designed, not built (approved docs/specs/, awaiting their own scope passes):
+  commerce purchase surface (→ Layer 7, already scoped), seller authoring, admin surface.
 ```
 
 ## Key decisions (WHY)
 
-- **Same-origin proxy topology** (browser → web `/api/v1/*` → server-only `API_ORIGIN`): keeps
-  `__Host-`/`SameSite=Lax` cookies first-party so the API origin can deploy on any host. Server
-  Components fetch `API_ORIGIN` **directly** (no cookies, public reads) — that's what yields real
-  SSR 404s. The browser must never call `API_ORIGIN` directly; auth reads stay client-side.
-- **Web ships as the standalone Docker image**: `next.config.ts` force-includes `messages/**` in the
-  output trace (+ Dockerfile `COPY`) because `i18n/request.ts` enumerates locale namespaces via a
-  runtime `fs.readdirSync` the tracer can't discover.
-- **Capture-only magic-link adapter** (`E2E_MAGIC_LINK_CAPTURE_FILE`, guarded to non-production) is the
-  cross-process seam the auth e2e uses to redeem a real link; the null/suppress adapter is wired
-  everywhere else, so the capture file can never be produced in production.
-- **e2e stack via `scripts/e2e-local.sh` + `prisma/seed-e2e.mjs`**: the public catalogue API is
-  read-only, so fixtures are inserted at the Prisma level; the 10 root categories (incl. `wordpress`)
-  come from the `catalogue_read_model` migration, so the seed only adds a seller + published products.
-- **Layer 6 is a decision/gate layer**, not a build layer: commerce/seller/admin are spec-gated
-  (§6/§7), each requiring a `/refine` + `/threat-model` pass before any endpoint is scoped.
+- **Security scanners now block merges** (Gitleaks/Semgrep/`pnpm audit`). WHY: Layers
+  1–5 gave the apps real source, so the "empty-skeleton" advisory era ended; secret
+  detection blocking completes the no-hard-coded-secrets discipline gate.
+- **Semgrep tuned, not flipped blind**: dropped `p/nodejsscan`, scoped to `apps/`+
+  `packages/` via `.semgrepignore` (exclude-list — whitelist negation scans 0 files).
+  WHY: a full run showed 52 findings, all njsscan false positives or vendored-skill/
+  supply-chain policy noise, zero real vulns.
+- **`audit-ignores-are-dev-only` guard** added to `security.yml`. WHY: pnpm's
+  `ignoreGhsas` mutes an advisory across the whole graph, not a path; the guard fails
+  the merge if any suppressed GHSA becomes runtime-reachable in `apps/*`.
+- **Commerce gate**: two-step sandbox payment (settle endpoint non-prod-guarded),
+  **client-only cart** (no server Cart model), `StoragePort` + local dev adapter,
+  two-wave sequencing. WHY: payment production is a go-live blocker; a v1 cart needs
+  no server persistence; storage stays provider-neutral.
+- **Seller gate**: first-party authoring only + **external-factory builds**. WHY: §6
+  makes public sellers/KYC/payouts non-goals, and building in the factory keeps the
+  marketplace from ever executing untrusted product code (it only verifies a signed,
+  checksummed artifact on ingest).
+- **Admin gate**: single `admin` role, **prod-flag-gated MFA**, **sequenced breadth**.
+  WHY: KISS (split roles later, additively); mirror the sandbox-payment go-live-blocker
+  pattern; admin can only manage data that later layers create.
+- **`/next-layer` advanced the pointer to the pre-existing `layer-7-todo.md`** instead
+  of re-dispatching `scope-planner`. WHY: commerce Wave 1 was already scoped from the
+  approved design; re-scoping would clobber/duplicate it.
 
 ## API contracts (signatures only)
 
-`packages/shared` (imported as `@shared/*` in web, `@marketplace/shared/*` in api):
+Layer 6 (gate layer) added **no** new `packages/shared` contracts. In play from
+Layers 1–5:
 
-- **catalogue.ts** — `categorySlugSchema`, `slugSchema`, `semanticVersionSchema`,
-  `publicationStateSchema`, `licenceIdentifierSchema`, `licenceOptionsSchema`, `productSortSchema`,
-  `compatibilityFilterSchema`, `updatedWithinSchema`, `localizedCategorySummarySchema`,
-  `productCardSchema`; queries `categoryCollectionQuerySchema` / `productCollectionQuerySchema` →
-  responses `categoryCollectionResponseSchema` / `productCollectionResponseSchema` (cards +
-  `cursorPageMetaSchema`) / `productDetailResponseSchema`.
-- **auth.ts** — `base64Url256BitTokenSchema`, `kitveraReturnToSchema`,
-  `magicLinkInitiationRequestSchema`→`magicLinkInitiationResponseSchema`,
-  `magicLinkRedemptionRequestSchema`→`magicLinkRedemptionResponseSchema`, `sessionUserSchema`,
-  `safeSessionSchema`, `currentSessionResponseSchema`, `currentSessionRevocationResponseSchema`,
-  `allSessionsRevocationResponseSchema`.
-- **localization.ts** — `localeSchema` (`vi`|`en`), `currencySchema` (`VND`|`USD`).
-- **money.ts** — `moneySchema` (integer minor units + currency). **api.ts** — `apiErrorSchema`
-  (`{ error: { code, ... } }` envelope), `healthResponseSchema`, `cursorPageMetaSchema`.
+- `@marketplace/shared/catalogue` — category list; product-collection request grammar
+  (`locale`, `currency`, `licence`, controlled facets, price range, sort keys, opaque
+  cursor) + `{data, meta}` response; product-detail response (localized, current
+  version, licence/price, media/demos) — no seller-private/persistence-only fields.
+- `@marketplace/shared/auth` — magic-link initiation `{email, locale, returnTo?}` →
+  generic accepted; redemption `{token}` → `{user, session, csrf, returnTo}`;
+  current-session + CSRF response; error envelope `{error:{code,message,details?}}`.
+
+Next to land (Layer 7 `T-c0a71e`, per commerce design §4/§5): `Order`,
+`OrderItemSnapshot` (immutable), `PaymentAttempt`, `Entitlement`, `DownloadEvent`
+request/response shapes; checkout, settle, orders-read, library, download contracts.
+Cart stays client-only (no wire contract). Wave-2 (wishlist/coupons/referrals/
+discount-quotes/reviews) deferred.
 
 ## Known issues & gotchas
 
-- **`next start` does NOT work with `output:"standalone"`** — serve via the Docker image (what the
-  e2e uses) or `node .next/standalone/apps/web/server.js` after copying `.next/static` + `messages`.
-- **Prisma `DATABASE_URL` must name the DB user explicitly** (`postgresql://<user>@localhost:5432/...`);
-  libpq's OS-user default gives Prisma `P1010: denied access`.
-- **axe `document-title` races App Router client soft-nav**: client routes (e.g. `/search`) get their
-  `<title>` from layout metadata only after the nav settles — `assertPageIsHealthy` now awaits
-  `toHaveTitle(/.+/)` before scanning.
-- **Header dropdowns that are `position:absolute` must anchor to the full-width positioned ancestor
-  (`.site-header`), not a narrow wrapper, and sit above `.nav-scrim` (z-index)** — otherwise the N11
-  columns collapse to the button width and overlap, leaving links unclickable (desktop-only; the
-  mobile drawer is a separate component). First real e2e run caught this.
-- **Run the FULL workspace gate** (`pnpm turbo run lint typecheck test`), not `--filter web` — a web
-  export deletion once broke an `apps/api` cross-package test.
-- **Playwright auth spec is pinned to one viewport project** (API per-IP magic-link cap: 20 init /
-  10 redeem per 15 min); browse fans across five viewports. The capture file path must be absolute and
-  `NODE_ENV` non-production for the seam to activate.
+- **Heavy builds never run in-session** (`block-build-output.sh` blocks `next build`,
+  `docker build`, `playwright test`): verify those in a real terminal, paste back only
+  errors.
+- **One dedicated Postgres DB per integration suite** (from `T-6a1d84`): Layer 7 adds
+  `COMMERCE_/ENTITLEMENTS_/COMMERCE_FLOW_INTEGRATION_DATABASE_URL` (+ test-only
+  `DOWNLOAD_TOKEN_HMAC_SECRET`, `LOCAL_ARTIFACT_STORAGE_DIR`) — never share one DB.
+- **`pnpm/action-setup` + `packageManager` conflict**: do NOT add `with: version:` in
+  a workflow when the root `package.json` pins `packageManager` — it fails CI with
+  "Multiple versions of pnpm specified".
+- **Standalone Docker path trap** (from `T-7c4f10`): `process.cwd()` is `/app` in the
+  standalone runtime; resolve `messages/` relative to app root + trace it, or localized
+  routes 500.
+- **Commerce build guardrails** (design §9, to enforce in Layer 7 code): server-side
+  price/discount authority + immutable `OrderItemSnapshot`; `order.userId` from session
+  only (no client owner id → BOLA/IDOR 404s); settle endpoint disabled in production;
+  private-bucket short-TTL single-use redacted-log signed download URLs; atomic
+  idempotent order/payment/entitlement writes.
+- **Module composition** (Layer-4 pattern, reused as `T-7b2d84`): resource modules own
+  their own dirs; a dedicated composition task wires `app.module.ts` so parallel
+  worktrees don't conflict on it.

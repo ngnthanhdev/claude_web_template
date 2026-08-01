@@ -16,7 +16,7 @@ import {
   libraryResponseSchema,
   orderSchema,
 } from "@marketplace/shared/commerce";
-import type { FastifyRequest, FastifyServerOptions } from "fastify";
+import type { FastifyServerOptions } from "fastify";
 import request from "supertest";
 import {
   afterAll,
@@ -31,6 +31,7 @@ import {
 import type { AuthSessionService as AuthSessionServiceType } from "../src/auth/core/auth-session.service.js";
 import { SESSION_COOKIE_NAME } from "../src/auth/core/auth-cookie.js";
 import { configureApp } from "../src/bootstrap/configure-app.js";
+import { requestLogSerializer } from "../src/common/request-log-serializer.js";
 
 const integrationDatabaseUrl =
   process.env.COMMERCE_FLOW_INTEGRATION_DATABASE_URL;
@@ -87,28 +88,6 @@ class CapturingLogStream extends Writable {
   text(): string {
     return Buffer.concat(this.chunks).toString("utf8");
   }
-}
-
-/**
- * Mirrors `main.ts`'s bootstrap request serializer exactly (design §9
- * "Signed download URL / Info disclosure"): masks only the single-use
- * download token segment of `GET /v1/downloads/token/:token`, leaving every
- * other request URL untouched. Duplicated here rather than imported —
- * `main.ts` calls `bootstrap()` at module load, so importing it would start
- * a real server; every other integration suite in this codebase similarly
- * keeps its own self-contained fixtures rather than sharing test-only
- * helpers across files.
- */
-function redactedReqSerializer(fastifyRequest: FastifyRequest) {
-  const url = fastifyRequest.url.replace(
-    /(\/v1\/downloads\/token\/)[^/?#]+/,
-    "$1[redacted]",
-  );
-  return {
-    method: fastifyRequest.method,
-    url,
-    hostname: fastifyRequest.hostname,
-  };
 }
 
 /**
@@ -351,7 +330,7 @@ describeWithPostgres(
         logger: {
           level: "info",
           stream: logStream,
-          serializers: { req: redactedReqSerializer },
+          serializers: { req: requestLogSerializer },
         },
       });
       app = testApp.app;
@@ -602,6 +581,11 @@ describeWithPostgres(
       const logText = logStream.text();
       expect(logText).not.toContain(rawToken);
       expect(logText).toContain("downloads/token/[redacted]");
+      // The token mask must not come at the cost of the observability
+      // fields Fastify's own default request serializer would have logged
+      // (`logger: true` before this project added the mask).
+      expect(logText).toContain('"remoteAddress"');
+      expect(logText).toContain('"remotePort"');
     });
   },
 );

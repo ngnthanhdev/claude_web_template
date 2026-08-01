@@ -112,9 +112,9 @@ tasks touch the same file.
 
 ### T-b13e77 — Seller authoring enablement gate (/refine + /threat-model)
 
-- **Status:** todo
+- **Status:** done
 - **Assignee:** human
-- **Files:** docs/specs/2026-07-28-seller-authoring-design.md (new approved design doc; the concrete date is the day the gate is run)
+- **Files:** docs/specs/2026-08-01-seller-authoring-design.md (approved design doc)
 - **Acceptance:**
   - Per spec §7 ("Future seller features require a new refinement and threat
     model before any seller-facing endpoint is enabled"), a new approved design

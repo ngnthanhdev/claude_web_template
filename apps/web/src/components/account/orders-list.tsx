@@ -1,12 +1,12 @@
 "use client";
 
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
+import { useAccountCollection } from "@/hooks/use-account-collection";
 import { useSession } from "@/hooks/use-session";
 import { listOrders } from "@/lib/commerce-client";
 import { formatMoney } from "@/lib/format";
@@ -39,7 +39,6 @@ export function OrdersList() {
   const router = useRouter();
   const t = useTranslations("Account.orders");
   const session = useSession();
-  const [cursor, setCursor] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (session.status === "unauthenticated") {
@@ -47,11 +46,10 @@ export function OrdersList() {
     }
   }, [session.status, locale, router]);
 
-  const ordersQuery = useQuery({
-    queryKey: ["account", "orders", cursor] as const,
-    queryFn: () => listOrders({ cursor, limit: ORDERS_PAGE_SIZE }),
+  const ordersQuery = useAccountCollection({
+    queryKey: ["account", "orders"] as const,
+    queryFn: ({ cursor }) => listOrders({ cursor, limit: ORDERS_PAGE_SIZE }),
     enabled: session.status === "authenticated",
-    placeholderData: keepPreviousData,
   });
 
   if (session.status === "loading" || session.status === "unauthenticated") {
@@ -108,8 +106,7 @@ export function OrdersList() {
     );
   }
 
-  const orders = ordersQuery.data?.data ?? [];
-  const meta = ordersQuery.data?.meta;
+  const orders = ordersQuery.items;
 
   return (
     <section
@@ -150,10 +147,10 @@ export function OrdersList() {
           ))}
         </ul>
       )}
-      {meta?.hasMore && meta.nextCursor ? (
+      {ordersQuery.hasNextPage ? (
         <Button
-          disabled={ordersQuery.isFetching}
-          onClick={() => setCursor(meta.nextCursor ?? undefined)}
+          disabled={ordersQuery.isFetchingNextPage}
+          onClick={() => ordersQuery.fetchNextPage()}
           type="button"
           variant="outline"
         >

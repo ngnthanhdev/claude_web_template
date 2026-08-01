@@ -13,9 +13,13 @@ export interface DownloadActionProps {
 
 /**
  * The library's Download action. POSTs `/v1/entitlements/:id/download` via
- * the Round-2 commerce client to issue a short-lived signed URL, then opens
- * it directly with `window.open`. The returned `{ url, expiresAt }` is only
- * ever handed to `window.open` — this component never renders it into an
+ * the Round-2 commerce client to issue a short-lived signed URL, then
+ * navigates directly to it with `window.location.assign`. The endpoint
+ * responds `content-disposition: attachment`, so the browser downloads the
+ * file in place instead of navigating away or opening a new tab — and
+ * unlike `window.open`, this isn't liable to be silently blocked as a
+ * popup. The returned `{ url, expiresAt }` is only ever handed to
+ * `window.location.assign` — this component never renders it into an
  * anchor `href`, a query string, or any pre-fetched link, and never logs it
  * (design §9 "Download/entitlement tokens / Information disclosure").
  */
@@ -28,7 +32,7 @@ export function DownloadAction({
   const downloadMutation = useMutation({
     mutationFn: () => issueDownload(entitlementId, csrfToken),
     onSuccess: (issued) => {
-      window.open(issued.url, "_blank", "noopener,noreferrer");
+      window.location.assign(issued.url);
     },
   });
 

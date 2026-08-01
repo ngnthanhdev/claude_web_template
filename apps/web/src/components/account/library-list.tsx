@@ -1,11 +1,11 @@
 "use client";
 
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
+import { useAccountCollection } from "@/hooks/use-account-collection";
 import { useSession } from "@/hooks/use-session";
 import { listLibrary } from "@/lib/commerce-client";
 import { localeSchema } from "@shared/localization";
@@ -28,7 +28,6 @@ export function LibraryList() {
   const t = useTranslations("Account.library");
   const tOrders = useTranslations("Account.orders");
   const session = useSession();
-  const [cursor, setCursor] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (session.status === "unauthenticated") {
@@ -36,11 +35,10 @@ export function LibraryList() {
     }
   }, [session.status, locale, router]);
 
-  const libraryQuery = useQuery({
-    queryKey: ["account", "library", cursor] as const,
-    queryFn: () => listLibrary({ cursor, limit: LIBRARY_PAGE_SIZE }),
+  const libraryQuery = useAccountCollection({
+    queryKey: ["account", "library"] as const,
+    queryFn: ({ cursor }) => listLibrary({ cursor, limit: LIBRARY_PAGE_SIZE }),
     enabled: session.status === "authenticated",
-    placeholderData: keepPreviousData,
   });
 
   if (session.status === "loading" || session.status === "unauthenticated") {
@@ -97,8 +95,7 @@ export function LibraryList() {
     );
   }
 
-  const entitlements = libraryQuery.data?.data ?? [];
-  const meta = libraryQuery.data?.meta;
+  const entitlements = libraryQuery.items;
   const csrfToken = session.csrfToken;
 
   return (
@@ -142,10 +139,10 @@ export function LibraryList() {
           ))}
         </ul>
       )}
-      {meta?.hasMore && meta.nextCursor ? (
+      {libraryQuery.hasNextPage ? (
         <Button
-          disabled={libraryQuery.isFetching}
-          onClick={() => setCursor(meta.nextCursor ?? undefined)}
+          disabled={libraryQuery.isFetchingNextPage}
+          onClick={() => libraryQuery.fetchNextPage()}
           type="button"
           variant="outline"
         >

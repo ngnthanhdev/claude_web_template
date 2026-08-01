@@ -75,6 +75,8 @@ const UNKNOWN_ORDER_ID = "55555555-5555-4555-8555-555555555505";
 const MALFORMED_ORDER_ID = "not-a-uuid";
 const ENTITLEMENT_ID = "33333333-3333-4333-8333-333333333303";
 const PRODUCT_ID = "44444444-4444-4444-8444-444444444404";
+const ENTITLEMENT_ID_2 = "66666666-6666-4666-8666-666666666606";
+const PRODUCT_ID_2 = "77777777-7777-4777-8777-777777777707";
 
 function sessionFixture(csrfToken: string) {
   return {
@@ -213,6 +215,18 @@ function renderWithProviders(ui: ReactNode) {
   );
 }
 
+/**
+ * jsdom's `Location.prototype.assign` isn't configurable, so
+ * `vi.spyOn(window.location, "assign")` throws; stubbing the whole
+ * `location` global (cleaned up by the existing `vi.unstubAllGlobals()` in
+ * `afterEach`) is the reliable way to observe a navigation call in jsdom.
+ */
+function stubLocationAssign(): ReturnType<typeof vi.fn> {
+  const assign = vi.fn();
+  vi.stubGlobal("location", { ...window.location, assign });
+  return assign;
+}
+
 let routerMock: RouterMock;
 
 beforeEach(() => {
@@ -269,6 +283,78 @@ describe("OrdersList", () => {
     expect(secondLink).toHaveTextContent(
       enAccount.Account.orders.status.pending,
     );
+  });
+
+  it("'Load more' appends the next page instead of replacing the page already on screen", async () => {
+    const csrfToken = base64UrlToken();
+    const orderPage1 = orderFixture(
+      ORDER_ID_1,
+      "settled",
+      "2026-08-01T00:00:00.000Z",
+    );
+    const orderPage2 = orderFixture(
+      ORDER_ID_2,
+      "pending",
+      "2026-07-15T00:00:00.000Z",
+    );
+
+    const impl = vi.fn(
+      async (
+        input: RequestInfo | URL,
+        init?: RequestInit,
+      ): Promise<Response> => {
+        const url = String(input);
+        const method = (init?.method ?? "GET").toUpperCase();
+
+        if (url === "/api/v1/sessions/current" && method === "GET") {
+          return jsonResponse(sessionFixture(csrfToken));
+        }
+        if (url.startsWith("/api/v1/orders?") && method === "GET") {
+          const cursor = new URL(url, "http://localhost").searchParams.get(
+            "cursor",
+          );
+          return cursor === "page-2-cursor"
+            ? jsonResponse({
+                data: [orderPage2],
+                meta: { nextCursor: null, hasMore: false },
+              })
+            : jsonResponse({
+                data: [orderPage1],
+                meta: { nextCursor: "page-2-cursor", hasMore: true },
+              });
+        }
+
+        throw new Error(`Unhandled fetch in test: ${method} ${url}`);
+      },
+    );
+    vi.stubGlobal("fetch", impl);
+    const user = userEvent.setup();
+
+    renderWithProviders(<OrdersList />);
+
+    const firstPageLink = await screen.findByRole("link", {
+      name: new RegExp(`Order #${ORDER_ID_1.slice(0, 8)}`),
+    });
+    expect(firstPageLink).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", {
+        name: new RegExp(`Order #${ORDER_ID_2.slice(0, 8)}`),
+      }),
+    ).not.toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: enAccount.Account.orders.loadMore }),
+    );
+
+    await screen.findByRole("link", {
+      name: new RegExp(`Order #${ORDER_ID_2.slice(0, 8)}`),
+    });
+    // Page 1's order is still on screen — "Load more" appended, it didn't
+    // swap the list out from under the shopper.
+    expect(firstPageLink).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: enAccount.Account.orders.loadMore }),
+    ).not.toBeInTheDocument();
   });
 
   it("shows an honest empty state when the caller has placed no orders", async () => {
@@ -439,6 +525,89 @@ describe("LibraryList", () => {
     ).toBeInTheDocument();
   });
 
+  it("'Load more' appends the next page instead of replacing the page already on screen", async () => {
+    const csrfToken = base64UrlToken();
+    const entitlementPage1 = entitlementFixture(
+      ENTITLEMENT_ID,
+      PRODUCT_ID,
+      "2026-08-01T00:00:00.000Z",
+    );
+    const entitlementPage2 = entitlementFixture(
+      ENTITLEMENT_ID_2,
+      PRODUCT_ID_2,
+      "2026-07-15T00:00:00.000Z",
+    );
+
+    const impl = vi.fn(
+      async (
+        input: RequestInfo | URL,
+        init?: RequestInit,
+      ): Promise<Response> => {
+        const url = String(input);
+        const method = (init?.method ?? "GET").toUpperCase();
+
+        if (url === "/api/v1/sessions/current" && method === "GET") {
+          return jsonResponse(sessionFixture(csrfToken));
+        }
+        if (url.startsWith("/api/v1/account/library?") && method === "GET") {
+          const cursor = new URL(url, "http://localhost").searchParams.get(
+            "cursor",
+          );
+          return cursor === "page-2-cursor"
+            ? jsonResponse({
+                data: [entitlementPage2],
+                meta: { nextCursor: null, hasMore: false },
+              })
+            : jsonResponse({
+                data: [entitlementPage1],
+                meta: { nextCursor: "page-2-cursor", hasMore: true },
+              });
+        }
+
+        throw new Error(`Unhandled fetch in test: ${method} ${url}`);
+      },
+    );
+    vi.stubGlobal("fetch", impl);
+    const user = userEvent.setup();
+
+    renderWithProviders(<LibraryList />);
+
+    const firstPageLabel = await screen.findByText(
+      enAccount.Account.library.entitlementLabel.replace(
+        "{productId}",
+        PRODUCT_ID.slice(0, 8),
+      ),
+    );
+    expect(firstPageLabel).toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        enAccount.Account.library.entitlementLabel.replace(
+          "{productId}",
+          PRODUCT_ID_2.slice(0, 8),
+        ),
+      ),
+    ).not.toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: enAccount.Account.library.loadMore }),
+    );
+
+    await screen.findByText(
+      enAccount.Account.library.entitlementLabel.replace(
+        "{productId}",
+        PRODUCT_ID_2.slice(0, 8),
+      ),
+    );
+    // Page 1's entitlement is still on screen — "Load more" appended, it
+    // didn't swap the list out from under the shopper.
+    expect(firstPageLabel).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", {
+        name: enAccount.Account.library.loadMore,
+      }),
+    ).not.toBeInTheDocument();
+  });
+
   it("shows an honest empty state when the caller owns nothing yet", async () => {
     const csrfToken = base64UrlToken();
     const { impl } = createFetchMock({ csrfToken, entitlements: [] });
@@ -473,7 +642,7 @@ describe("LibraryList", () => {
 });
 
 describe("DownloadAction", () => {
-  it("POSTs to issue a download with the CSRF header, then opens the returned URL directly — never rendering the token in the DOM", async () => {
+  it("POSTs to issue a download with the CSRF header, then navigates to the returned URL directly — never rendering the token in the DOM", async () => {
     const csrfToken = base64UrlToken();
     const downloadUrl =
       "https://cdn.kitvera.example/downloads/secret-token-abc123";
@@ -497,7 +666,7 @@ describe("DownloadAction", () => {
       },
     );
     vi.stubGlobal("fetch", fetchMock);
-    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+    const assignSpy = stubLocationAssign();
     const consoleSpies = [
       vi.spyOn(console, "log").mockImplementation(() => undefined),
       vi.spyOn(console, "info").mockImplementation(() => undefined),
@@ -516,21 +685,15 @@ describe("DownloadAction", () => {
       }),
     );
 
-    await waitFor(() =>
-      expect(openSpy).toHaveBeenCalledWith(
-        downloadUrl,
-        "_blank",
-        "noopener,noreferrer",
-      ),
-    );
+    await waitFor(() => expect(assignSpy).toHaveBeenCalledWith(downloadUrl));
 
     const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(init.method).toBe("POST");
     expect(new Headers(init.headers).get("x-csrf-token")).toBe(csrfToken);
 
     // The issued URL/token never reaches the DOM: no anchor is rendered at
-    // all (this action only ever calls `window.open`), and no text node
-    // contains it either.
+    // all (this action only ever navigates via `window.location.assign`),
+    // and no text node contains it either.
     expect(container.querySelectorAll("a").length).toBe(0);
     expect(container.innerHTML).not.toContain(downloadUrl);
 
@@ -547,7 +710,7 @@ describe("DownloadAction", () => {
     });
     const fetchMock = vi.fn(async () => pending);
     vi.stubGlobal("fetch", fetchMock);
-    vi.spyOn(window, "open").mockImplementation(() => null);
+    stubLocationAssign();
     const user = userEvent.setup();
 
     renderWithProviders(

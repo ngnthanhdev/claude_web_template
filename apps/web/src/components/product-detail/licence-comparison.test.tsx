@@ -194,16 +194,6 @@ describe("LicenceComparison", () => {
     expect(screen.getByRole("radio", { name: /^Regular/ })).not.toBeChecked();
   });
 
-  it("presents the purchase affordance as a disabled, labelled sandbox placeholder that performs no commerce", () => {
-    renderLicenceComparison({ locale: "en", messages: enMessages });
-
-    const purchaseButton = screen.getByRole("button", { name: "Purchase" });
-    expect(purchaseButton).toBeDisabled();
-    expect(
-      screen.getByText("Sandbox preview — purchasing isn't available yet."),
-    ).toBeInTheDocument();
-  });
-
   it("has no detectable accessibility violations in either locale", async () => {
     const { container: en } = renderLicenceComparison({
       locale: "en",

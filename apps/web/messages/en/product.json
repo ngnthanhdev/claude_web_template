@@ -26,9 +26,7 @@
       "heading": "Choose a licence",
       "Regular": "Regular",
       "Extended": "Extended",
-      "priceUnavailable": "Price unavailable",
-      "purchaseLabel": "Purchase",
-      "purchaseSandboxNote": "Sandbox preview — purchasing isn't available yet."
+      "priceUnavailable": "Price unavailable"
     },
     "reviews": {
       "heading": "Reviews",

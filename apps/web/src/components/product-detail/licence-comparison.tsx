@@ -3,7 +3,6 @@
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 
-import { Button } from "@/components/ui/button";
 import { useCurrency } from "@/lib/currency";
 import { formatMoney } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -19,11 +18,11 @@ export interface LicenceComparisonProps {
 }
 
 /**
- * The Regular/Extended licence comparison and the (deferred) purchase
- * affordance. Prices always come from the matching `{identifier, currency}`
- * entry in `licenceOptions` — never computed or hard-coded here — and the
- * purchase control stays a disabled, clearly labelled sandbox placeholder:
- * it performs no commerce and calls no endpoint.
+ * The Regular/Extended licence comparison. Prices always come from the
+ * matching `{identifier, currency}` entry in `licenceOptions` — never
+ * computed or hard-coded here. Purchasing itself lives in the add-to-cart
+ * block above this comparison (`DetailHeader`); this component is
+ * comparison-only.
  */
 export function LicenceComparison({ licenceOptions }: LicenceComparisonProps) {
   const locale = localeSchema.parse(useLocale());
@@ -83,15 +82,6 @@ export function LicenceComparison({ licenceOptions }: LicenceComparisonProps) {
           );
         })}
       </fieldset>
-
-      <div className="flex flex-col items-start gap-2">
-        <Button disabled type="button">
-          {t("purchaseLabel")}
-        </Button>
-        <p className="text-sm text-muted-foreground">
-          {t("purchaseSandboxNote")}
-        </p>
-      </div>
     </section>
   );
 }

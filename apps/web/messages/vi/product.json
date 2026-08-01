@@ -26,9 +26,7 @@
       "heading": "Chọn giấy phép",
       "Regular": "Tiêu chuẩn",
       "Extended": "Mở rộng",
-      "priceUnavailable": "Chưa có giá",
-      "purchaseLabel": "Mua",
-      "purchaseSandboxNote": "Bản xem trước — chức năng mua chưa khả dụng."
+      "priceUnavailable": "Chưa có giá"
     },
     "reviews": {
       "heading": "Đánh giá",

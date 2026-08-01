@@ -17,6 +17,9 @@ model User {
   authSecurityEvents AuthSecurityEvent[]
   roleAssignments    UserRole[]
   sellerProfile      SellerProfile?
+  orders             Order[]
+  entitlements       Entitlement[]
+  downloadEvents     DownloadEvent[]
 
   @@map("users")
 }
@@ -227,6 +230,9 @@ model Product {
   demoPages           ProductDemoPage[]
   versions            ProductVersion[]       @relation("ProductVersions")
   licenceOptions      LicenceOption[]
+  orderItemSnapshots  OrderItemSnapshot[]
+  entitlements        Entitlement[]
+  downloadEvents      DownloadEvent[]
 
   @@unique([id, currentVersion])
   @@index([publicationState, categoryId, publishedAt, id])
@@ -396,4 +402,103 @@ model Price {
 
   @@unique([licenceOptionId, currency])
   @@map("prices")
+}
+
+enum OrderStatus {
+  pending
+  settled
+  cancelled
+}
+
+enum PaymentAttemptStatus {
+  pending
+  settled
+  failed
+}
+
+enum PaymentProvider {
+  sandbox
+}
+
+model Order {
+  id              String              @id @default(uuid()) @db.Uuid
+  userId          String              @map("user_id") @db.Uuid
+  currency        Currency
+  subtotalMinor   Int                 @map("subtotal_minor")
+  discountMinor   Int                 @map("discount_minor")
+  totalMinor      Int                 @map("total_minor")
+  status          OrderStatus         @default(pending)
+  idempotencyKey  String              @unique @map("idempotency_key") @db.VarChar(255)
+  createdAt       DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  settledAt       DateTime?           @map("settled_at") @db.Timestamptz(3)
+  user            User                @relation(fields: [userId], references: [id], onDelete: Restrict)
+  items           OrderItemSnapshot[]
+  paymentAttempts PaymentAttempt[]
+  entitlements    Entitlement[]
+
+  @@index([userId, createdAt, id], map: "orders_user_id_created_at_id_idx")
+  @@map("orders")
+}
+
+model OrderItemSnapshot {
+  id                String            @id @default(uuid()) @db.Uuid
+  orderId           String            @map("order_id") @db.Uuid
+  productId         String            @map("product_id") @db.Uuid
+  version           String            @db.VarChar(64)
+  licenceIdentifier LicenceIdentifier @map("licence_identifier")
+  titleSnapshot     String            @map("title_snapshot") @db.VarChar(240)
+  unitPriceMinor    Int               @map("unit_price_minor")
+  currency          Currency
+  order             Order             @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  product           Product           @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([orderId], map: "order_item_snapshots_order_id_idx")
+  @@map("order_item_snapshots")
+}
+
+model PaymentAttempt {
+  id        String               @id @default(uuid()) @db.Uuid
+  orderId   String               @map("order_id") @db.Uuid
+  provider  PaymentProvider      @default(sandbox)
+  status    PaymentAttemptStatus @default(pending)
+  createdAt DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  settledAt DateTime?            @map("settled_at") @db.Timestamptz(3)
+  order     Order                @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  @@index([orderId], map: "payment_attempts_order_id_idx")
+  @@map("payment_attempts")
+}
+
+model Entitlement {
+  id             String          @id @default(uuid()) @db.Uuid
+  userId         String          @map("user_id") @db.Uuid
+  productId      String          @map("product_id") @db.Uuid
+  version        String          @db.VarChar(64)
+  orderId        String          @map("order_id") @db.Uuid
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  user           User            @relation(fields: [userId], references: [id], onDelete: Restrict)
+  product        Product         @relation(fields: [productId], references: [id], onDelete: Restrict)
+  order          Order           @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  downloadEvents DownloadEvent[]
+
+  @@unique([userId, productId])
+  @@index([userId, createdAt, id], map: "entitlements_user_id_created_at_id_idx")
+  @@map("entitlements")
+}
+
+model DownloadEvent {
+  id             String      @id @default(uuid()) @db.Uuid
+  entitlementId  String      @map("entitlement_id") @db.Uuid
+  userId         String      @map("user_id") @db.Uuid
+  productId      String      @map("product_id") @db.Uuid
+  version        String      @db.VarChar(64)
+  issuedAt       DateTime    @default(now()) @map("issued_at") @db.Timestamptz(3)
+  sourceIpDigest String      @map("source_ip_digest") @db.VarChar(64)
+  entitlement    Entitlement @relation(fields: [entitlementId], references: [id], onDelete: Restrict)
+  user           User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  product        Product     @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([entitlementId, issuedAt, id], map: "download_events_entitlement_id_issued_at_id_idx")
+  @@index([userId, issuedAt, id], map: "download_events_user_id_issued_at_id_idx")
+  @@map("download_events")
 }

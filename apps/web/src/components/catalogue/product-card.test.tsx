@@ -1,5 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
+import userEvent from "@testing-library/user-event";
 import { NextIntlClientProvider } from "next-intl";
 import { useEffect, type ReactNode } from "react";
 import { afterEach, describe, expect, it } from "vitest";
@@ -11,7 +12,7 @@ import type {
 } from "@shared/catalogue";
 import type { Currency } from "@shared/localization";
 
-import { CartProvider } from "@/lib/cart-store";
+import { CartProvider, useCart } from "@/lib/cart-store";
 import { CurrencyProvider, useCurrency } from "@/lib/currency";
 import { formatMoney } from "@/lib/format";
 import enCartMessages from "../../../messages/en/cart.json";
@@ -223,5 +224,75 @@ describe("ProductCard", () => {
       messages: viMessages,
     });
     expect((await axe(vi)).violations).toEqual([]);
+  });
+});
+
+describe("ProductCard cart currency consistency", () => {
+  /**
+   * Wave-1 checkout always charges in VND, regardless of the storefront's
+   * browsing-currency toggle. This probe reads the client-only cart store
+   * (the same state `CartLine`/`CheckoutDialog` render from) to prove the
+   * line captured by add-to-cart carries VND, not whatever currency the
+   * shopper happened to be browsing in.
+   */
+  function CartPriceProbe() {
+    const { items } = useCart();
+    const item = items[0];
+
+    if (
+      item === undefined ||
+      item.unitPriceMinor === undefined ||
+      item.currency === undefined
+    ) {
+      return null;
+    }
+
+    return (
+      <p data-testid="cart-probe">
+        {formatMoney(
+          { amount: item.unitPriceMinor, currency: item.currency },
+          "en",
+        )}
+      </p>
+    );
+  }
+
+  it("adds a VND-priced cart line even while browsing in USD", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <NextIntlClientProvider
+        locale="en"
+        messages={{ ...enMessages, ...enCartMessages }}
+      >
+        <CurrencyProvider>
+          <CartProvider>
+            <CurrencyFixture currency="USD">
+              <ProductCard
+                categories={categories}
+                licence="Regular"
+                product={product}
+              />
+            </CurrencyFixture>
+            <CartPriceProbe />
+          </CartProvider>
+        </CurrencyProvider>
+      </NextIntlClientProvider>,
+    );
+
+    // Browsing display stays in the toggled currency (USD).
+    expect(
+      screen.getByText(formatMoney({ amount: 4_900, currency: "USD" }, "en")),
+    ).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Add Modern storefront template to cart",
+      }),
+    );
+
+    expect(await screen.findByTestId("cart-probe")).toHaveTextContent(
+      formatMoney({ amount: 1_290_000, currency: "VND" }, "en"),
+    );
   });
 });

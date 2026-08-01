@@ -53,9 +53,19 @@ export function ProductCard({
       .find((category) => category.slug === product.category)
       ?.translations.find((entry) => entry.locale === locale)?.name ??
     product.category;
-  const price = product.licenceOptions
-    .find((option) => option.identifier === licence)
-    ?.prices.find((entry) => entry.currency === currency);
+  const licenceOption = product.licenceOptions.find(
+    (option) => option.identifier === licence,
+  );
+  const price = licenceOption?.prices.find(
+    (entry) => entry.currency === currency,
+  );
+  // Checkout always charges in VND (design §1/§9), so the cart's stored
+  // display metadata is captured in VND regardless of the storefront's
+  // browsing-currency toggle — only the price shown *here*, for browsing,
+  // follows `currency`.
+  const cartPrice = licenceOption?.prices.find(
+    (entry) => entry.currency === "VND",
+  );
   const visibleTags = product.tags.slice(0, MAX_VISIBLE_TAGS);
   const hiddenTagCount = product.tags.length - visibleTags.length;
 
@@ -120,11 +130,11 @@ export function ProductCard({
             {price ? formatMoney(price, locale) : t("priceUnavailable")}
           </span>
         </div>
-        {price ? (
+        {cartPrice ? (
           <AddToCartButton
             className="w-full sm:w-auto"
             licence={licence}
-            price={price}
+            price={cartPrice}
             productId={product.id}
             slug={product.slug}
             title={translation?.title ?? product.slug}

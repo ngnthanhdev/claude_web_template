@@ -88,7 +88,7 @@ export function DetailHeader({ product }: DetailHeaderProps) {
         </ul>
       ) : null}
 
-      <div
+      <section
         aria-labelledby="detail-header-add-to-cart-heading"
         className="flex flex-col gap-3 rounded-[var(--radius-panel)] border border-border bg-muted/40 p-4"
       >
@@ -106,6 +106,12 @@ export function DetailHeader({ product }: DetailHeaderProps) {
             const price = option?.prices.find(
               (entry) => entry.currency === currency,
             );
+            // Checkout always charges in VND (design §1/§9); only the price
+            // shown here for browsing follows the storefront's currency
+            // toggle — the cart's stored display metadata stays VND.
+            const cartPrice = option?.prices.find(
+              (entry) => entry.currency === "VND",
+            );
 
             return (
               <div
@@ -120,10 +126,10 @@ export function DetailHeader({ product }: DetailHeaderProps) {
                     ? formatMoney(price, locale)
                     : tLicence("priceUnavailable")}
                 </span>
-                {price ? (
+                {cartPrice ? (
                   <AddToCartButton
                     licence={identifier}
-                    price={price}
+                    price={cartPrice}
                     productId={product.id}
                     slug={product.slug}
                     title={title}
@@ -133,7 +139,7 @@ export function DetailHeader({ product }: DetailHeaderProps) {
             );
           })}
         </div>
-      </div>
+      </section>
     </header>
   );
 }

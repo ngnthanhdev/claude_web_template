@@ -22,6 +22,10 @@
       "types": "./dist/catalogue.d.ts",
       "default": "./dist/catalogue.js"
     },
+    "./commerce": {
+      "types": "./dist/commerce.d.ts",
+      "default": "./dist/commerce.js"
+    },
     "./localization": {
       "types": "./dist/localization.d.ts",
       "default": "./dist/localization.js"

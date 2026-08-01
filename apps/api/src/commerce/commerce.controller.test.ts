@@ -441,6 +441,25 @@ describe("CheckoutService boundaries", () => {
     expect(prisma.order.create).not.toHaveBeenCalled();
   });
 
+  it("replays a repeated idempotency key even at the rate-limit cap", async () => {
+    prisma.order.count.mockResolvedValue(20);
+    prisma.order.findUnique.mockResolvedValue({
+      id: "60000000-0000-4000-8000-000000000002",
+      userId,
+      status: "pending",
+      paymentAttempts: [{ id: paymentAttemptId }],
+    });
+
+    const response = await service.checkout(userId, request);
+
+    expect(response).toEqual({
+      orderId: "60000000-0000-4000-8000-000000000002",
+      status: "pending",
+      paymentAttemptId,
+    });
+    expect(prisma.order.create).not.toHaveBeenCalled();
+  });
+
   it("never leaks another user's order when their idempotency key is replayed", async () => {
     prisma.order.findUnique.mockResolvedValue({
       id: "60000000-0000-4000-8000-000000000003",

@@ -76,8 +76,9 @@ export class CheckoutService {
     userId: string,
     request: CheckoutRequest,
   ): Promise<CheckoutResponse> {
-    await this.assertWithinRateLimit(userId);
-
+    // Replay an existing order for a repeated idempotency key BEFORE the rate
+    // limit, so a client that lost its response and retries the same key gets
+    // its original order back rather than a 429 at the attempt cap.
     const existing = await this.prisma.order.findUnique({
       where: { idempotencyKey: request.idempotencyKey },
       include: orderWithPaymentAttemptsInclude,
@@ -85,6 +86,8 @@ export class CheckoutService {
     if (existing !== null) {
       return this.replayResponse(userId, existing);
     }
+
+    await this.assertWithinRateLimit(userId);
 
     const snapshots = await this.priceItems(request.items);
     const subtotalMinor = snapshots.reduce(

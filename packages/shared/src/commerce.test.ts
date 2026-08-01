@@ -61,6 +61,19 @@ describe("checkout request contract", () => {
     ).toBe(true);
   });
 
+  it("rejects duplicate items with the same product and licence", () => {
+    const line = {
+      productId: "2a80d74e-6f18-48a6-9034-7b79a8af93e9",
+      licence: "Regular",
+    };
+    expect(
+      checkoutRequestSchema.safeParse({
+        ...validCheckoutRequest,
+        items: [line, line],
+      }).success,
+    ).toBe(false);
+  });
+
   it("carries no price, discount amount, currency total, or owner id", () => {
     for (const smuggledField of [
       { totalMinor: 129_000_0 },

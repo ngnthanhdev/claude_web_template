@@ -44,7 +44,16 @@ export const checkoutRequestSchema = z
     idempotencyKey: z.string().uuid(),
     discountCode: discountCodeSchema.optional(),
   })
-  .strict();
+  .strict()
+  .refine(
+    (value) =>
+      new Set(value.items.map((item) => `${item.productId}:${item.licence}`))
+        .size === value.items.length,
+    {
+      message: "items must be unique by product and licence",
+      path: ["items"],
+    },
+  );
 export type CheckoutRequest = z.infer<typeof checkoutRequestSchema>;
 
 export const checkoutResponseSchema = z

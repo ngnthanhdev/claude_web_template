@@ -5,11 +5,17 @@
 // (incl. "wordpress") and their bilingual translations already exist from the
 // `catalogue_read_model` migration; this only adds a seller plus the published
 // products the specs drive against (SEEDED_CATEGORY="wordpress",
-// MIN_SEEDED_PRODUCTS_IN_CATEGORY=3 — see apps/web/e2e/fixtures/test-catalogue.ts).
+// MIN_SEEDED_PRODUCTS_IN_CATEGORY=3 — see apps/web/e2e/fixtures/test-catalogue.ts),
+// plus (T-e3a9d7) a local private artifact file backing PRODUCTS[0] so
+// `commerce.spec.ts`'s purchase-to-download happy path has something real to
+// stream.
 //
 // Plain ESM (.mjs) on purpose: apps/api ships no tsx/ts-node, so this runs with
 // a bare `node prisma/seed-e2e.mjs` against a DATABASE_URL pointing at a
 // throwaway database. Never point it at a shared or production database.
+import { mkdir, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+
 import {
   Currency,
   LicenceIdentifier,
@@ -26,6 +32,9 @@ const SELLER_PROFILE_ID = "a0000000-0000-4000-8000-000000000002";
 
 // First slug word doubles as the search term the en browse spec derives
 // (deriveSearchTermFromSlug), so each title contains it for the trigram search.
+// PRODUCTS[0] ("aurora-storefront") also doubles as commerce.spec.ts's
+// purchasable product (apps/web/e2e/fixtures/purchasable-product.ts) — its
+// id/slug/version/titles below must stay in literal sync with that file.
 const PRODUCTS = [
   {
     id: "b0000000-0000-4000-8000-000000000001",
@@ -46,6 +55,10 @@ const PRODUCTS = [
     vi: "Mẫu Vertex Portfolio",
   },
 ];
+
+// commerce.spec.ts's purchasable product — see the comment above PRODUCTS.
+const PURCHASABLE_PRODUCT_ID = PRODUCTS[0].id;
+const PURCHASABLE_PRODUCT_VERSION = "1.0.0";
 
 function productData({ id, slug, en, vi }) {
   return {
@@ -155,6 +168,35 @@ function productData({ id, slug, en, vi }) {
   };
 }
 
+// Writes the local private artifact the dev/CI `StoragePort` adapter streams
+// from (apps/api/src/entitlements/downloads/local-storage.adapter.ts):
+// `<LOCAL_ARTIFACT_STORAGE_DIR>/<productId>/<version>`, matching that
+// adapter's `objectKey = "<productId>/<version>"`. Skips (with a log line,
+// not a failure) when `LOCAL_ARTIFACT_STORAGE_DIR` isn't set, so seeding
+// still works standalone for consumers that only need the browse-suite
+// catalogue contract and never touch the download flow.
+async function seedPurchasableArtifact() {
+  const artifactsDir = process.env.LOCAL_ARTIFACT_STORAGE_DIR;
+  if (!artifactsDir) {
+    console.log(
+      "LOCAL_ARTIFACT_STORAGE_DIR not set — skipping the purchasable-product " +
+        "artifact file (only needed by apps/web/e2e/commerce.spec.ts's download step).",
+    );
+    return;
+  }
+
+  const objectDir = join(artifactsDir, PURCHASABLE_PRODUCT_ID);
+  await mkdir(objectDir, { recursive: true });
+  await writeFile(
+    join(objectDir, PURCHASABLE_PRODUCT_VERSION),
+    "Kitvera e2e purchasable-product artifact fixture — see apps/web/e2e/fixtures/purchasable-product.ts.\n",
+    "utf8",
+  );
+  console.log(
+    `Wrote the e2e download artifact for ${PURCHASABLE_PRODUCT_ID}/${PURCHASABLE_PRODUCT_VERSION} under ${artifactsDir}.`,
+  );
+}
+
 async function main() {
   const prisma = new PrismaClient();
   try {
@@ -188,6 +230,8 @@ async function main() {
       },
     });
     console.log(`Seeded ${published} published product(s) under "wordpress".`);
+
+    await seedPurchasableArtifact();
   } finally {
     await prisma.$disconnect();
   }

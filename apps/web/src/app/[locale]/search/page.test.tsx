@@ -15,6 +15,8 @@ import { Providers } from "@/components/providers";
 import { listCategories, listProducts } from "@/lib/catalogue-client";
 import enCatalogue from "../../../../messages/en/catalogue.json";
 import viCatalogue from "../../../../messages/vi/catalogue.json";
+import enCart from "../../../../messages/en/cart.json";
+import viCart from "../../../../messages/vi/cart.json";
 import enCollection from "../../../../messages/en/collection.json";
 import viCollection from "../../../../messages/vi/collection.json";
 import SearchPage from "./page";
@@ -123,8 +125,8 @@ const emptyMeta = { nextCursor: null, hasMore: false };
 
 function buildMessages(locale: "vi" | "en") {
   return locale === "vi"
-    ? { ...viCatalogue, ...viCollection }
-    : { ...enCatalogue, ...enCollection };
+    ? { ...viCatalogue, ...viCollection, ...viCart }
+    : { ...enCatalogue, ...enCollection, ...enCart };
 }
 
 function renderSearchPage(locale: "vi" | "en" = "en") {

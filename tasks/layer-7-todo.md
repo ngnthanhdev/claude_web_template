@@ -73,7 +73,7 @@ and belong to a later `/scope-breakdown` pass over the same approved design:
 
 ### T-c0a71e — Shared commerce Zod contracts
 
-- **Status:** todo
+- **Status:** in-progress
 - **Assignee:** ai
 - **Files:** packages/shared/src/commerce.ts, packages/shared/src/commerce.test.ts, packages/shared/src/index.ts, packages/shared/package.json
 - **Acceptance:**
@@ -86,7 +86,7 @@ and belong to a later `/scope-breakdown` pass over the same approved design:
 
 ### T-d4b8f2 — Prisma commerce models and migration
 
-- **Status:** todo
+- **Status:** in-progress
 - **Assignee:** ai
 - **Files:** apps/api/prisma/schema.prisma, apps/api/prisma/migrations/20260801000000_commerce_purchase_surface/migration.sql
 - **Acceptance:**

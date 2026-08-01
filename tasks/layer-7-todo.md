@@ -180,7 +180,7 @@ and belong to a later `/scope-breakdown` pass over the same approved design:
 
 ### T-3c9e15 — Gate the commerce integration suites in CI
 
-- **Status:** in-progress
+- **Status:** review
 - **Assignee:** ai
 - **Files:** .github/workflows/ci.yml
 - **Acceptance:**
@@ -192,7 +192,7 @@ and belong to a later `/scope-breakdown` pass over the same approved design:
 
 ### T-b57c09 — Cart page and add-to-cart affordances
 
-- **Status:** in-progress
+- **Status:** review
 - **Assignee:** ai
 - **Files:** apps/web/src/app/[locale]/cart/page.tsx, apps/web/src/components/cart/cart-view.tsx, apps/web/src/components/cart/cart-line.tsx, apps/web/src/components/cart/add-to-cart-button.tsx, apps/web/src/components/cart/cart-nav-entry.tsx, apps/web/src/components/app-shell.tsx, apps/web/src/components/catalogue/product-card.tsx, apps/web/src/components/product-detail/detail-header.tsx, apps/web/messages/vi/cart.json, apps/web/messages/en/cart.json, apps/web/src/components/cart/cart-view.test.tsx
 - **Acceptance:**

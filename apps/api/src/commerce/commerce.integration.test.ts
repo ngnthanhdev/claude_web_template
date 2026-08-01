@@ -43,6 +43,8 @@ function testEnvironment(nodeEnv: Env["NODE_ENV"]): Env {
     AUTH_SESSION_HASH_SECRET: secret(3),
     AUTH_CSRF_HASH_SECRET: secret(4),
     AUTH_SOURCE_IP_HASH_SECRET: secret(5),
+    DOWNLOAD_TOKEN_HMAC_SECRET: secret(6),
+    LOCAL_ARTIFACT_STORAGE_DIR: "/tmp/kitvera-commerce-test-artifacts",
   } satisfies Env;
 }
 

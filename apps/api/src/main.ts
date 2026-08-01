@@ -6,6 +6,7 @@ import {
   FastifyAdapter,
   type NestFastifyApplication,
 } from "@nestjs/platform-fastify";
+import type { FastifyRequest } from "fastify";
 
 import { AppModule } from "./app.module.js";
 import { configureApp } from "./bootstrap/configure-app.js";
@@ -14,7 +15,23 @@ import type { Env } from "./config/env.js";
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    new FastifyAdapter({ logger: true }),
+    new FastifyAdapter({
+      logger: {
+        serializers: {
+          req(request: FastifyRequest) {
+            // The single-use download token is never recorded in the access
+            // log (design §9 "Signed download URL / Info disclosure") — only
+            // that path segment is masked, every other request URL logs as
+            // normal.
+            const url = request.url.replace(
+              /(\/v1\/downloads\/token\/)[^/?#]+/,
+              "$1[redacted]",
+            );
+            return { method: request.method, url, hostname: request.hostname };
+          },
+        },
+      },
+    }),
   );
   const config = app.get(ConfigService<Env, true>);
   const corsOrigins = config

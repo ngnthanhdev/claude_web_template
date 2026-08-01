@@ -141,7 +141,7 @@ and belong to a later `/scope-breakdown` pass over the same approved design:
 
 ### T-7b2d84 — Compose commerce API modules and composed integration suite
 
-- **Status:** in-progress
+- **Status:** review
 - **Assignee:** ai
 - **Files:** apps/api/src/app.module.ts, apps/api/src/main.ts, apps/api/test/commerce-flow.integration.test.ts
 - **Acceptance:**
@@ -154,7 +154,7 @@ and belong to a later `/scope-breakdown` pass over the same approved design:
 
 ### T-92b7e4 — Checkout dialog/sheet and result screen
 
-- **Status:** in-progress
+- **Status:** review
 - **Assignee:** ai
 - **Files:** apps/web/src/components/checkout/checkout-dialog.tsx, apps/web/src/components/checkout/checkout-form.tsx, apps/web/src/components/checkout/order-summary.tsx, apps/web/src/app/[locale]/checkout/result/page.tsx, apps/web/messages/vi/checkout.json, apps/web/messages/en/checkout.json, apps/web/src/components/checkout/checkout-dialog.test.tsx
 - **Acceptance:**
@@ -167,7 +167,7 @@ and belong to a later `/scope-breakdown` pass over the same approved design:
 
 ### T-1d6f3a — Account orders, library, and download action
 
-- **Status:** in-progress
+- **Status:** review
 - **Assignee:** ai
 - **Files:** apps/web/src/app/[locale]/account/orders/page.tsx, apps/web/src/app/[locale]/account/orders/[id]/page.tsx, apps/web/src/app/[locale]/account/library/page.tsx, apps/web/src/components/account/orders-list.tsx, apps/web/src/components/account/order-detail.tsx, apps/web/src/components/account/library-list.tsx, apps/web/src/components/account/download-action.tsx, apps/web/src/app/[locale]/account/page.tsx, apps/web/src/components/account/account-panel.tsx, apps/web/messages/vi/account.json, apps/web/messages/en/account.json, apps/web/src/components/account/download-action.test.tsx
 - **Acceptance:**

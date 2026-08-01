@@ -98,7 +98,7 @@ and belong to a later `/scope-breakdown` pass over the same approved design:
 
 ### T-a19c3d — Checkout, sandbox settle, and order-read API
 
-- **Status:** review
+- **Status:** done
 - **Assignee:** ai
 - **Files:** apps/api/src/commerce/commerce.module.ts, apps/api/src/commerce/checkout.controller.ts, apps/api/src/commerce/checkout.service.ts, apps/api/src/commerce/orders.controller.ts, apps/api/src/commerce/orders.service.ts, apps/api/src/commerce/settle.controller.ts, apps/api/src/commerce/settle.service.ts, apps/api/src/commerce/payment/payment.port.ts, apps/api/src/commerce/payment/sandbox-payment.adapter.ts, apps/api/src/commerce/commerce.controller.test.ts, apps/api/src/commerce/commerce.integration.test.ts
 - **Acceptance:**
@@ -113,7 +113,7 @@ and belong to a later `/scope-breakdown` pass over the same approved design:
 
 ### T-e5f60b — Entitlements, library, and signed-download API (StoragePort)
 
-- **Status:** review
+- **Status:** done
 - **Assignee:** ai
 - **Files:** apps/api/src/entitlements/entitlements.module.ts, apps/api/src/entitlements/entitlements.controller.ts, apps/api/src/entitlements/entitlements.service.ts, apps/api/src/entitlements/downloads/storage.port.ts, apps/api/src/entitlements/downloads/local-storage.adapter.ts, apps/api/src/entitlements/downloads/download-token.controller.ts, apps/api/src/entitlements/downloads/download-audit.service.ts, apps/api/src/entitlements/entitlements.controller.test.ts, apps/api/src/entitlements/entitlements.integration.test.ts, apps/api/src/config/env.ts, apps/api/.env.example
 - **Acceptance:**
@@ -128,7 +128,7 @@ and belong to a later `/scope-breakdown` pass over the same approved design:
 
 ### T-f80a6c — Web commerce client and client-only cart store
 
-- **Status:** review
+- **Status:** done
 - **Assignee:** ai
 - **Files:** apps/web/src/lib/commerce-client.ts, apps/web/src/lib/commerce-client.test.ts, apps/web/src/lib/cart-store.tsx, apps/web/src/lib/cart-store.test.tsx, apps/web/src/components/providers.tsx
 - **Acceptance:**

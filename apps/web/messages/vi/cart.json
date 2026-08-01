@@ -1,0 +1,26 @@
+{
+  "Cart": {
+    "navEntry": {
+      "label": "Giỏ hàng ({count} sản phẩm)"
+    },
+    "page": {
+      "heading": "Giỏ hàng của bạn",
+      "empty": "Giỏ hàng của bạn đang trống. Hãy khám phá các mẫu để thêm vào giỏ.",
+      "clear": "Xóa giỏ hàng",
+      "checkout": "Tiến hành thanh toán"
+    },
+    "line": {
+      "remove": "Xóa",
+      "removeLabel": "Xóa {title} khỏi giỏ hàng",
+      "unknownItem": "Sản phẩm",
+      "priceUnavailable": "Chưa có giá"
+    },
+    "addToCart": {
+      "add": "Thêm vào giỏ",
+      "remove": "Xóa khỏi giỏ",
+      "addLabelForTitle": "Thêm {title} vào giỏ hàng",
+      "removeLabelForTitle": "Xóa {title} khỏi giỏ hàng",
+      "detailHeading": "Thêm vào giỏ hàng"
+    }
+  }
+}

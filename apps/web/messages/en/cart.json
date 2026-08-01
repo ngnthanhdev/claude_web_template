@@ -1,0 +1,26 @@
+{
+  "Cart": {
+    "navEntry": {
+      "label": "Cart ({count} items)"
+    },
+    "page": {
+      "heading": "Your cart",
+      "empty": "Your cart is empty. Browse templates to add one.",
+      "clear": "Clear cart",
+      "checkout": "Proceed to checkout"
+    },
+    "line": {
+      "remove": "Remove",
+      "removeLabel": "Remove {title} from cart",
+      "unknownItem": "Item",
+      "priceUnavailable": "Price unavailable"
+    },
+    "addToCart": {
+      "add": "Add to cart",
+      "remove": "Remove from cart",
+      "addLabelForTitle": "Add {title} to cart",
+      "removeLabelForTitle": "Remove {title} from cart",
+      "detailHeading": "Add to cart"
+    }
+  }
+}

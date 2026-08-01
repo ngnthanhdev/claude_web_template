@@ -3,6 +3,7 @@
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 
+import { AddToCartButton } from "@/components/cart/add-to-cart-button";
 import { useCurrency } from "@/lib/currency";
 import { formatMoney } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -59,50 +60,59 @@ export function ProductCard({
   const hiddenTagCount = product.tags.length - visibleTags.length;
 
   return (
-    <Link
+    <div
       className={cn(
-        "group flex flex-col overflow-hidden rounded-[var(--radius-panel)] border border-border bg-background transition-[border-color,box-shadow] duration-[var(--dur-short)] ease-[var(--ease-out)] hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        "group flex flex-col rounded-[var(--radius-panel)] border border-border bg-background transition-colors duration-[var(--dur-short)] ease-[var(--ease-out)] hover:border-primary",
         className,
       )}
-      href={`/${locale}/templates/${product.slug}`}
     >
-      <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted">
-        {/* Decorative: the visible/announced title below already names the product. */}
-        <img
-          alt=""
-          className="size-full object-cover transition-transform duration-[var(--dur-short)] ease-[var(--ease-out)] group-hover:scale-105"
-          loading="lazy"
-          src={product.thumbnailUrl}
-        />
-      </div>
-      <div className="flex flex-1 flex-col gap-2 p-4">
-        <span className="inline-flex w-fit items-center rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">
-          {categoryName}
-        </span>
-        <h3 className="text-base font-semibold text-foreground">
-          {translation?.title ?? product.slug}
-        </h3>
-        <p className="line-clamp-2 text-sm text-muted-foreground">
-          {translation?.summary ?? ""}
-        </p>
-        {visibleTags.length > 0 ? (
-          <ul aria-label={t("tagsLabel")} className="flex flex-wrap gap-1.5">
-            {visibleTags.map((tag) => (
-              <li
-                className="rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground"
-                key={tag}
-              >
-                {tag}
-              </li>
-            ))}
-            {hiddenTagCount > 0 ? (
-              <li className="rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground">
-                {t("moreTags", { count: hiddenTagCount })}
-              </li>
-            ) : null}
-          </ul>
-        ) : null}
-        <div className="mt-auto flex items-baseline justify-between gap-2 pt-2">
+      {/* The card's primary navigation target: everything except the
+          price/add-to-cart row, which needs its own interactive control and
+          so can't sit inside this anchor (no nested interactive elements). */}
+      <Link
+        className="flex flex-1 flex-col gap-2 rounded-t-[var(--radius-panel)] outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        href={`/${locale}/templates/${product.slug}`}
+      >
+        <div className="relative aspect-[4/3] w-full overflow-hidden rounded-t-[var(--radius-panel)] bg-muted">
+          {/* Decorative: the visible/announced title below already names the product. */}
+          <img
+            alt=""
+            className="size-full object-cover transition-transform duration-[var(--dur-short)] ease-[var(--ease-out)] group-hover:scale-105"
+            loading="lazy"
+            src={product.thumbnailUrl}
+          />
+        </div>
+        <div className="flex flex-1 flex-col gap-2 px-4 pt-4">
+          <span className="inline-flex w-fit items-center rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">
+            {categoryName}
+          </span>
+          <h3 className="text-base font-semibold text-foreground">
+            {translation?.title ?? product.slug}
+          </h3>
+          <p className="line-clamp-2 text-sm text-muted-foreground">
+            {translation?.summary ?? ""}
+          </p>
+          {visibleTags.length > 0 ? (
+            <ul aria-label={t("tagsLabel")} className="flex flex-wrap gap-1.5">
+              {visibleTags.map((tag) => (
+                <li
+                  className="rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground"
+                  key={tag}
+                >
+                  {tag}
+                </li>
+              ))}
+              {hiddenTagCount > 0 ? (
+                <li className="rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground">
+                  {t("moreTags", { count: hiddenTagCount })}
+                </li>
+              ) : null}
+            </ul>
+          ) : null}
+        </div>
+      </Link>
+      <div className="flex flex-col gap-2 p-4 pt-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-0.5">
           <span className="text-sm text-muted-foreground">
             {tLicence(licence)}
           </span>
@@ -110,7 +120,17 @@ export function ProductCard({
             {price ? formatMoney(price, locale) : t("priceUnavailable")}
           </span>
         </div>
+        {price ? (
+          <AddToCartButton
+            className="w-full sm:w-auto"
+            licence={licence}
+            price={price}
+            productId={product.id}
+            slug={product.slug}
+            title={translation?.title ?? product.slug}
+          />
+        ) : null}
       </div>
-    </Link>
+    </div>
   );
 }

@@ -9,10 +9,13 @@ import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { axe } from "vitest-axe";
 
+import { CartProvider } from "@/lib/cart-store";
 import { listCategories, listProducts } from "@/lib/catalogue-client";
 import { CurrencyProvider } from "@/lib/currency";
+import enCart from "../../../messages/en/cart.json";
 import enCollection from "../../../messages/en/collection.json";
 import enHome from "../../../messages/en/home.json";
+import viCart from "../../../messages/vi/cart.json";
 import viCollection from "../../../messages/vi/collection.json";
 import viHome from "../../../messages/vi/home.json";
 
@@ -26,8 +29,8 @@ vi.mock("@/lib/catalogue-client", () => ({
 const mockedListCategories = vi.mocked(listCategories);
 const mockedListProducts = vi.mocked(listProducts);
 
-const enMessages = { ...enHome, ...enCollection };
-const viMessages = { ...viHome, ...viCollection };
+const enMessages = { ...enHome, ...enCollection, ...enCart };
+const viMessages = { ...viHome, ...viCollection, ...viCart };
 
 const categoriesFixture: LocalizedCategorySummary[] = [
   {
@@ -168,7 +171,9 @@ function renderHomePage(locale: "vi" | "en", messages: typeof enMessages) {
     <NextIntlClientProvider locale={locale} messages={messages}>
       <QueryClientProvider client={queryClient}>
         <CurrencyProvider>
-          <HomePage />
+          <CartProvider>
+            <HomePage />
+          </CartProvider>
         </CurrencyProvider>
       </QueryClientProvider>
     </NextIntlClientProvider>,

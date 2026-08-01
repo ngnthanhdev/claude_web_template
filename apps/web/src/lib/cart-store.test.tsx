@@ -18,6 +18,9 @@ function CartProbe() {
         {items.map((item) => (
           <li key={`${item.productId}:${item.licence}`}>
             {item.productId}:{item.licence}
+            {item.title !== undefined
+              ? `:${item.title}:${item.unitPriceMinor}:${item.currency}`
+              : ""}
           </li>
         ))}
       </ul>
@@ -35,6 +38,20 @@ function CartProbe() {
         onClick={() => addItem({ productId: PRODUCT_B, licence: "Regular" })}
       >
         Add product B (Regular)
+      </button>
+      <button
+        onClick={() =>
+          addItem({
+            productId: PRODUCT_A,
+            licence: "Regular",
+            title: "Lotus Commerce",
+            slug: "lotus-commerce",
+            unitPriceMinor: 1_290_000,
+            currency: "VND",
+          })
+        }
+      >
+        Add product A with metadata
       </button>
       <button onClick={() => removeItem(PRODUCT_A, "Regular")}>
         Remove product A (Regular)
@@ -175,6 +192,62 @@ describe("cart persistence", () => {
       "kitvera.cart",
       JSON.stringify([
         { productId: PRODUCT_A, licence: "Regular", unitPrice: 0 },
+      ]),
+    );
+
+    renderCart();
+
+    expect(screen.getByTestId("cart-count")).toHaveTextContent("0");
+  });
+});
+
+describe("cart display metadata", () => {
+  it("carries the advisory title/slug/price/currency alongside the canonical productId+licence, and persists it across a remount", async () => {
+    const user = userEvent.setup();
+    const { unmount } = renderCart();
+
+    await user.click(
+      screen.getByRole("button", { name: "Add product A with metadata" }),
+    );
+
+    expect(
+      screen.getByText(`${PRODUCT_A}:Regular:Lotus Commerce:1290000:VND`),
+    ).toBeInTheDocument();
+
+    unmount();
+    renderCart();
+
+    expect(
+      await screen.findByText(
+        `${PRODUCT_A}:Regular:Lotus Commerce:1290000:VND`,
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("accepts a persisted cart line with only the canonical productId+licence (no display metadata)", () => {
+    window.localStorage.setItem(
+      "kitvera.cart",
+      JSON.stringify([{ productId: PRODUCT_A, licence: "Regular" }]),
+    );
+
+    renderCart();
+
+    expect(screen.getByTestId("cart-count")).toHaveTextContent("1");
+    expect(screen.getByText(`${PRODUCT_A}:Regular`)).toBeInTheDocument();
+  });
+
+  it("discards a persisted line whose display metadata has the wrong type instead of trusting it", () => {
+    window.localStorage.setItem(
+      "kitvera.cart",
+      JSON.stringify([
+        {
+          productId: PRODUCT_A,
+          licence: "Regular",
+          title: "Lotus Commerce",
+          slug: "lotus-commerce",
+          unitPriceMinor: "not-a-number",
+          currency: "VND",
+        },
       ]),
     );
 

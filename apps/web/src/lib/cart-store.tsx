@@ -1,6 +1,8 @@
 "use client";
 
-import { checkoutItemSchema, type CheckoutItem } from "@shared/commerce";
+import { slugSchema } from "@shared/catalogue";
+import { checkoutItemSchema } from "@shared/commerce";
+import { currencySchema } from "@shared/localization";
 import {
   createContext,
   useCallback,
@@ -13,17 +15,36 @@ import {
 import { z } from "zod";
 
 /**
- * A cart line. Deliberately just `{ productId, licence }` — the same shape
- * checkout sends server-side — with no price, total, or currency field: the
- * cart never carries money authority, only what the shopper wants to buy.
- * Any amount shown next to a cart line elsewhere in the app is a display-only
- * lookup against the catalogue, and the server checkout/order response is
- * the only authoritative total.
+ * A cart line is always the canonical `{ productId, licence }` pair —
+ * the same shape checkout sends server-side — plus **optional, advisory**
+ * display metadata (`title`, `slug`, `unitPriceMinor`, `currency`) captured
+ * at add-to-cart time from whatever catalogue read rendered the add-to-cart
+ * affordance (a product card or the product-detail header). None of it
+ * carries money authority: `unitPriceMinor`/`currency` exist only so the
+ * cart page can render a price without re-fetching, and checkout still
+ * builds its request from `productId`/`licence` alone — the server is the
+ * only authoritative source of price (design §1/§9 client-cart trust model).
  */
-export type CartLineItem = CheckoutItem;
+const cartDisplayMetaSchema = z
+  .object({
+    title: z.string().trim().min(1),
+    slug: slugSchema,
+    unitPriceMinor: z.number().int().nonnegative().safe(),
+    currency: currencySchema,
+  })
+  .partial();
+
+const cartLineItemSchema = z
+  .object({
+    ...checkoutItemSchema.shape,
+    ...cartDisplayMetaSchema.shape,
+  })
+  .strict();
+
+export type CartLineItem = z.infer<typeof cartLineItemSchema>;
 
 const CART_STORAGE_KEY = "kitvera.cart";
-const storedCartSchema = z.array(checkoutItemSchema);
+const storedCartSchema = z.array(cartLineItemSchema);
 
 interface CartContextValue {
   /** The current browser-side cart lines. */
@@ -91,7 +112,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addItem = useCallback((item: CartLineItem) => {
-    const validItem = checkoutItemSchema.parse(item);
+    const validItem = cartLineItemSchema.parse(item);
     setItems((current) => {
       if (current.some((line) => isSameLine(line, validItem))) return current;
       const next = [...current, validItem];

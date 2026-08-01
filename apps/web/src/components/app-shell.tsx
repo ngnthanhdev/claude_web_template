@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { CartNavEntry } from "@/components/cart/cart-nav-entry";
 import { LocaleCurrencyToggle } from "@/components/nav/locale-currency-toggle";
 import { MegaMenu } from "@/components/nav/mega-menu";
 import { MobileDrawer } from "@/components/nav/mobile-drawer";
@@ -52,6 +53,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <line x1="21" x2="16.65" y1="21" y2="16.65" />
               </svg>
             </Link>
+            <CartNavEntry />
             <div className="hidden sm:block">
               <LocaleCurrencyToggle />
             </div>

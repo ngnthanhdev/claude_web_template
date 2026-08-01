@@ -11,8 +11,11 @@ import type {
 } from "@shared/catalogue";
 import type { Currency } from "@shared/localization";
 
+import { CartProvider } from "@/lib/cart-store";
 import { CurrencyProvider, useCurrency } from "@/lib/currency";
 import { formatMoney } from "@/lib/format";
+import enCartMessages from "../../../messages/en/cart.json";
+import viCartMessages from "../../../messages/vi/cart.json";
 import enMessages from "../../../messages/en/collection.json";
 import viMessages from "../../../messages/vi/collection.json";
 import { ProductCard } from "./product-card";
@@ -89,16 +92,23 @@ function renderCard({
   currency?: Currency;
   licence?: "Regular" | "Extended";
 }) {
+  const cartMessages = locale === "vi" ? viCartMessages : enCartMessages;
+
   return render(
-    <NextIntlClientProvider locale={locale} messages={messages}>
+    <NextIntlClientProvider
+      locale={locale}
+      messages={{ ...messages, ...cartMessages }}
+    >
       <CurrencyProvider>
-        <CurrencyFixture currency={currency}>
-          <ProductCard
-            categories={categories}
-            licence={licence}
-            product={product}
-          />
-        </CurrencyFixture>
+        <CartProvider>
+          <CurrencyFixture currency={currency}>
+            <ProductCard
+              categories={categories}
+              licence={licence}
+              product={product}
+            />
+          </CurrencyFixture>
+        </CartProvider>
       </CurrencyProvider>
     </NextIntlClientProvider>,
   );

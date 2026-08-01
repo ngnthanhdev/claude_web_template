@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 
+import { QueryClientProvider, type QueryClient } from "@tanstack/react-query";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 import { NextIntlClientProvider } from "next-intl";
@@ -9,6 +10,7 @@ import { axe } from "vitest-axe";
 import enAuth from "../../../messages/en/auth.json";
 import { ApiClientError } from "@/lib/api-client";
 import { redeemMagicLink } from "@/lib/auth-client";
+import { createQueryClient } from "@/lib/query-client";
 
 import { RedemptionStatus } from "./redemption-status";
 
@@ -53,10 +55,14 @@ function validRedemptionResponse(overrides?: { returnTo?: string }) {
   };
 }
 
-function renderRedemptionStatus() {
+function renderRedemptionStatus(
+  queryClient: QueryClient = createQueryClient(),
+) {
   return render(
     <NextIntlClientProvider locale="en" messages={enAuth}>
-      <RedemptionStatus />
+      <QueryClientProvider client={queryClient}>
+        <RedemptionStatus />
+      </QueryClientProvider>
     </NextIntlClientProvider>,
   );
 }
@@ -100,6 +106,42 @@ describe("RedemptionStatus", () => {
         "/en/templates/lotus-commerce",
       );
     });
+  });
+
+  it("clears any account/orders cache left over from a previous session on this tab before redirecting", async () => {
+    const token = base64UrlToken();
+    setUrl(`/en/auth/magic-link#token=${token}`);
+    mockedRedeemMagicLink.mockResolvedValue(validRedemptionResponse());
+
+    const queryClient = createQueryClient();
+    // Simulates a previous visitor's cached account reads still sitting in
+    // this tab's query cache — a shared device's next sign-in must never
+    // surface these without a fresh network request of its own.
+    queryClient.setQueryData(["account", "orders"], {
+      pages: [
+        {
+          data: [{ id: "prior-user-order" }],
+          meta: { nextCursor: null, hasMore: false },
+        },
+      ],
+      pageParams: [undefined],
+    });
+    queryClient.setQueryData(
+      ["orders", "11111111-1111-4111-8111-111111111101"],
+      { id: "prior-user-order" },
+    );
+
+    renderRedemptionStatus(queryClient);
+
+    await screen.findByText(enAuth.Auth.magicLink.successTitle);
+
+    expect(queryClient.getQueryData(["account", "orders"])).toBeUndefined();
+    expect(
+      queryClient.getQueryData([
+        "orders",
+        "11111111-1111-4111-8111-111111111101",
+      ]),
+    ).toBeUndefined();
   });
 
   it("shows the generic invalid-or-expired state and a re-request link on HTTP 401 MAGIC_LINK_INVALID_OR_EXPIRED", async () => {

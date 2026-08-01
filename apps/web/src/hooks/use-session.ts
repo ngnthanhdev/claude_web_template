@@ -83,11 +83,16 @@ export function useSession(): UseSessionResult {
 
   // Both revocation endpoints clear the session cookie server-side.
   // Re-checking afterward re-validates that truth (flipping `status` to
-  // `"unauthenticated"`) instead of this hook guessing at the outcome.
-  const invalidateSession = useCallback(
-    () => queryClient.invalidateQueries({ queryKey: sessionQueryKey }),
-    [queryClient],
-  );
+  // `"unauthenticated"`) instead of this hook guessing at the outcome. This
+  // also drops every cached account read (orders, library, an order's own
+  // detail cache) — on a shared device, leaving that cache behind would let
+  // whoever signs in next on the same tab read the previous user's data
+  // straight out of it, with no network request of their own.
+  const invalidateSession = useCallback(() => {
+    queryClient.removeQueries({ queryKey: ["account"] });
+    queryClient.removeQueries({ queryKey: ["orders"] });
+    return queryClient.invalidateQueries({ queryKey: sessionQueryKey });
+  }, [queryClient]);
 
   const signOutMutation = useMutation({
     mutationFn: (csrfToken: string) => logoutCurrentSession(csrfToken),

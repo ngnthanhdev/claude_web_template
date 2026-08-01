@@ -10,6 +10,7 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { axe } from "vitest-axe";
 
+import { sessionQueryKey, useSession } from "@/hooks/use-session";
 import { createQueryClient } from "@/lib/query-client";
 import { formatMoney } from "@/lib/format";
 
@@ -738,5 +739,117 @@ describe("DownloadAction", () => {
     await screen.findByRole("button", {
       name: enAccount.Account.library.download.action,
     });
+  });
+});
+
+describe("account cache isolation across sign-out", () => {
+  function SignOutAndOrders() {
+    const session = useSession();
+    return (
+      <div>
+        <button
+          disabled={session.status !== "authenticated"}
+          onClick={session.signOut}
+          type="button"
+        >
+          Sign out
+        </button>
+        <OrdersList />
+      </div>
+    );
+  }
+
+  function renderSignOutAndOrders(queryClient = createQueryClient()) {
+    const view = render(
+      <NextIntlClientProvider locale="en" messages={enAccount}>
+        <QueryClientProvider client={queryClient}>
+          <SignOutAndOrders />
+        </QueryClientProvider>
+      </NextIntlClientProvider>,
+    );
+    return { queryClient, ...view };
+  }
+
+  it("clears cached orders on sign-out, so a different user signing in on the same tab never renders the prior user's orders", async () => {
+    const csrfTokenA = base64UrlToken();
+    const csrfTokenB = base64UrlToken();
+    const orderA = orderFixture(
+      ORDER_ID_1,
+      "settled",
+      "2026-08-01T00:00:00.000Z",
+    );
+    const orderB = orderFixture(
+      ORDER_ID_2,
+      "settled",
+      "2026-07-01T00:00:00.000Z",
+    );
+
+    let currentUser: "A" | "B" | "signedOut" = "A";
+
+    const impl = vi.fn(
+      async (
+        input: RequestInfo | URL,
+        init?: RequestInit,
+      ): Promise<Response> => {
+        const url = String(input);
+        const method = (init?.method ?? "GET").toUpperCase();
+
+        if (url === "/api/v1/sessions/current" && method === "GET") {
+          if (currentUser === "signedOut") return unauthenticatedResponse();
+          return jsonResponse(
+            sessionFixture(currentUser === "A" ? csrfTokenA : csrfTokenB),
+          );
+        }
+        if (url === "/api/v1/sessions/current" && method === "DELETE") {
+          currentUser = "signedOut";
+          return new Response(null, { status: 204 });
+        }
+        if (url.startsWith("/api/v1/orders?") && method === "GET") {
+          if (currentUser === "signedOut") return unauthenticatedResponse();
+          const orders = currentUser === "A" ? [orderA] : [orderB];
+          return jsonResponse({
+            data: orders,
+            meta: { nextCursor: null, hasMore: false },
+          });
+        }
+
+        throw new Error(`Unhandled fetch in test: ${method} ${url}`);
+      },
+    );
+    vi.stubGlobal("fetch", impl);
+    const user = userEvent.setup();
+
+    const { queryClient } = renderSignOutAndOrders();
+
+    await screen.findByRole("link", {
+      name: new RegExp(`Order #${ORDER_ID_1.slice(0, 8)}`),
+    });
+
+    await user.click(screen.getByRole("button", { name: "Sign out" }));
+
+    // Sign-out drops the cached orders page outright — not just the
+    // session — so nothing from user A's cache survives to be read by
+    // whoever uses this tab next.
+    await waitFor(() =>
+      expect(queryClient.getQueryData(["account", "orders"])).toBeUndefined(),
+    );
+    await waitFor(() =>
+      expect(routerMock.replace).toHaveBeenCalledWith("/en/auth/sign-in"),
+    );
+
+    // A different user now signs in on the same tab (simulated by flipping
+    // the fetch stub's active user and re-validating the session query, the
+    // same re-check any real sign-in flow would trigger).
+    currentUser = "B";
+    await queryClient.invalidateQueries({ queryKey: sessionQueryKey });
+
+    await screen.findByRole("link", {
+      name: new RegExp(`Order #${ORDER_ID_2.slice(0, 8)}`),
+    });
+    expect(
+      screen.queryByRole("link", {
+        name: new RegExp(`Order #${ORDER_ID_1.slice(0, 8)}`),
+      }),
+    ).not.toBeInTheDocument();
   });
 });

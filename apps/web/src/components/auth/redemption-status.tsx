@@ -5,6 +5,7 @@ import {
   magicLinkRedemptionRequestSchema,
 } from "@shared/auth";
 import { localeSchema } from "@shared/localization";
+import { useQueryClient } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -67,6 +68,7 @@ export function RedemptionStatus() {
   const locale = localeSchema.parse(useLocale());
   const t = useTranslations("Auth.magicLink");
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [state, setState] = useState<RedemptionState>({
     status: "verifying",
   });
@@ -103,6 +105,13 @@ export function RedemptionStatus() {
         // own CSRF value from `GET /v1/sessions/current` instead of relying
         // on this one surviving the redirect below.
         setState({ status: "success", csrfToken: response.csrfToken });
+        // Drop any account-surface cache (orders, library, an order's own
+        // detail) left over from a previous session on this tab, before
+        // navigating anywhere the newly-signed-in visitor might read it —
+        // a shared device must never let this sign-in see the last
+        // visitor's cached data.
+        queryClient.removeQueries({ queryKey: ["account"] });
+        queryClient.removeQueries({ queryKey: ["orders"] });
         router.replace(resolveSafeReturnTo(response.returnTo, locale));
       } catch (error) {
         if (
@@ -118,7 +127,7 @@ export function RedemptionStatus() {
     }
 
     void run();
-  }, [locale, router]);
+  }, [locale, queryClient, router]);
 
   if (state.status === "verifying") {
     return (

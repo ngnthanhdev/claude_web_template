@@ -34,10 +34,6 @@ function sumTotal(items: CheckoutSummaryItem[]): Money {
   };
 }
 
-function licenceLabelKey(licence: LicenceIdentifier): LicenceIdentifier {
-  return licence;
-}
-
 /**
  * The checkout dialog/sheet's display-only order summary. Nothing rendered
  * here is authoritative — the server's checkout/order response is (design
@@ -71,7 +67,7 @@ export function OrderSummary({ items }: OrderSummaryProps) {
             <span className="text-foreground">
               {item.title}{" "}
               <span className="text-muted-foreground">
-                ({tLicence(licenceLabelKey(item.licence))})
+                ({tLicence(item.licence)})
               </span>
             </span>
             <span className="font-medium text-foreground">

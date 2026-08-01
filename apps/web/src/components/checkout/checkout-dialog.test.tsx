@@ -4,6 +4,7 @@ import "@testing-library/jest-dom/vitest";
 import userEvent from "@testing-library/user-event";
 import { NextIntlClientProvider } from "next-intl";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { axe } from "vitest-axe";
 
@@ -123,6 +124,34 @@ function renderCheckoutDialog(
   );
 }
 
+function ToggleableCheckoutDialog({
+  items = FIXTURE_ITEMS,
+}: {
+  items?: CheckoutSummaryItem[];
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button onClick={() => setOpen(true)} type="button">
+        Open checkout
+      </button>
+      <CheckoutDialog items={items} onOpenChange={setOpen} open={open} />
+    </>
+  );
+}
+
+function renderToggleableCheckoutDialog(
+  items: CheckoutSummaryItem[] = FIXTURE_ITEMS,
+) {
+  return render(
+    <NextIntlClientProvider locale="en" messages={enCheckout}>
+      <Providers>
+        <ToggleableCheckoutDialog items={items} />
+      </Providers>
+    </NextIntlClientProvider>,
+  );
+}
+
 async function fillValidCheckoutForm(user: ReturnType<typeof userEvent.setup>) {
   await user.type(
     screen.getByRole("textbox", { name: enCheckout.Checkout.form.emailLabel }),
@@ -197,6 +226,12 @@ describe("CheckoutDialog", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(formatMoney(FIXTURE_ITEMS[1]!.unitPrice, "en")),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(`(${enCheckout.Checkout.licence.Regular})`),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(`(${enCheckout.Checkout.licence.Extended})`),
     ).toBeInTheDocument();
 
     const total = FIXTURE_ITEMS.reduce(
@@ -370,6 +405,24 @@ describe("CheckoutDialog", () => {
     await user.keyboard("{Escape}");
 
     expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it("moves focus into the dialog panel on open, and restores it to the trigger on close", async () => {
+    const user = userEvent.setup();
+    renderToggleableCheckoutDialog();
+
+    const trigger = screen.getByRole("button", { name: "Open checkout" });
+    trigger.focus();
+    expect(trigger).toHaveFocus();
+
+    await user.click(trigger);
+
+    const dialog = await screen.findByRole("dialog");
+    await waitFor(() => expect(dialog).toHaveFocus());
+
+    await user.keyboard("{Escape}");
+
+    await waitFor(() => expect(trigger).toHaveFocus());
   });
 
   it("has no detectable accessibility violations while open", async () => {

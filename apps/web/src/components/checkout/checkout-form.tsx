@@ -66,8 +66,13 @@ export function CheckoutForm({
   // Generated once per mount (i.e. once per checkout attempt) rather than
   // per submit, so a shopper retrying after a transient failure replays the
   // same idempotency key — the server's unique constraint then returns the
-  // original order instead of creating a duplicate one.
-  const idempotencyKeyRef = useRef<string>(crypto.randomUUID());
+  // original order instead of creating a duplicate one. Lazily initialized
+  // (rather than `useRef(crypto.randomUUID())`) so a fresh UUID isn't
+  // generated and discarded on every render — only ever on the first.
+  const idempotencyKeyRef = useRef<string | undefined>(undefined);
+  if (!idempotencyKeyRef.current) {
+    idempotencyKeyRef.current = crypto.randomUUID();
+  }
   const regionLegendId = useId();
   const emailId = useId();
   const emailErrorId = useId();

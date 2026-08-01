@@ -4,7 +4,7 @@ import { localeSchema } from "@shared/localization";
 import { motion, useReducedMotion } from "motion/react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { useEffect, useId } from "react";
+import { useEffect, useId, useRef } from "react";
 
 import { Button } from "@/components/ui/button";
 import { useSession } from "@/hooks/use-session";
@@ -44,6 +44,8 @@ export function CheckoutDialog({
   const session = useSession();
   const reduceMotion = useReducedMotion();
   const titleId = useId();
+  const panelRef = useRef<HTMLElement>(null);
+  const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -55,6 +57,24 @@ export function CheckoutDialog({
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [open, onOpenChange]);
+
+  // Minimal focus management (a full focus trap is out of scope): move focus
+  // into the panel as soon as it opens, and return it to whatever element
+  // had focus beforehand once the dialog closes — mirrors the escape-key
+  // effect's open-gated lifecycle above.
+  useEffect(() => {
+    if (!open) return undefined;
+
+    previouslyFocusedElementRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    panelRef.current?.focus();
+
+    return () => {
+      previouslyFocusedElementRef.current?.focus();
+    };
+  }, [open]);
 
   if (!open) return null;
 
@@ -81,9 +101,11 @@ export function CheckoutDialog({
         animate={{ opacity: 1 }}
         aria-labelledby={titleId}
         aria-modal="true"
-        className="fixed inset-0 z-[211] flex flex-col gap-6 overflow-y-auto bg-background p-6 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:h-auto sm:max-h-[85dvh] sm:w-[min(30rem,92vw)] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[var(--radius-panel)] sm:border sm:border-border sm:shadow-lg"
+        className="fixed inset-0 z-[211] flex flex-col gap-6 overflow-y-auto bg-background p-6 outline-none sm:inset-auto sm:top-1/2 sm:left-1/2 sm:h-auto sm:max-h-[85dvh] sm:w-[min(30rem,92vw)] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[var(--radius-panel)] sm:border sm:border-border sm:shadow-lg"
         initial={reduceMotion ? false : { opacity: 0 }}
+        ref={panelRef}
         role="dialog"
+        tabIndex={-1}
         transition={{ duration: DIALOG_TRANSITION_SECONDS, ease: "easeOut" }}
       >
         <div className="flex items-start justify-between gap-4">

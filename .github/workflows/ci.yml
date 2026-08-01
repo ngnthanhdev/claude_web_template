@@ -28,6 +28,14 @@ jobs:
       MAGIC_LINK_INTEGRATION_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/magic_link_integration_test?schema=public
       SESSIONS_INTEGRATION_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/sessions_integration_test?schema=public
       PUBLIC_RESOURCES_INTEGRATION_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/public_resources_integration_test?schema=public
+      COMMERCE_INTEGRATION_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/commerce_integration_test?schema=public
+      ENTITLEMENTS_INTEGRATION_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/entitlements_integration_test?schema=public
+      COMMERCE_FLOW_INTEGRATION_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/commerce_flow_integration_test?schema=public
+      # Test-only values the commerce/entitlements integration suites need;
+      # distinct from the AUTH_*/CATALOGUE_* test secrets the api test script
+      # already exports. Never a production credential.
+      DOWNLOAD_TOKEN_HMAC_SECRET: BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc
+      LOCAL_ARTIFACT_STORAGE_DIR: /tmp/kitvera-ci-local-artifacts
     steps:
       - uses: actions/checkout@v4
       # pnpm version comes from package.json's packageManager field — passing
@@ -47,15 +55,17 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends postgresql-client
-          for db in catalogue_integration_test magic_link_integration_test sessions_integration_test public_resources_integration_test; do
+          for db in catalogue_integration_test magic_link_integration_test sessions_integration_test public_resources_integration_test commerce_integration_test entitlements_integration_test commerce_flow_integration_test; do
             createdb -h localhost -U postgres "$db"
           done
       - name: Apply Prisma migrations to integration databases
         working-directory: apps/api
         run: |
-          for url in "$CATALOGUE_INTEGRATION_DATABASE_URL" "$MAGIC_LINK_INTEGRATION_DATABASE_URL" "$SESSIONS_INTEGRATION_DATABASE_URL" "$PUBLIC_RESOURCES_INTEGRATION_DATABASE_URL"; do
+          for url in "$CATALOGUE_INTEGRATION_DATABASE_URL" "$MAGIC_LINK_INTEGRATION_DATABASE_URL" "$SESSIONS_INTEGRATION_DATABASE_URL" "$PUBLIC_RESOURCES_INTEGRATION_DATABASE_URL" "$COMMERCE_INTEGRATION_DATABASE_URL" "$ENTITLEMENTS_INTEGRATION_DATABASE_URL" "$COMMERCE_FLOW_INTEGRATION_DATABASE_URL"; do
             DATABASE_URL="$url" pnpm exec prisma migrate deploy
           done
+      - name: Prepare local artifact storage directory
+        run: mkdir -p "$LOCAL_ARTIFACT_STORAGE_DIR"
       - run: pnpm turbo run lint typecheck test
 
   design-detector:

@@ -58,6 +58,8 @@ const testEnvironment = {
   AUTH_SESSION_HASH_SECRET: secret("c"),
   AUTH_CSRF_HASH_SECRET: secret("d"),
   AUTH_SOURCE_IP_HASH_SECRET: secret("e"),
+  DOWNLOAD_TOKEN_HMAC_SECRET: secret("f"),
+  LOCAL_ARTIFACT_STORAGE_DIR: "/tmp/kitvera-sessions-test-artifacts",
 } satisfies Env;
 
 class MutableClock implements AuthClock {
@@ -95,7 +97,10 @@ function cookieHeader(rawSessionToken: string): string {
 
 function headerValues(value: unknown): string[] {
   if (typeof value === "string") return [value];
-  if (Array.isArray(value) && value.every((entry) => typeof entry === "string")) {
+  if (
+    Array.isArray(value) &&
+    value.every((entry) => typeof entry === "string")
+  ) {
     return value;
   }
   return [];
@@ -171,9 +176,9 @@ describeWithPostgres("Sessions resources with PostgreSQL", () => {
       .get("/v1/sessions/current")
       .set("Cookie", cookieHeader(issued.sessionToken))
       .expect(200);
-    expect(currentSessionResponseSchema.parse(initial.body).session.expiresAt).toBe(
-      issued.idleExpiresAt.toISOString(),
-    );
+    expect(
+      currentSessionResponseSchema.parse(initial.body).session.expiresAt,
+    ).toBe(issued.idleExpiresAt.toISOString());
     expect(initial.headers["set-cookie"]).toBeUndefined();
 
     clock.advance(DAY - 1);
@@ -354,7 +359,9 @@ describeWithPostgres("Sessions resources with PostgreSQL", () => {
         .get("/v1/sessions/current")
         .set("Cookie", cookieHeader(issued.sessionToken)),
     ]);
-    expect(concurrentRotation.map(({ status }) => status).sort()).toEqual([200, 401]);
+    expect(concurrentRotation.map(({ status }) => status).sort()).toEqual([
+      200, 401,
+    ]);
     const winner = concurrentRotation.find(({ status }) => status === 200);
     const replacement = replacementBearer(winner?.headers["set-cookie"]);
     const winnerBody = currentSessionResponseSchema.parse(winner?.body);
@@ -370,11 +377,13 @@ describeWithPostgres("Sessions resources with PostgreSQL", () => {
         .set("X-CSRF-Token", winnerBody.csrfToken),
     ]);
     expect(
-      concurrentRevocation.map(({ status }) => status).every((status) =>
-        status === 204 || status === 401,
-      ),
+      concurrentRevocation
+        .map(({ status }) => status)
+        .every((status) => status === 204 || status === 401),
     ).toBe(true);
-    expect(concurrentRevocation.some(({ status }) => status === 204)).toBe(true);
+    expect(concurrentRevocation.some(({ status }) => status === 204)).toBe(
+      true,
+    );
     await request(app.getHttpServer())
       .get("/v1/sessions/current")
       .set("Cookie", cookieHeader(replacement))

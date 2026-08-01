@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { validateEnv } from "./env.js";
 
-const secret = (byte: string): string => Buffer.alloc(32, byte).toString("base64url");
+const secret = (byte: string): string =>
+  Buffer.alloc(32, byte).toString("base64url");
 
 function validEnvironment(): Record<string, unknown> {
   return {
@@ -16,6 +17,8 @@ function validEnvironment(): Record<string, unknown> {
     AUTH_SESSION_HASH_SECRET: secret("c"),
     AUTH_CSRF_HASH_SECRET: secret("d"),
     AUTH_SOURCE_IP_HASH_SECRET: secret("e"),
+    DOWNLOAD_TOKEN_HMAC_SECRET: secret("f"),
+    LOCAL_ARTIFACT_STORAGE_DIR: "/tmp/kitvera-test-artifacts",
   };
 }
 
@@ -35,6 +38,8 @@ describe("environment validation", () => {
     "AUTH_SESSION_HASH_SECRET",
     "AUTH_CSRF_HASH_SECRET",
     "AUTH_SOURCE_IP_HASH_SECRET",
+    "DOWNLOAD_TOKEN_HMAC_SECRET",
+    "LOCAL_ARTIFACT_STORAGE_DIR",
     "PUBLIC_WEB_ORIGIN",
   ])("rejects a missing %s", (name) => {
     const environment = validEnvironment();
@@ -54,6 +59,20 @@ describe("environment validation", () => {
     const environment = validEnvironment();
     environment.AUTH_CSRF_HASH_SECRET = environment.AUTH_SESSION_HASH_SECRET;
     expect(() => validateEnv(environment)).toThrow(/independent/i);
+
+    const reusedDownloadSecret = validEnvironment();
+    reusedDownloadSecret.DOWNLOAD_TOKEN_HMAC_SECRET =
+      reusedDownloadSecret.AUTH_SESSION_HASH_SECRET;
+    expect(() => validateEnv(reusedDownloadSecret)).toThrow(/independent/i);
+  });
+
+  it("rejects a relative LOCAL_ARTIFACT_STORAGE_DIR path", () => {
+    expect(() =>
+      validateEnv({
+        ...validEnvironment(),
+        LOCAL_ARTIFACT_STORAGE_DIR: "relative/artifacts",
+      }),
+    ).toThrow(/absolute path/i);
   });
 
   it("allows HTTP only for loopback development origins", () => {

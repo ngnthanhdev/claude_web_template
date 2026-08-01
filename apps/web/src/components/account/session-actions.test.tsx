@@ -183,13 +183,14 @@ describe("AccountPanel (authenticated)", () => {
       }),
     ).toBeInTheDocument();
 
-    // No library/orders/profile editing rendered as functional.
+    // Orders and library now link to their real `T-1d6f3a` pages; profile
+    // editing remains deferred and is never rendered as functional.
     expect(
-      screen.queryByRole("link", { name: /library/i }),
-    ).not.toBeInTheDocument();
+      screen.getByRole("link", { name: enAccount.Account.panel.ordersLink }),
+    ).toHaveAttribute("href", "/en/account/orders");
     expect(
-      screen.queryByRole("link", { name: /order/i }),
-    ).not.toBeInTheDocument();
+      screen.getByRole("link", { name: enAccount.Account.panel.libraryLink }),
+    ).toHaveAttribute("href", "/en/account/library");
     expect(
       screen.queryByRole("link", { name: /profile/i }),
     ).not.toBeInTheDocument();

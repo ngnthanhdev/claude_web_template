@@ -1,0 +1,48 @@
+{
+  "Checkout": {
+    "licence": {
+      "Regular": "Regular",
+      "Extended": "Extended"
+    },
+    "dialog": {
+      "title": "Checkout",
+      "sandboxLabel": "Sandbox — no real payment",
+      "close": "Close checkout",
+      "sessionLoading": "Checking your session…",
+      "signInRequired": "Sign in to complete checkout."
+    },
+    "summary": {
+      "heading": "Order summary",
+      "totalLabel": "Total",
+      "currencyNote": "Prices are shown in Vietnamese đồng (VND) for this sandbox purchase, regardless of your currency preference.",
+      "emptyItems": "Your cart is empty."
+    },
+    "form": {
+      "regionLegend": "Region",
+      "regionGlobal": "Global",
+      "regionVietnam": "Vietnam",
+      "emailLabel": "Email",
+      "emailInvalid": "Enter a valid email address.",
+      "nameLabel": "Full name",
+      "nameRequired": "Enter your full name.",
+      "continue": "Continue",
+      "submitting": "Processing…",
+      "checkoutError": "We couldn't start checkout. Please try again.",
+      "settleError": "We couldn't confirm your sandbox payment. Please try again."
+    },
+    "result": {
+      "notFound": "We couldn't find that order.",
+      "loading": "Loading your order…",
+      "settledHeading": "Purchase complete",
+      "settledDescription": "Your sandbox order is settled and ready in your library.",
+      "pendingHeading": "Order pending",
+      "pendingDescription": "Your order hasn't settled yet.",
+      "cancelledHeading": "Order cancelled",
+      "cancelledDescription": "This order was cancelled.",
+      "orderDateLabel": "Order date",
+      "totalLabel": "Total",
+      "itemsHeading": "Items",
+      "libraryLink": "Go to your library"
+    }
+  }
+}

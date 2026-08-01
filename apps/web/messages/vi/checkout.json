@@ -1,0 +1,48 @@
+{
+  "Checkout": {
+    "licence": {
+      "Regular": "Tiêu chuẩn",
+      "Extended": "Mở rộng"
+    },
+    "dialog": {
+      "title": "Thanh toán",
+      "sandboxLabel": "Chế độ thử nghiệm — không thanh toán thật",
+      "close": "Đóng thanh toán",
+      "sessionLoading": "Đang kiểm tra phiên đăng nhập…",
+      "signInRequired": "Vui lòng đăng nhập để hoàn tất thanh toán."
+    },
+    "summary": {
+      "heading": "Tóm tắt đơn hàng",
+      "totalLabel": "Tổng cộng",
+      "currencyNote": "Giá được hiển thị bằng đồng Việt Nam (VND) cho lần mua thử nghiệm này, bất kể lựa chọn tiền tệ của bạn.",
+      "emptyItems": "Giỏ hàng của bạn đang trống."
+    },
+    "form": {
+      "regionLegend": "Khu vực",
+      "regionGlobal": "Toàn cầu",
+      "regionVietnam": "Việt Nam",
+      "emailLabel": "Email",
+      "emailInvalid": "Vui lòng nhập địa chỉ email hợp lệ.",
+      "nameLabel": "Họ và tên",
+      "nameRequired": "Vui lòng nhập họ và tên.",
+      "continue": "Tiếp tục",
+      "submitting": "Đang xử lý…",
+      "checkoutError": "Không thể bắt đầu thanh toán. Vui lòng thử lại.",
+      "settleError": "Không thể xác nhận thanh toán thử nghiệm. Vui lòng thử lại."
+    },
+    "result": {
+      "notFound": "Không tìm thấy đơn hàng này.",
+      "loading": "Đang tải đơn hàng của bạn…",
+      "settledHeading": "Mua hàng thành công",
+      "settledDescription": "Đơn hàng thử nghiệm của bạn đã hoàn tất và sẵn sàng trong thư viện.",
+      "pendingHeading": "Đơn hàng đang chờ",
+      "pendingDescription": "Đơn hàng của bạn chưa được xử lý xong.",
+      "cancelledHeading": "Đơn hàng đã hủy",
+      "cancelledDescription": "Đơn hàng này đã bị hủy.",
+      "orderDateLabel": "Ngày đặt hàng",
+      "totalLabel": "Tổng cộng",
+      "itemsHeading": "Sản phẩm",
+      "libraryLink": "Đến thư viện của bạn"
+    }
+  }
+}

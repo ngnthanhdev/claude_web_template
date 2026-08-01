@@ -141,9 +141,9 @@ tasks touch the same file.
 
 ### T-4c8a9e — Admin surface enablement gate (/refine + /threat-model)
 
-- **Status:** todo
+- **Status:** done
 - **Assignee:** human
-- **Files:** docs/specs/2026-07-28-admin-surface-design.md (new approved design doc; the concrete date is the day the gate is run)
+- **Files:** docs/specs/2026-08-01-admin-surface-design.md (approved design doc)
 - **Acceptance:**
   - A new approved design doc under `docs/specs/` is produced by a `/refine`
     brainstorm + `/threat-model` covering the admin surface the spec calls for

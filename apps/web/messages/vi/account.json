@@ -10,7 +10,10 @@
       "identityHeading": "Đã đăng nhập",
       "emailLabel": "Email",
       "sessionExpiresLabel": "Phiên đăng nhập hết hạn",
-      "comingSoon": "Thư viện, đơn hàng và cài đặt hồ sơ của bạn sẽ sớm ra mắt.",
+      "comingSoon": "Chỉnh sửa hồ sơ sẽ sớm ra mắt.",
+      "quickLinksHeading": "Liên kết nhanh",
+      "ordersLink": "Xem đơn hàng của bạn",
+      "libraryLink": "Đến thư viện của bạn",
       "error": {
         "heading": "Không thể tải tài khoản của bạn",
         "description": "Đã có lỗi xảy ra khi kiểm tra phiên đăng nhập. Vui lòng thử lại.",
@@ -25,6 +28,69 @@
       "signOutAll": "Đăng xuất khỏi mọi thiết bị",
       "signOutAllPending": "Đang đăng xuất khỏi mọi thiết bị…",
       "error": "Không thể đăng xuất. Vui lòng thử lại."
+    },
+    "orders": {
+      "heading": "Đơn hàng của bạn",
+      "loading": "Đang tải đơn hàng của bạn…",
+      "redirecting": "Đang chuyển hướng bạn đến trang đăng nhập…",
+      "empty": "Bạn chưa đặt đơn hàng nào.",
+      "currencyNote": "Hiện tại số tiền được tính bằng đồng Việt Nam (VND) — nút chuyển đổi tiền tệ trên trang chỉ thay đổi cách hiển thị giá khi duyệt sản phẩm.",
+      "loadMore": "Tải thêm đơn hàng",
+      "orderNumber": "Đơn hàng #{id}",
+      "placedOnLabel": "Đặt vào",
+      "totalLabel": "Tổng cộng",
+      "status": {
+        "pending": "Đang xử lý",
+        "settled": "Đã thanh toán",
+        "cancelled": "Đã hủy"
+      },
+      "error": {
+        "heading": "Không thể tải đơn hàng của bạn",
+        "description": "Đã có lỗi xảy ra khi tải đơn hàng của bạn. Vui lòng thử lại.",
+        "action": "Thử lại"
+      }
+    },
+    "orderDetail": {
+      "heading": "Đơn hàng #{id}",
+      "loading": "Đang tải đơn hàng…",
+      "redirecting": "Đang chuyển hướng bạn đến trang đăng nhập…",
+      "backToOrders": "Quay lại đơn hàng",
+      "statusLabel": "Trạng thái",
+      "placedOnLabel": "Đặt vào",
+      "totalLabel": "Tổng cộng",
+      "itemsHeading": "Sản phẩm",
+      "itemLicenceLabel": "Giấy phép",
+      "itemVersionLabel": "Phiên bản",
+      "notFound": {
+        "heading": "Không tìm thấy đơn hàng",
+        "description": "Đơn hàng này không tồn tại hoặc không thuộc tài khoản của bạn.",
+        "cta": "Quay lại đơn hàng"
+      },
+      "error": {
+        "heading": "Không thể tải đơn hàng này",
+        "description": "Đã có lỗi xảy ra khi tải đơn hàng này. Vui lòng thử lại.",
+        "action": "Thử lại"
+      }
+    },
+    "library": {
+      "heading": "Thư viện của bạn",
+      "loading": "Đang tải thư viện của bạn…",
+      "redirecting": "Đang chuyển hướng bạn đến trang đăng nhập…",
+      "empty": "Bạn chưa sở hữu mẫu nào.",
+      "loadMore": "Tải thêm",
+      "entitlementLabel": "Mẫu {productId}",
+      "versionLabel": "Phiên bản",
+      "purchasedOnLabel": "Mua vào",
+      "download": {
+        "action": "Tải xuống",
+        "pending": "Đang chuẩn bị tải xuống…",
+        "error": "Không thể chuẩn bị tệp tải xuống. Vui lòng thử lại."
+      },
+      "error": {
+        "heading": "Không thể tải thư viện của bạn",
+        "description": "Đã có lỗi xảy ra khi tải thư viện của bạn. Vui lòng thử lại.",
+        "action": "Thử lại"
+      }
     }
   }
 }

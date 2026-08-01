@@ -10,7 +10,10 @@
       "identityHeading": "Signed in",
       "emailLabel": "Email",
       "sessionExpiresLabel": "Session expires",
-      "comingSoon": "Your library, orders, and profile settings are coming soon.",
+      "comingSoon": "Profile editing is coming soon.",
+      "quickLinksHeading": "Quick links",
+      "ordersLink": "View your orders",
+      "libraryLink": "Go to your library",
       "error": {
         "heading": "We couldn't load your account",
         "description": "Something went wrong while checking your session. Please try again.",
@@ -25,6 +28,69 @@
       "signOutAll": "Sign out of all devices",
       "signOutAllPending": "Signing out of all devices…",
       "error": "We couldn't sign you out. Please try again."
+    },
+    "orders": {
+      "heading": "Your orders",
+      "loading": "Loading your orders…",
+      "redirecting": "Redirecting you to sign in…",
+      "empty": "You haven't placed any orders yet.",
+      "currencyNote": "Amounts are billed in Vietnamese đồng (VND) for now — the site's currency switch only changes how browsing prices are displayed.",
+      "loadMore": "Load more orders",
+      "orderNumber": "Order #{id}",
+      "placedOnLabel": "Placed on",
+      "totalLabel": "Total",
+      "status": {
+        "pending": "Pending",
+        "settled": "Paid",
+        "cancelled": "Cancelled"
+      },
+      "error": {
+        "heading": "We couldn't load your orders",
+        "description": "Something went wrong while loading your orders. Please try again.",
+        "action": "Try again"
+      }
+    },
+    "orderDetail": {
+      "heading": "Order #{id}",
+      "loading": "Loading order…",
+      "redirecting": "Redirecting you to sign in…",
+      "backToOrders": "Back to orders",
+      "statusLabel": "Status",
+      "placedOnLabel": "Placed on",
+      "totalLabel": "Total",
+      "itemsHeading": "Items",
+      "itemLicenceLabel": "Licence",
+      "itemVersionLabel": "Version",
+      "notFound": {
+        "heading": "Order not found",
+        "description": "This order doesn't exist or isn't linked to your account.",
+        "cta": "Back to orders"
+      },
+      "error": {
+        "heading": "We couldn't load this order",
+        "description": "Something went wrong while loading this order. Please try again.",
+        "action": "Try again"
+      }
+    },
+    "library": {
+      "heading": "Your library",
+      "loading": "Loading your library…",
+      "redirecting": "Redirecting you to sign in…",
+      "empty": "You don't own any templates yet.",
+      "loadMore": "Load more",
+      "entitlementLabel": "Template {productId}",
+      "versionLabel": "Version",
+      "purchasedOnLabel": "Purchased on",
+      "download": {
+        "action": "Download",
+        "pending": "Preparing download…",
+        "error": "We couldn't prepare your download. Please try again."
+      },
+      "error": {
+        "heading": "We couldn't load your library",
+        "description": "Something went wrong while loading your library. Please try again.",
+        "action": "Try again"
+      }
     }
   }
 }

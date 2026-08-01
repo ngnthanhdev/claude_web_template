@@ -1,10 +1,11 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { useSession } from "@/hooks/use-session";
 import type { Locale } from "@shared/localization";
 import { localeSchema } from "@shared/localization";
@@ -27,9 +28,10 @@ function formatSessionExpiry(expiresAt: string, locale: Locale): string {
  * The account landing's data-driven core. Reads the current session through
  * `useSession`, redirects an unauthenticated visitor to sign-in, and — once
  * authenticated — renders only the allowlisted `sessionUserSchema`/
- * `safeSessionSchema` fields read-only, plus `SessionActions`. Library,
- * orders, and profile editing are explicitly deferred and are never
- * rendered here as if they were functional.
+ * `safeSessionSchema` fields read-only, a quick-links entry into the real
+ * `/[locale]/account/orders` and `/[locale]/account/library` screens, plus
+ * `SessionActions`. Profile editing remains deferred and is never rendered
+ * here as if it were functional.
  */
 export function AccountPanel() {
   const locale = localeSchema.parse(useLocale());
@@ -99,6 +101,31 @@ export function AccountPanel() {
           </div>
         </dl>
         <p className="text-sm text-muted-foreground">{t("comingSoon")}</p>
+      </section>
+      <section
+        aria-labelledby="account-quick-links-heading"
+        className="flex flex-col gap-4 rounded-[var(--radius-panel)] border border-border bg-background p-6"
+      >
+        <h2
+          className="text-sm font-semibold uppercase tracking-wide text-foreground"
+          id="account-quick-links-heading"
+        >
+          {t("quickLinksHeading")}
+        </h2>
+        <div className="flex flex-wrap gap-3">
+          <Link
+            className={buttonVariants({ variant: "outline" })}
+            href={`/${locale}/account/orders`}
+          >
+            {t("ordersLink")}
+          </Link>
+          <Link
+            className={buttonVariants({ variant: "outline" })}
+            href={`/${locale}/account/library`}
+          >
+            {t("libraryLink")}
+          </Link>
+        </div>
       </section>
       <SessionActions />
     </div>

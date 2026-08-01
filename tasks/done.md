@@ -6,6 +6,137 @@ Each task keeps its original `T-xxxxxx` id and task-block schema (`Status`,
 `Assignee`, `Files`, `Acceptance`, `Skills`, optional `Depends`) unchanged
 except `Status`, which is `done` for everything in this file.
 
+## Layer 6 — Commerce, Seller, and Admin Enablement Gates
+
+Completed 2026-08-01. Gate/decision layer: shipped no application code, Prisma
+model, shared contract, or endpoint, so there is no package test-suite delta.
+`T-e72b45` promoted the `security.yml` scanners (Gitleaks, Semgrep, `pnpm audit`)
+from advisory to blocking merge gates against a confirmed-clean, tuned baseline,
+plus an `audit-ignores-are-dev-only` guard; the gate config is unchanged since its
+last green CI run. The three human gates each produced a user-approved design doc
+under `docs/specs/` — commerce purchase-surface (`T-6d0f2c`), seller authoring
+(`T-b13e77`), and admin surface (`T-4c8a9e`) — the inputs to separate future
+`/scope-breakdown` passes (commerce Wave 1 is already scoped as Layer 7). Payment
+production and production admin MFA remain explicit go-live blockers.
+
+### T-6d0f2c — Commerce & purchase-surface enablement gate (/refine + /threat-model)
+
+- **Status:** done
+- **Assignee:** human
+- **Files:** docs/specs/2026-07-28-commerce-purchase-surface-design.md (new approved design doc; the concrete date is the day the gate is run)
+- **Acceptance:**
+  - A new approved design document under `docs/specs/` is produced by a `/refine`
+    brainstorm (clarifying questions one at a time, 2–3 approaches with a
+    recommendation) plus a `/threat-model` pass, covering the full deferred
+    customer commerce surface: `Cart`/`CartItem`; checkout (dialog on desktop /
+    full-screen sheet on mobile, following the spec §4 Global/Vietnam + email +
+    name + coupon + referral + continue hierarchy, clearly labelled sandbox);
+    sandbox/mock `PaymentAttempt` (production payment + webhooks remain an
+    explicit go-live blocker per §6/§8); `Order`/`OrderItemSnapshot`;
+    `Entitlement` + `account/library`; signed-URL `DownloadEvent` + download
+    audit; `Wishlist`; `Coupon`/`ReferralCode`/`DiscountRedemption` +
+    `POST /v1/discount-quotes`; and verified-purchase `Review` (which depends on
+    entitlement data existing, so it is designed to sequence after purchase).
+  - The doc turns spec §7's high-level rows into concrete, per-endpoint
+    mitigations before any endpoint is enabled: server-side price/discount
+    calculation with immutable order-item snapshots (no client price/licence/
+    discount authority); server-scoped ownership + entitlement checks with no
+    client-supplied owner id (order/download BOLA/IDOR); private-bucket,
+    short-TTL, redacted-log signed download URLs; and atomic, idempotent,
+    uniquely-capped coupon/referral redemption.
+  - The doc resolves — or explicitly records as still-open behind the
+    sandbox-only boundary — the §8 provider-neutral decisions that gate commerce
+    go-live (payment provider + webhook signing, entitlement/artifact storage),
+    so a later scope pass is not forced to invent them.
+  - The document is marked **approved by the user** and is structured so a
+    follow-on `/scope-breakdown` pass can derive an ordered commerce layer
+    (shared Zod contracts → Prisma models/migrations → NestJS resources → web
+    screens) without re-litigating scope. This task writes **no** application
+    code, Prisma model, shared contract, or endpoint; its checkable "done" is
+    the approved, internally consistent design doc plus a linked follow-on scope
+    pass, not a passing test suite.
+- **Skills:** brainstorming, security-threat-model, api-design, backend-auth-security, database-orm, shared-contracts, web-data-forms
+
+### T-b13e77 — Seller authoring enablement gate (/refine + /threat-model)
+
+- **Status:** done
+- **Assignee:** human
+- **Files:** docs/specs/2026-08-01-seller-authoring-design.md (approved design doc)
+- **Acceptance:**
+  - Per spec §7 ("Future seller features require a new refinement and threat
+    model before any seller-facing endpoint is enabled"), a new approved design
+    doc under `docs/specs/` is produced by a `/refine` brainstorm +
+    `/threat-model` covering the intended seller surface: seller onboarding and
+    seller-scoped product authoring, `ProductVersion`/`Artifact`/`BuildRun`, the
+    QA/publication state machine, and any seller dashboard — building on the
+    existing server-controlled `Product.sellerId` / `SellerProfile` ownership so
+    a later scope pass does not rewrite catalogue authorization.
+  - The doc names the concrete trust boundaries and mitigations: seller RBAC and
+    ownership scoping so one seller cannot read or modify another seller's
+    products/releases, and ephemeral, resource-limited, least-privilege
+    build-runner isolation (spec §7 malicious-code row) before any build runner
+    executes untrusted product code.
+  - The doc explicitly reconciles with spec §6 (public sellers, KYC,
+    commissions, payouts, and seller dashboards are v1 non-goals) by stating
+    which seller capabilities, if any, v1 enables versus defers, so a follow-on
+    `/scope-breakdown` pass inherits an unambiguous boundary.
+  - The document is marked **approved by the user** and structured for a
+    follow-on `/scope-breakdown` pass; this task writes **no** seller-facing
+    endpoint, guard, model, or code. Its checkable "done" is the approved,
+    internally consistent design doc, not a passing test suite.
+- **Skills:** brainstorming, security-threat-model, backend-auth-security, api-design, database-orm, shared-contracts
+
+### T-4c8a9e — Admin surface enablement gate (/refine + /threat-model)
+
+- **Status:** done
+- **Assignee:** human
+- **Files:** docs/specs/2026-08-01-admin-surface-design.md (approved design doc)
+- **Acceptance:**
+  - A new approved design doc under `docs/specs/` is produced by a `/refine`
+    brainstorm + `/threat-model` covering the admin surface the spec calls for
+    (§3 admin resources + §4 `/[locale]/admin/*` pages): catalogue authoring,
+    releases/builds, orders, entitlements, discounts, review moderation, and
+    audit, with guarded publish/delist/approve actions on the dense
+    operate/review/publish shell described in §2.
+  - The doc turns spec §7's admin-API elevation row into concrete mitigations
+    before any admin endpoint is enabled: server-enforced admin RBAC (no
+    client-supplied role/owner authority), production MFA, and an append-only
+    `AdminAuditLog` capturing the acting admin for every release/publication
+    state change (§7 repudiation row).
+  - The document is marked **approved by the user** and structured for a
+    follow-on `/scope-breakdown` pass; this task writes **no** admin endpoint,
+    guard, model, or code. Its checkable "done" is the approved, internally
+    consistent design doc, not a passing test suite.
+- **Skills:** brainstorming, security-threat-model, backend-auth-security, web-security, api-design, database-orm
+
+### T-e72b45 — Promote security.yml scanners from advisory to blocking now the apps are populated
+
+- **Status:** done
+- **Assignee:** ai
+- **Files:** .github/workflows/security.yml, docs/SECURITY.md
+- **Acceptance:**
+  - `docs/CI_CD.md` scopes the `security.yml` scanners' `continue-on-error` to
+    the era when "`apps/*`/`packages/shared` are still empty skeletons" — a
+    condition Layers 1–5 have ended. The Gitleaks secret-scan step therefore no
+    longer runs `continue-on-error`: a detected secret blocks the merge,
+    completing the documented "no hard-coded secrets" discipline gate rather than
+    leaving secret detection advisory.
+  - Semgrep (`p/typescript p/javascript p/owasp-top-ten p/nodejsscan`) and
+    `pnpm audit --audit-level=high` are escalated to blocking **only** against a
+    confirmed-clean baseline. Where a finding cannot yet be resolved, it is
+    recorded as an explicit, narrowly-scoped, dated exception with rationale in
+    `docs/SECURITY.md` (not left as a blanket advisory step). The separate
+    non-blocking `design-detector` job and ZAP's manual, release-time status are
+    unchanged.
+  - The PR / `main` / `develop` triggers, the existing steps and rulesets, and
+    the provider-neutral posture are preserved; no production credential is
+    introduced. `security.yml` passes static YAML validation, and the full
+    security workflow run is verified in a real terminal outside the agent
+    session per the repository heavy-build rule; the task changes only
+    `security.yml` and `docs/SECURITY.md`.
+- **Skills:** security-review, git-workflow, backend-auth-security, web-security
+
+
 ## Layer 5 — Public Storefront, Passwordless Auth Web Flow, and Web Release Readiness
 
 Completed 2026-07-28. All 14 tasks done; full workspace lint/typecheck/test green

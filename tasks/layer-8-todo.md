@@ -115,7 +115,7 @@ belong to the admin gate `T-4c8a9e`:
 
 ### T-2d8b06 — Seller guard and seller-scoped authoring API
 
-- **Status:** todo
+- **Status:** in-progress
 - **Assignee:** ai
 - **Files:** apps/api/src/seller/seller.module.ts, apps/api/src/seller/seller.guard.ts, apps/api/src/seller/seller-principal.ts, apps/api/src/seller/seller-products.controller.ts, apps/api/src/seller/seller-products.service.ts, apps/api/src/seller/seller-versions.controller.ts, apps/api/src/seller/seller-versions.service.ts, apps/api/src/seller/seller-review.controller.ts, apps/api/src/seller/seller-review.service.ts, apps/api/src/seller/seller.controller.test.ts, apps/api/src/seller/seller.integration.test.ts
 - **Acceptance:**
@@ -129,7 +129,7 @@ belong to the admin gate `T-4c8a9e`:
 
 ### T-6f1a93 — Factory→API signed-artifact ingest
 
-- **Status:** todo
+- **Status:** in-progress
 - **Assignee:** ai
 - **Files:** apps/api/src/factory-ingest/factory-ingest.module.ts, apps/api/src/factory-ingest/factory-ingest.controller.ts, apps/api/src/factory-ingest/factory-ingest.service.ts, apps/api/src/factory-ingest/factory-signature.guard.ts, apps/api/src/factory-ingest/factory-ingest.controller.test.ts, apps/api/src/factory-ingest/factory-ingest.integration.test.ts, apps/api/src/config/env.ts, apps/api/.env.example
 - **Acceptance:**
@@ -142,7 +142,7 @@ belong to the admin gate `T-4c8a9e`:
 
 ### T-84c3de — Web seller authoring client
 
-- **Status:** todo
+- **Status:** in-progress
 - **Assignee:** ai
 - **Files:** apps/web/src/lib/seller-client.ts, apps/web/src/lib/seller-client.test.ts
 - **Acceptance:**

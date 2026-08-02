@@ -89,7 +89,7 @@ belong to the admin gate `T-4c8a9e`:
 
 ### T-5a2f7b — Shared seller authoring Zod contracts
 
-- **Status:** in-progress
+- **Status:** done
 - **Assignee:** ai
 - **Files:** packages/shared/src/seller.ts, packages/shared/src/seller.test.ts, packages/shared/src/index.ts, packages/shared/package.json
 - **Acceptance:**
@@ -102,7 +102,7 @@ belong to the admin gate `T-4c8a9e`:
 
 ### T-9c4e18 — Prisma Artifact/BuildRun models, ReviewState, and migration
 
-- **Status:** in-progress
+- **Status:** done
 - **Assignee:** ai
 - **Files:** apps/api/prisma/schema.prisma, apps/api/prisma/migrations/20260802000000_seller_authoring/migration.sql
 - **Acceptance:**

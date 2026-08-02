@@ -6,8 +6,10 @@ import { CatalogueModule } from "./catalogue/catalogue.module.js";
 import { CommerceModule } from "./commerce/commerce.module.js";
 import { validateEnv } from "./config/env.js";
 import { EntitlementsModule } from "./entitlements/entitlements.module.js";
+import { FactoryIngestModule } from "./factory-ingest/factory-ingest.module.js";
 import { HealthModule } from "./health/health.module.js";
 import { PrismaModule } from "./prisma/prisma.module.js";
+import { SellerModule } from "./seller/seller.module.js";
 
 @Module({
   imports: [
@@ -21,6 +23,8 @@ import { PrismaModule } from "./prisma/prisma.module.js";
     AuthModule,
     CommerceModule,
     EntitlementsModule,
+    SellerModule,
+    FactoryIngestModule,
   ],
 })
 export class AppModule {}

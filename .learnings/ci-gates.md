@@ -25,3 +25,20 @@ across the package boundary (`../../web/src/lib/api-client`). A web-only
   the 2026-07-23 entry asked for, so the four integration suites now gate in CI.)
 
 Source: apps/api/test/health-client.integration.test.ts, commit 2474002
+
+## 2026-08-02 — Turbo test-cache can hide a broken integration suite for layers
+
+A DB-gated integration suite (`public-resources.integration.test.ts`) had a
+stale `Env` fixture missing three env keys that became required across two later
+layers (`DOWNLOAD_TOKEN_HMAC_SECRET`, `FACTORY_INGEST_HMAC_SECRET`,
+`LOCAL_ARTIFACT_STORAGE_DIR`). `validateEnv(base)` throws whenever the suite
+actually runs — yet CI stayed green because Turbo replayed a *cached* pass from
+before those keys were required (the api package's test hash hadn't changed in a
+way that busted the cache). It only surfaced when a subagent ran the suite
+directly against a fresh Postgres. Lesson: when you add a required env key,
+grep EVERY test that builds a full `Env` literal (not just the obvious
+integration suites) and fix them in the same change; do not trust a green CI to
+prove an integration suite ran — a cache hit and a real pass look identical.
+Verify a suspect suite by running it directly with a disposable DB + full env.
+
+Source: fix `8c0d3a2`; reconciled during Layer 8 Round 3.

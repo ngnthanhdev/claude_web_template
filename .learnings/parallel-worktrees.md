@@ -33,3 +33,19 @@ mid-session process restart discards _uncommitted_ worktree work, so instruct
 every implementer to **commit incrementally**, not only at the end.
 
 Source: packages/shared/src/commerce.ts + apps/api/src/entitlements (layer-7 download-contract fix)
+
+## 2026-08-02 — Splitting shared-Zod and Prisma into parallel tasks drifts enums; unit tests mask it
+
+When a round fans out the shared `packages/shared` Zod contracts (one task) and
+the Prisma schema (a sibling task) in parallel, their enums drift and BOTH tasks
+stay green in isolation: `buildVerdictSchema` shipped `pass|fail` while Prisma
+`BuildVerdict` was `passed|failed`, and `buildRunStatusSchema` omitted the
+`pending` default — the Zod contract tests asserted the *wrong* literals, so they
+passed. The merged-tree union typecheck does NOT catch this (Zod inferred types
+and Prisma enums are independent types that never meet until a Round-2 mapping
+layer). Only `code-reviewer` cross-reading the two files caught it. Lesson: when
+one round owns both sides of an enum contract, give BOTH prompts the exact
+literal member list and tell the shared-schema task its enum "must match Prisma
+X exactly"; and rely on review (not the gate) to verify cross-package enum parity.
+
+Source: fix `a186434`; Layer 8 Round 1 code review.

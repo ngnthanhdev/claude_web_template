@@ -18,6 +18,7 @@ function validEnvironment(): Record<string, unknown> {
     AUTH_CSRF_HASH_SECRET: secret("d"),
     AUTH_SOURCE_IP_HASH_SECRET: secret("e"),
     DOWNLOAD_TOKEN_HMAC_SECRET: secret("f"),
+    FACTORY_INGEST_HMAC_SECRET: secret("g"),
     LOCAL_ARTIFACT_STORAGE_DIR: "/tmp/kitvera-test-artifacts",
   };
 }
@@ -39,6 +40,7 @@ describe("environment validation", () => {
     "AUTH_CSRF_HASH_SECRET",
     "AUTH_SOURCE_IP_HASH_SECRET",
     "DOWNLOAD_TOKEN_HMAC_SECRET",
+    "FACTORY_INGEST_HMAC_SECRET",
     "LOCAL_ARTIFACT_STORAGE_DIR",
     "PUBLIC_WEB_ORIGIN",
   ])("rejects a missing %s", (name) => {

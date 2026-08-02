@@ -57,6 +57,7 @@ const environmentObjectSchema = z.object({
   AUTH_CSRF_HASH_SECRET: secretSchema,
   AUTH_SOURCE_IP_HASH_SECRET: secretSchema,
   DOWNLOAD_TOKEN_HMAC_SECRET: secretSchema,
+  FACTORY_INGEST_HMAC_SECRET: secretSchema,
   LOCAL_ARTIFACT_STORAGE_DIR: z
     .string()
     .min(1)
@@ -70,6 +71,7 @@ const secretNames = [
   "AUTH_CSRF_HASH_SECRET",
   "AUTH_SOURCE_IP_HASH_SECRET",
   "DOWNLOAD_TOKEN_HMAC_SECRET",
+  "FACTORY_INGEST_HMAC_SECRET",
 ] as const;
 
 export const envSchema = environmentObjectSchema.superRefine(

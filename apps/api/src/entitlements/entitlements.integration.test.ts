@@ -91,6 +91,7 @@ describeWithPostgres("Entitlements resources with PostgreSQL", () => {
       AUTH_CSRF_HASH_SECRET: secret(4),
       AUTH_SOURCE_IP_HASH_SECRET: secret(5),
       DOWNLOAD_TOKEN_HMAC_SECRET: secret(6),
+      FACTORY_INGEST_HMAC_SECRET: secret(7),
       LOCAL_ARTIFACT_STORAGE_DIR: artifactsDir,
     } satisfies Env;
 

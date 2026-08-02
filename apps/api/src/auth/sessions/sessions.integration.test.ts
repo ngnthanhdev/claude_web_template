@@ -59,6 +59,7 @@ const testEnvironment = {
   AUTH_CSRF_HASH_SECRET: secret("d"),
   AUTH_SOURCE_IP_HASH_SECRET: secret("e"),
   DOWNLOAD_TOKEN_HMAC_SECRET: secret("f"),
+  FACTORY_INGEST_HMAC_SECRET: secret("g"),
   LOCAL_ARTIFACT_STORAGE_DIR: "/tmp/kitvera-sessions-test-artifacts",
 } satisfies Env;
 

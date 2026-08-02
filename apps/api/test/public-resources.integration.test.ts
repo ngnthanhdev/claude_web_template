@@ -455,6 +455,10 @@ describeWithPostgres("Composed public API resources", () => {
       AUTH_SESSION_HASH_SECRET: Buffer.alloc(32, 3).toString("base64url"),
       AUTH_CSRF_HASH_SECRET: Buffer.alloc(32, 4).toString("base64url"),
       AUTH_SOURCE_IP_HASH_SECRET: Buffer.alloc(32, 5).toString("base64url"),
+      DOWNLOAD_TOKEN_HMAC_SECRET: Buffer.alloc(32, 6).toString("base64url"),
+      FACTORY_INGEST_HMAC_SECRET: Buffer.alloc(32, 7).toString("base64url"),
+      LOCAL_ARTIFACT_STORAGE_DIR:
+        "/tmp/kitvera-public-resources-test-artifacts",
     };
     expect(() => validateEnv(base)).not.toThrow();
     const missingSecret: Record<string, unknown> = { ...base };

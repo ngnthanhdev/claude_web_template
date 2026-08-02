@@ -19,3 +19,17 @@ still run the **union gate** in the main tree afterward, because no single
 worktree tested the combined state.
 
 Source: Layer 5 wave 2b (tasks/layer-5-todo.md)
+
+## 2026-08-02 — The union gate catches cross-task CONTRACT drift, not just build breaks
+
+Layer 7 fanned commerce across worktrees; two isolation-green tasks still
+disagreed at the seam: the API download endpoint required a `{productId, version}`
+body (its own controller test passed) while the web client sent none — a **422 at
+runtime** no unit suite hit and the union _typecheck_ didn't catch (the web fetch
+stub was permissive; only the e2e trace surfaced it). Fix: move the request shape
+into a shared `downloadIssueRequestSchema` both sides import — **never leave a
+request DTO local to the API for a client to mirror.** Corollary reconfirmed: a
+mid-session process restart discards _uncommitted_ worktree work, so instruct
+every implementer to **commit incrementally**, not only at the end.
+
+Source: packages/shared/src/commerce.ts + apps/api/src/entitlements (layer-7 download-contract fix)

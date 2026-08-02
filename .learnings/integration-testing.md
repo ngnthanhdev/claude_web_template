@@ -24,3 +24,17 @@ missing. Integration tests seed only **child** categories (under an existing
 root) + products — never re-seed the roots.
 
 Source: apps/api/prisma/migrations/20260722010000_catalogue_read_model/migration.sql
+
+## 2026-08-02 — @nestjs/config freezes validated config at import time
+
+`ConfigModule.forRoot({ validate })` resolves + freezes its config the moment
+`AppModule`'s decorator is first evaluated (import time), NOT at
+`TestingModule#compile()`/`#init()`. So mutating `process.env.NODE_ENV` in
+`beforeAll` before a second `Test.createTestingModule({ imports: [AppModule] })`
+is silently ignored (the second app keeps the first's frozen env). To boot a
+second app with different env — e.g. asserting the sandbox settle endpoint is
+disabled under `NODE_ENV=production` — call `vi.resetModules()` then
+**dynamically re-import** `AppModule` and every class used as a DI token against
+it (`PrismaService`, `AuthSessionService`).
+
+Source: apps/api/test/commerce-flow.integration.test.ts (T-7b2d84)

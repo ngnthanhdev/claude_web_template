@@ -6,9 +6,10 @@
 // `catalogue_read_model` migration; this only adds a seller plus the published
 // products the specs drive against (SEEDED_CATEGORY="wordpress",
 // MIN_SEEDED_PRODUCTS_IN_CATEGORY=3 — see apps/web/e2e/fixtures/test-catalogue.ts),
-// plus (T-e3a9d7) a local private artifact file backing PRODUCTS[0] so
-// `commerce.spec.ts`'s purchase-to-download happy path has something real to
-// stream.
+// a local private artifact file backing PRODUCTS[0] so `commerce.spec.ts`'s
+// purchase-to-download happy path has something real to stream, and a
+// `seller` Role/UserRole for that same owner so `seller-authoring.spec.ts`
+// can sign in and actually pass `SellerGuard`.
 //
 // Plain ESM (.mjs) on purpose: apps/api ships no tsx/ts-node, so this runs with
 // a bare `node prisma/seed-e2e.mjs` against a DATABASE_URL pointing at a
@@ -29,6 +30,15 @@ const WORDPRESS_ROOT_ID = "00000000-0000-4000-8000-000000000001";
 
 const SELLER_OWNER_ID = "a0000000-0000-4000-8000-000000000001";
 const SELLER_PROFILE_ID = "a0000000-0000-4000-8000-000000000002";
+
+// The `seller` Role/UserRole SellerGuard requires alongside a SellerProfile
+// (apps/api/src/seller/seller.guard.ts) — without this assignment
+// SELLER_OWNER_ID could own products (seeded below) but could never itself
+// pass the guard to author them, since admin role-provisioning is out of e2e
+// scope and this seed grants it directly instead.
+const SELLER_ROLE_ID = "a0000000-0000-4000-8000-000000000003";
+const SELLER_ROLE_ASSIGNMENT_ID = "a0000000-0000-4000-8000-000000000004";
+const SELLER_ROLE_KEY = "seller";
 
 // First slug word doubles as the search term the en browse spec derives
 // (deriveSearchTermFromSlug), so each title contains it for the trigram search.
@@ -208,6 +218,21 @@ async function main() {
         id: SELLER_PROFILE_ID,
         ownerId: SELLER_OWNER_ID,
         slug: "e2e-templates",
+      },
+    });
+
+    // apps/web/e2e/seller-authoring.spec.ts signs in as this same
+    // SELLER_OWNER_ID user (SELLER_EMAIL in
+    // apps/web/e2e/fixtures/seller-user.ts) and drives the authoring happy
+    // path — that needs the `seller` role, not just the SellerProfile above.
+    await prisma.role.create({
+      data: { id: SELLER_ROLE_ID, key: SELLER_ROLE_KEY },
+    });
+    await prisma.userRole.create({
+      data: {
+        id: SELLER_ROLE_ASSIGNMENT_ID,
+        userId: SELLER_OWNER_ID,
+        roleId: SELLER_ROLE_ID,
       },
     });
 

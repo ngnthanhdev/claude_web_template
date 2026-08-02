@@ -1,13 +1,14 @@
 # KITVERA web e2e (Playwright + axe)
 
 Cross-viewport Playwright specs for the storefront's browse and auth happy
-paths (`T-b8d260`), plus the Wave-1 commerce purchase happy path
-(`commerce.spec.ts`, `T-e3a9d7`). These specs are statically valid and
-lint/typecheck clean (see "Verified in this session" below), but **running
-them is a real-terminal step, not something the authoring session does** —
-the repository's heavy-build rule blocks `next build`/`docker build`/
-`playwright test` in an agent session because the run needs a built+served
-web app, a served API, a seeded database, and installed browsers.
+paths, plus the Wave-1 commerce purchase happy path (`commerce.spec.ts`) and
+the v1 seller-authoring happy path (`seller-authoring.spec.ts`). These specs
+are statically valid and lint/typecheck clean (see "Verified in this
+session" below), but **running them is a real-terminal step, not something
+the authoring session does** — the repository's heavy-build rule blocks
+`next build`/`docker build`/`playwright test` in an agent session because
+the run needs a built+served web app, a served API, a seeded database, and
+installed browsers.
 
 ## What this suite needs
 
@@ -58,6 +59,15 @@ web app, a served API, a seeded database, and installed browsers.
      `seed-e2e.mjs` (see "Running it" below) — it writes the one purchasable
      product's backing artifact file there so the spec's download step has
      something real to stream.
+8. **For `seller-authoring.spec.ts` only** — nothing extra beyond the seed:
+   `seed-e2e.mjs` grants its `SELLER_OWNER_ID` user (the same seller that
+   already owns the browse/commerce fixture products) a `seller`
+   `Role`/`UserRole`, since `SellerGuard` requires both that role assignment
+   and an owned `SellerProfile` (`apps/api/src/seller/seller.guard.ts`) —
+   admin role-provisioning is out of scope for a disposable e2e seed, so this
+   grants the role directly at the Prisma level. `fixtures/seller-user.ts`'s
+   `SELLER_EMAIL` (`"e2e-seller@example.com"`) must stay in literal sync with
+   that seeded user's `normalizedEmail`.
 
 ## Known gap: apps/api has no capture-only email adapter yet
 
@@ -150,12 +160,15 @@ pnpm --filter @marketplace/web exec playwright test
 pnpm --filter @marketplace/web exec playwright test --project=mobile-320
 pnpm --filter @marketplace/web exec playwright test e2e/browse.spec.ts
 pnpm --filter @marketplace/web exec playwright test e2e/commerce.spec.ts
+pnpm --filter @marketplace/web exec playwright test e2e/seller-authoring.spec.ts
 ```
 
 `E2E_MAGIC_LINK_CAPTURE_FILE` is optional — omit it to run everything except
-the seam-gated happy-path tests (see the gap above). `commerce.spec.ts`
-entirely is one of those seam-gated suites (every scenario needs a real
-signed-in session), so it self-skips the same way without it.
+the seam-gated happy-path tests (see the gap above). `commerce.spec.ts` and
+`seller-authoring.spec.ts`'s happy-path describes are both seam-gated
+(every scenario needs a real signed-in session); `seller-authoring.spec.ts`'s
+two unauthenticated-redirect access-control tests need no seam and run
+either way.
 
 ## Rate limiting: why auth (and commerce) don't run on every viewport
 
@@ -182,9 +195,22 @@ Instead each of its two scenarios (`vi`/VND, `en`/USD) checks
 except one pinned project — `mobile-320` and `desktop-1440` respectively, the
 two extremes of the acceptance's 320-1440px range — so the file costs exactly
 2 initiations/redemptions per full run regardless of how many viewport
-projects exist. Combined with `auth.spec.ts`'s up to 5/3, one full
-seam-enabled `playwright test` run costs at most 7 initiations and 5
-redemptions — comfortably under both the 20/15min and 10/15min caps.
+projects exist.
+
+`seller-authoring.spec.ts` uses the identical per-scenario
+`testInfo.project.name` pin for its own `vi`/`en` happy-path scenarios
+(`mobile-320`/`desktop-1440`, 2 more initiations/redemptions — both reuse the
+same seeded `SELLER_EMAIL`, still well under the per-email 3/15min cap), plus
+one more pinned-to-`mobile-320` scenario for its non-seller access-control
+check (1 more initiation/redemption; that single session visits both seller
+paths, `vi` and `en`, so it doesn't need a second one). Its two
+unauthenticated-redirect access-control tests need no session and run on
+every viewport project for free. Total added: 3 initiations/3 redemptions.
+
+Combined, one full seam-enabled `playwright test` run costs at most 10
+initiations (5 from `auth.spec.ts` + 2 from `commerce.spec.ts` + 3 from
+`seller-authoring.spec.ts`) and 8 redemptions (3 + 2 + 3) — still
+comfortably under both the 20/15min and 10/15min caps.
 
 Because the window is cumulative, repeated full runs still add up. To re-run
 sooner, either wait out the window or clear the counters on the **disposable**
@@ -246,3 +272,28 @@ psql "$DATABASE_URL" -c 'TRUNCATE auth_rate_events;'
   `apps/web/src/components/account/download-action.tsx`, and
   `apps/api/src/entitlements/entitlements.controller.ts` are all owned by
   already-merged prior tasks).
+
+## Verified in this session (seller-authoring, task-implementer, no browser run)
+
+- `pnpm --filter @marketplace/web lint` — passes, and includes
+  `seller-authoring.spec.ts`/`fixtures/seller-user.ts` for the same reason as
+  above (no e2e-specific ESLint ignore exists).
+- `pnpm --filter @marketplace/web typecheck` — passes; still doesn't touch
+  `e2e/**` (same `tsconfig.json` `include` gap noted above). Independently
+  type-checked the whole `e2e/**` tree (including this file) via the same
+  throwaway `apps/web/tsconfig.e2e-check.json` approach described above —
+  zero errors — then deleted before committing.
+- `pnpm --filter @marketplace/web test` — passes (280 tests, 28 files);
+  Vitest still never collects any `e2e/**` file (same `include` scoping as
+  above).
+- `node --check apps/api/prisma/seed-e2e.mjs` — passes; the extended seed
+  (the added `seller` `Role`/`UserRole`) is syntactically valid plain ESM.
+- `pnpm --filter @marketplace/web exec playwright test --list` was **not**
+  run: this repository's heavy-build rule blocks any `playwright test`
+  invocation (including `--list`) inside an agent session outright, not just
+  the full run — see `.claude/hooks/block-build-output.sh`. Static validity
+  is instead established the same way as the two sessions above:
+  lint + independent `tsc --noEmit` on the whole `e2e/**` tree.
+- The actual `playwright test` browser run was **not** executed — same
+  heavy-build-rule reason as above, plus this spec needs the seller `Role`/
+  `SellerProfile` seed step (see "What this suite needs" #8 above).

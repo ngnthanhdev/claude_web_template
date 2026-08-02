@@ -154,7 +154,7 @@ belong to the admin gate `T-4c8a9e`:
 
 ### T-7e0b52 — Compose seller API modules and composed integration suite
 
-- **Status:** todo
+- **Status:** in-progress
 - **Assignee:** ai
 - **Files:** apps/api/src/app.module.ts, apps/api/test/seller-authoring.integration.test.ts
 - **Acceptance:**
@@ -167,7 +167,7 @@ belong to the admin gate `T-4c8a9e`:
 
 ### T-b9d4a1 — Seller authoring surface (/[locale]/seller/*)
 
-- **Status:** todo
+- **Status:** in-progress
 - **Assignee:** ai
 - **Files:** apps/web/src/app/[locale]/seller/page.tsx, apps/web/src/app/[locale]/seller/products/new/page.tsx, apps/web/src/app/[locale]/seller/products/[id]/page.tsx, apps/web/src/components/seller/seller-product-list.tsx, apps/web/src/components/seller/product-authoring-form.tsx, apps/web/src/components/seller/version-form.tsx, apps/web/src/components/seller/submit-for-review-action.tsx, apps/web/src/components/seller/review-state-badge.tsx, apps/web/src/components/app-shell.tsx, apps/web/messages/vi/seller.json, apps/web/messages/en/seller.json, apps/web/src/components/seller/product-authoring-form.test.tsx
 - **Acceptance:**

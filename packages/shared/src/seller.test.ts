@@ -83,7 +83,7 @@ const validSubmitForReviewRequest = { version: "1.0.0" };
 
 const validArtifact = {
   id: "3b6e1c2a-4f5d-4e6f-8a9b-0c1d2e3f4a5b",
-  storageUri: "s3://factory-artifacts/lotus-commerce/1.0.0.zip",
+  storageId: "s3://factory-artifacts/lotus-commerce/1.0.0.zip",
   checksum: "a".repeat(64),
   sizeBytes: 1_048_576,
   producedAt: "2026-08-01T00:00:00.000Z",
@@ -99,8 +99,8 @@ const validVersionSummary = {
     status: "succeeded",
     startedAt: "2026-08-01T00:00:00.000Z",
     finishedAt: "2026-08-01T00:05:00.000Z",
-    qaVerdict: "pass",
-    scanVerdict: "pass",
+    qaVerdict: "passed",
+    scanVerdict: "passed",
     artifact: validArtifact,
   },
 };
@@ -131,14 +131,14 @@ const validSellerProductDetail = {
 const validFactoryIngestRequest = {
   productId: "2a80d74e-6f18-48a6-9034-7b79a8af93e9",
   version: "1.0.0",
-  storageUri: "s3://factory-artifacts/lotus-commerce/1.0.0.zip",
+  storageId: "s3://factory-artifacts/lotus-commerce/1.0.0.zip",
   checksum: "a".repeat(64),
   signature: "b".repeat(88),
   sizeBytes: 1_048_576,
   producedAt: "2026-08-01T00:00:00.000Z",
   factoryRunId: "run-2026-08-01-001",
-  qaVerdict: "pass",
-  scanVerdict: "pass",
+  qaVerdict: "passed",
+  scanVerdict: "passed",
 };
 
 describe("reviewStateSchema", () => {
@@ -197,6 +197,21 @@ describe("create-draft-product request contract", () => {
         tags: Array.from({ length: 21 }, (_, index) => `tag-${index}`),
       }).success,
     ).toBe(false);
+  });
+
+  it("rejects a non-public/SSRF-prone URL on the authoring write path", () => {
+    for (const badUrl of [
+      "http://169.254.169.254/latest/meta-data",
+      "https://localhost/internal",
+      "https://user:pass@cdn.example.com/thumb.png",
+    ]) {
+      expect(
+        createDraftProductRequestSchema.safeParse({
+          ...validCreateDraftProductRequest,
+          thumbnailUrl: badUrl,
+        }).success,
+      ).toBe(false);
+    }
   });
 });
 
@@ -444,7 +459,7 @@ describe("factory artifact ingest request/response contract", () => {
         productId: validFactoryIngestRequest.productId,
         version: validFactoryIngestRequest.version,
         recordedAt: "2026-08-01T00:05:00.000Z",
-        storageUri: "s3://leaked",
+        storageId: "s3://leaked",
       }).success,
     ).toBe(false);
   });

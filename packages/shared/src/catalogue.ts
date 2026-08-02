@@ -279,7 +279,7 @@ function isPublicHttpUrl(value: string): boolean {
   }
 }
 
-const publicHttpUrlSchema = z
+export const publicHttpUrlSchema = z
   .string()
   .url()
   .refine(isPublicHttpUrl, "must be a public HTTP(S) URL without credentials");

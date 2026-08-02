@@ -3,6 +3,7 @@ import { z } from "zod";
 import { cursorPageMetaSchema } from "./api.js";
 import {
   categorySlugSchema,
+  publicHttpUrlSchema,
   publicationStateSchema,
   semanticVersionSchema,
   slugSchema,
@@ -63,7 +64,7 @@ const mediaInputSchema = z
   .object({
     position: z.number().int().nonnegative().safe(),
     kind: z.enum(["image", "video"]),
-    url: z.string().url(),
+    url: publicHttpUrlSchema,
     translations: z
       .array(
         z.object({ locale: localeSchema, alt: nonEmptyTextSchema }).strict(),
@@ -109,7 +110,7 @@ const demoPageInputSchema = z
   .object({
     position: z.number().int().nonnegative().safe(),
     slug: slugSchema,
-    previewUrl: z.string().url(),
+    previewUrl: publicHttpUrlSchema,
     translations: z
       .array(
         z.object({ locale: localeSchema, title: nonEmptyTextSchema }).strict(),
@@ -129,9 +130,9 @@ export const createDraftProductRequestSchema = z
   .object({
     slug: slugSchema,
     category: categorySlugSchema,
-    thumbnailUrl: z.string().url(),
-    documentationUrl: z.string().url(),
-    isolatedPreviewUrl: z.string().url(),
+    thumbnailUrl: publicHttpUrlSchema,
+    documentationUrl: publicHttpUrlSchema,
+    isolatedPreviewUrl: publicHttpUrlSchema,
     tags: z.array(slugSchema).max(MAX_TAGS).optional(),
   })
   .strict();
@@ -150,9 +151,9 @@ export const editDraftProductRequestSchema = z
   .object({
     category: categorySlugSchema,
     tags: z.array(slugSchema).max(MAX_TAGS),
-    thumbnailUrl: z.string().url(),
-    documentationUrl: z.string().url(),
-    isolatedPreviewUrl: z.string().url(),
+    thumbnailUrl: publicHttpUrlSchema,
+    documentationUrl: publicHttpUrlSchema,
+    isolatedPreviewUrl: publicHttpUrlSchema,
     translations: z
       .array(translationInputSchema)
       .min(1)
@@ -217,13 +218,23 @@ export type SubmitForReviewResponse = z.infer<
 >;
 
 /**
- * QA/scan verdict on a factory `BuildRun` (design §4/§5). A minimal,
- * shipped-independent enum: pass/fail/pending.
+ * QA/scan verdict on a factory `BuildRun` (design §4/§5). Must match the
+ * Prisma `BuildVerdict` enum exactly (`pending` is the persisted default).
  */
-export const buildVerdictSchema = z.enum(["pending", "pass", "fail"]);
+export const buildVerdictSchema = z.enum(["pending", "passed", "failed"]);
 export type BuildVerdict = z.infer<typeof buildVerdictSchema>;
 
-export const buildRunStatusSchema = z.enum(["running", "succeeded", "failed"]);
+/**
+ * Lifecycle status of a factory `BuildRun`. Must match the Prisma
+ * `BuildRunStatus` enum exactly, including the `pending` default a freshly
+ * recorded run carries before it transitions.
+ */
+export const buildRunStatusSchema = z.enum([
+  "pending",
+  "running",
+  "succeeded",
+  "failed",
+]);
 export type BuildRunStatus = z.infer<typeof buildRunStatusSchema>;
 
 /**
@@ -236,7 +247,7 @@ export type BuildRunStatus = z.infer<typeof buildRunStatusSchema>;
 const sellerArtifactSummarySchema = z
   .object({
     id: z.string().uuid(),
-    storageUri: z.string().min(1).max(2_048),
+    storageId: z.string().min(1).max(2_048),
     checksum: z.string().min(32).max(128),
     sizeBytes: z.number().int().positive().safe(),
     producedAt: z.string().datetime({ offset: true }),
@@ -299,9 +310,9 @@ export type SellerProductListResponse = z.infer<
 
 export const sellerProductDetailResponseSchema = sellerProductSummarySchema
   .extend({
-    thumbnailUrl: z.string().url(),
-    documentationUrl: z.string().url(),
-    isolatedPreviewUrl: z.string().url(),
+    thumbnailUrl: publicHttpUrlSchema,
+    documentationUrl: publicHttpUrlSchema,
+    isolatedPreviewUrl: publicHttpUrlSchema,
     translations: z.array(translationInputSchema),
     media: z.array(mediaInputSchema),
     compatibility: z.array(compatibilityInputSchema),
@@ -323,7 +334,7 @@ export const factoryArtifactIngestRequestSchema = z
   .object({
     productId: z.string().uuid(),
     version: semanticVersionSchema,
-    storageUri: z.string().min(1).max(2_048),
+    storageId: z.string().min(1).max(2_048),
     checksum: z.string().min(32).max(128),
     signature: z.string().min(1).max(4_096),
     sizeBytes: z.number().int().positive().safe(),

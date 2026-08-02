@@ -33,6 +33,10 @@
     "./money": {
       "types": "./dist/money.d.ts",
       "default": "./dist/money.js"
+    },
+    "./seller": {
+      "types": "./dist/seller.d.ts",
+      "default": "./dist/seller.js"
     }
   },
   "scripts": {

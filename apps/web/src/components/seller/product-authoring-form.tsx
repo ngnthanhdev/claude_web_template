@@ -20,6 +20,7 @@ import { useId, type ReactNode } from "react";
 import {
   useFieldArray,
   useForm,
+  type FieldErrors,
   type SubmitHandler,
   type UseFormRegister,
   type UseFormRegisterReturn,
@@ -374,6 +375,7 @@ function EditProductForm({
     });
   };
 
+  const hasTranslationsError = Boolean(errors.translations);
   const hasMediaError = Boolean(errors.media);
   const hasCompatibilityError = Boolean(errors.compatibility);
   const hasSpecificationsError = Boolean(errors.specifications);
@@ -445,12 +447,19 @@ function EditProductForm({
         {FORM_LOCALES.map((locale, index) => (
           <TranslationFields
             baseId={`${translationsBaseId}-${locale}`}
+            errors={errors}
             index={index}
             key={locale}
             locale={locale}
             register={register}
           />
         ))}
+        <FieldError
+          id={`${translationsBaseId}-error`}
+          message={
+            hasTranslationsError ? t("sections.translations.error") : undefined
+          }
+        />
       </fieldset>
 
       <RepeatableSection
@@ -466,6 +475,7 @@ function EditProductForm({
         {mediaArray.fields.map((field, index) => (
           <MediaItemFields
             baseId={`${mediaBaseId}-${index}`}
+            errors={errors}
             index={index}
             key={field.id}
             onRemove={() => mediaArray.remove(index)}
@@ -488,6 +498,7 @@ function EditProductForm({
         {compatibilityArray.fields.map((field, index) => (
           <CompatibilityItemFields
             baseId={`${compatibilityBaseId}-${index}`}
+            errors={errors}
             index={index}
             key={field.id}
             onRemove={() => compatibilityArray.remove(index)}
@@ -512,6 +523,7 @@ function EditProductForm({
         {specificationArray.fields.map((field, index) => (
           <SpecificationItemFields
             baseId={`${specificationsBaseId}-${index}`}
+            errors={errors}
             index={index}
             key={field.id}
             onRemove={() => specificationArray.remove(index)}
@@ -534,6 +546,7 @@ function EditProductForm({
         {demoPageArray.fields.map((field, index) => (
           <DemoPageItemFields
             baseId={`${demoPagesBaseId}-${index}`}
+            errors={errors}
             index={index}
             key={field.id}
             onRemove={() => demoPageArray.remove(index)}
@@ -600,13 +613,16 @@ function TranslationFields({
   index,
   locale,
   register,
+  errors,
 }: {
   baseId: string;
   index: number;
   locale: Locale;
   register: UseFormRegister<EditDraftProductRequest>;
+  errors: FieldErrors<EditDraftProductRequest>;
 }) {
   const t = useTranslations("Seller.authoringForm");
+  const translationError = errors.translations?.[index];
 
   return (
     <div className="flex flex-col gap-3 rounded-[var(--radius-panel)] border border-border p-4">
@@ -619,18 +635,33 @@ function TranslationFields({
         {...register(`translations.${index}.locale` as const)}
       />
       <TextField
+        error={
+          translationError?.title
+            ? t("fields.translationTitle.error")
+            : undefined
+        }
         errorId={`${baseId}-title-error`}
         id={`${baseId}-title`}
         label={t("fields.translationTitle.label")}
         registration={register(`translations.${index}.title` as const)}
       />
       <TextField
+        error={
+          translationError?.summary
+            ? t("fields.translationSummary.error")
+            : undefined
+        }
         errorId={`${baseId}-summary-error`}
         id={`${baseId}-summary`}
         label={t("fields.translationSummary.label")}
         registration={register(`translations.${index}.summary` as const)}
       />
       <TextField
+        error={
+          translationError?.description
+            ? t("fields.translationDescription.error")
+            : undefined
+        }
         errorId={`${baseId}-description-error`}
         id={`${baseId}-description`}
         label={t("fields.translationDescription.label")}
@@ -646,15 +677,18 @@ function MediaItemFields({
   register,
   onRemove,
   removeLabel,
+  errors,
 }: {
   baseId: string;
   index: number;
   register: UseFormRegister<EditDraftProductRequest>;
   onRemove: () => void;
   removeLabel: string;
+  errors: FieldErrors<EditDraftProductRequest>;
 }) {
   const t = useTranslations("Seller.authoringForm");
   const kindId = `${baseId}-kind`;
+  const mediaError = errors.media?.[index];
 
   return (
     <div className="flex flex-col gap-3 rounded-[var(--radius-panel)] border border-border p-4">
@@ -672,6 +706,7 @@ function MediaItemFields({
         </select>
       </div>
       <TextField
+        error={mediaError?.url ? t("sections.media.urlError") : undefined}
         errorId={`${baseId}-url-error`}
         id={`${baseId}-url`}
         label={t("sections.media.urlLabel")}
@@ -680,6 +715,11 @@ function MediaItemFields({
       />
       {FORM_LOCALES.map((locale, localeIndex) => (
         <TextField
+          error={
+            mediaError?.translations?.[localeIndex]?.alt
+              ? t("sections.media.altError")
+              : undefined
+          }
           errorId={`${baseId}-alt-${locale}-error`}
           id={`${baseId}-alt-${locale}`}
           key={locale}
@@ -714,24 +754,37 @@ function CompatibilityItemFields({
   register,
   onRemove,
   removeLabel,
+  errors,
 }: {
   baseId: string;
   index: number;
   register: UseFormRegister<EditDraftProductRequest>;
   onRemove: () => void;
   removeLabel: string;
+  errors: FieldErrors<EditDraftProductRequest>;
 }) {
   const t = useTranslations("Seller.authoringForm");
+  const compatibilityError = errors.compatibility?.[index];
 
   return (
     <div className="flex flex-col gap-3 rounded-[var(--radius-panel)] border border-border p-4">
       <TextField
+        error={
+          compatibilityError?.target
+            ? t("sections.compatibility.targetError")
+            : undefined
+        }
         errorId={`${baseId}-target-error`}
         id={`${baseId}-target`}
         label={t("sections.compatibility.targetLabel")}
         registration={register(`compatibility.${index}.target` as const)}
       />
       <TextField
+        error={
+          compatibilityError?.constraint
+            ? t("sections.compatibility.constraintError")
+            : undefined
+        }
         errorId={`${baseId}-constraint-error`}
         id={`${baseId}-constraint`}
         label={t("sections.compatibility.constraintLabel")}
@@ -750,18 +803,26 @@ function SpecificationItemFields({
   register,
   onRemove,
   removeLabel,
+  errors,
 }: {
   baseId: string;
   index: number;
   register: UseFormRegister<EditDraftProductRequest>;
   onRemove: () => void;
   removeLabel: string;
+  errors: FieldErrors<EditDraftProductRequest>;
 }) {
   const t = useTranslations("Seller.authoringForm");
+  const specificationError = errors.specifications?.[index];
 
   return (
     <div className="flex flex-col gap-3 rounded-[var(--radius-panel)] border border-border p-4">
       <TextField
+        error={
+          specificationError?.key
+            ? t("sections.specifications.keyError")
+            : undefined
+        }
         errorId={`${baseId}-key-error`}
         id={`${baseId}-key`}
         label={t("sections.specifications.keyLabel")}
@@ -777,6 +838,11 @@ function SpecificationItemFields({
             )}
           />
           <TextField
+            error={
+              specificationError?.translations?.[localeIndex]?.label
+                ? t("sections.specifications.labelError")
+                : undefined
+            }
             errorId={`${baseId}-label-${locale}-error`}
             id={`${baseId}-label-${locale}`}
             label={t("sections.specifications.labelLabel", {
@@ -787,6 +853,11 @@ function SpecificationItemFields({
             )}
           />
           <TextField
+            error={
+              specificationError?.translations?.[localeIndex]?.value
+                ? t("sections.specifications.valueError")
+                : undefined
+            }
             errorId={`${baseId}-value-${locale}-error`}
             id={`${baseId}-value-${locale}`}
             label={t("sections.specifications.valueLabel", {
@@ -811,24 +882,35 @@ function DemoPageItemFields({
   register,
   onRemove,
   removeLabel,
+  errors,
 }: {
   baseId: string;
   index: number;
   register: UseFormRegister<EditDraftProductRequest>;
   onRemove: () => void;
   removeLabel: string;
+  errors: FieldErrors<EditDraftProductRequest>;
 }) {
   const t = useTranslations("Seller.authoringForm");
+  const demoPageError = errors.demoPages?.[index];
 
   return (
     <div className="flex flex-col gap-3 rounded-[var(--radius-panel)] border border-border p-4">
       <TextField
+        error={
+          demoPageError?.slug ? t("sections.demoPages.slugError") : undefined
+        }
         errorId={`${baseId}-slug-error`}
         id={`${baseId}-slug`}
         label={t("sections.demoPages.slugLabel")}
         registration={register(`demoPages.${index}.slug` as const)}
       />
       <TextField
+        error={
+          demoPageError?.previewUrl
+            ? t("sections.demoPages.previewUrlError")
+            : undefined
+        }
         errorId={`${baseId}-previewUrl-error`}
         id={`${baseId}-previewUrl`}
         label={t("sections.demoPages.previewUrlLabel")}
@@ -847,6 +929,11 @@ function DemoPageItemFields({
       ))}
       {FORM_LOCALES.map((locale, localeIndex) => (
         <TextField
+          error={
+            demoPageError?.translations?.[localeIndex]?.title
+              ? t("sections.demoPages.titleError")
+              : undefined
+          }
           errorId={`${baseId}-title-${locale}-error`}
           id={`${baseId}-title-${locale}`}
           key={locale}

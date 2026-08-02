@@ -55,13 +55,16 @@
           "error": "Nhập một URL HTTPS công khai hợp lệ."
         },
         "translationTitle": {
-          "label": "Tiêu đề"
+          "label": "Tiêu đề",
+          "error": "Nhập tiêu đề."
         },
         "translationSummary": {
-          "label": "Tóm tắt"
+          "label": "Tóm tắt",
+          "error": "Nhập tóm tắt."
         },
         "translationDescription": {
-          "label": "Mô tả"
+          "label": "Mô tả",
+          "error": "Nhập mô tả."
         }
       },
       "categories": {
@@ -82,7 +85,8 @@
       },
       "sections": {
         "translations": {
-          "heading": "Bản dịch"
+          "heading": "Bản dịch",
+          "error": "Kiểm tra lại các bản dịch bên dưới."
         },
         "media": {
           "heading": "Phương tiện",
@@ -94,7 +98,9 @@
           "kindImage": "Hình ảnh",
           "kindVideo": "Video",
           "urlLabel": "URL phương tiện",
-          "altLabel": "Văn bản thay thế ({locale})"
+          "urlError": "Nhập một URL HTTPS công khai hợp lệ.",
+          "altLabel": "Văn bản thay thế ({locale})",
+          "altError": "Nhập văn bản thay thế."
         },
         "compatibility": {
           "heading": "Khả năng tương thích",
@@ -103,7 +109,9 @@
           "empty": "Chưa có mục tương thích nào.",
           "error": "Kiểm tra lại các mục tương thích bên dưới.",
           "targetLabel": "Đối tượng",
-          "constraintLabel": "Ràng buộc"
+          "targetError": "Nhập đối tượng viết thường, phân tách bằng dấu gạch nối.",
+          "constraintLabel": "Ràng buộc",
+          "constraintError": "Nhập ràng buộc."
         },
         "specifications": {
           "heading": "Thông số kỹ thuật",
@@ -112,8 +120,11 @@
           "empty": "Chưa có thông số nào.",
           "error": "Kiểm tra lại các thông số bên dưới.",
           "keyLabel": "Khoá",
+          "keyError": "Nhập khoá viết thường, phân tách bằng dấu gạch nối.",
           "labelLabel": "Nhãn ({locale})",
-          "valueLabel": "Giá trị ({locale})"
+          "labelError": "Nhập nhãn.",
+          "valueLabel": "Giá trị ({locale})",
+          "valueError": "Nhập giá trị."
         },
         "demoPages": {
           "heading": "Trang demo",
@@ -122,8 +133,11 @@
           "empty": "Chưa có trang demo nào.",
           "error": "Kiểm tra lại các trang demo bên dưới.",
           "slugLabel": "Slug",
+          "slugError": "Nhập slug viết thường, phân tách bằng dấu gạch nối.",
           "previewUrlLabel": "URL xem trước",
-          "titleLabel": "Tiêu đề ({locale})"
+          "previewUrlError": "Nhập một URL HTTPS công khai hợp lệ.",
+          "titleLabel": "Tiêu đề ({locale})",
+          "titleError": "Nhập tiêu đề."
         }
       },
       "submitError": "Không thể lưu thay đổi của bạn. Vui lòng thử lại.",

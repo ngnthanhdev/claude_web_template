@@ -55,13 +55,16 @@
           "error": "Enter a valid public HTTPS URL."
         },
         "translationTitle": {
-          "label": "Title"
+          "label": "Title",
+          "error": "Enter a title."
         },
         "translationSummary": {
-          "label": "Summary"
+          "label": "Summary",
+          "error": "Enter a summary."
         },
         "translationDescription": {
-          "label": "Description"
+          "label": "Description",
+          "error": "Enter a description."
         }
       },
       "categories": {
@@ -82,7 +85,8 @@
       },
       "sections": {
         "translations": {
-          "heading": "Translations"
+          "heading": "Translations",
+          "error": "Check the translations below."
         },
         "media": {
           "heading": "Media",
@@ -94,7 +98,9 @@
           "kindImage": "Image",
           "kindVideo": "Video",
           "urlLabel": "Media URL",
-          "altLabel": "Alt text ({locale})"
+          "urlError": "Enter a valid public HTTPS URL.",
+          "altLabel": "Alt text ({locale})",
+          "altError": "Enter alt text."
         },
         "compatibility": {
           "heading": "Compatibility",
@@ -103,7 +109,9 @@
           "empty": "No compatibility entries added yet.",
           "error": "Check the compatibility entries below.",
           "targetLabel": "Target",
-          "constraintLabel": "Constraint"
+          "targetError": "Enter a lowercase, hyphenated target.",
+          "constraintLabel": "Constraint",
+          "constraintError": "Enter a constraint."
         },
         "specifications": {
           "heading": "Specifications",
@@ -112,8 +120,11 @@
           "empty": "No specifications added yet.",
           "error": "Check the specifications below.",
           "keyLabel": "Key",
+          "keyError": "Enter a lowercase, hyphenated key.",
           "labelLabel": "Label ({locale})",
-          "valueLabel": "Value ({locale})"
+          "labelError": "Enter a label.",
+          "valueLabel": "Value ({locale})",
+          "valueError": "Enter a value."
         },
         "demoPages": {
           "heading": "Demo pages",
@@ -122,8 +133,11 @@
           "empty": "No demo pages added yet.",
           "error": "Check the demo pages below.",
           "slugLabel": "Slug",
+          "slugError": "Enter a lowercase, hyphenated slug.",
           "previewUrlLabel": "Preview URL",
-          "titleLabel": "Title ({locale})"
+          "previewUrlError": "Enter a valid public HTTPS URL.",
+          "titleLabel": "Title ({locale})",
+          "titleError": "Enter a title."
         }
       },
       "submitError": "We couldn't save your changes. Please try again.",

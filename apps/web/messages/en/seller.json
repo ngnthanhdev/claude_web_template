@@ -1,0 +1,192 @@
+{
+  "Seller": {
+    "nav": {
+      "label": "Seller"
+    },
+    "list": {
+      "heading": "Your products",
+      "loading": "Loading your products…",
+      "redirecting": "Redirecting you to sign in…",
+      "empty": "You haven't created any products yet.",
+      "noVersions": "No versions yet.",
+      "createAction": "New product",
+      "loadMore": "Load more",
+      "error": {
+        "heading": "We couldn't load your products",
+        "description": "Something went wrong while loading your products. Please try again.",
+        "action": "Try again"
+      },
+      "forbidden": {
+        "heading": "Seller access required",
+        "description": "Your account doesn't have seller access. Contact an admin if you believe this is a mistake."
+      }
+    },
+    "states": {
+      "publicationState": {
+        "draft": "Draft",
+        "published": "Published",
+        "delisted": "Delisted"
+      },
+      "reviewState": {
+        "draft": "Draft",
+        "in_review": "In review",
+        "approved": "Approved"
+      }
+    },
+    "authoringForm": {
+      "fields": {
+        "slug": {
+          "label": "Slug",
+          "error": "Enter a lowercase, hyphenated slug."
+        },
+        "category": {
+          "label": "Category"
+        },
+        "thumbnailUrl": {
+          "label": "Thumbnail URL",
+          "error": "Enter a valid public HTTPS URL."
+        },
+        "documentationUrl": {
+          "label": "Documentation URL",
+          "error": "Enter a valid public HTTPS URL."
+        },
+        "isolatedPreviewUrl": {
+          "label": "Isolated preview URL",
+          "error": "Enter a valid public HTTPS URL."
+        },
+        "translationTitle": {
+          "label": "Title"
+        },
+        "translationSummary": {
+          "label": "Summary"
+        },
+        "translationDescription": {
+          "label": "Description"
+        }
+      },
+      "categories": {
+        "wordpress": "WordPress",
+        "elementor": "Elementor",
+        "html": "HTML",
+        "shopify": "Shopify",
+        "jamstack": "Jamstack",
+        "marketing": "Marketing",
+        "cms": "CMS",
+        "ecommerce": "Ecommerce",
+        "ui-templates": "UI templates",
+        "plugins": "Plugins"
+      },
+      "locales": {
+        "vi": "Vietnamese",
+        "en": "English"
+      },
+      "sections": {
+        "translations": {
+          "heading": "Translations"
+        },
+        "media": {
+          "heading": "Media",
+          "add": "Add media",
+          "remove": "Remove media",
+          "empty": "No media added yet.",
+          "error": "Check the media entries below.",
+          "kindLabel": "Kind",
+          "kindImage": "Image",
+          "kindVideo": "Video",
+          "urlLabel": "Media URL",
+          "altLabel": "Alt text ({locale})"
+        },
+        "compatibility": {
+          "heading": "Compatibility",
+          "add": "Add compatibility entry",
+          "remove": "Remove entry",
+          "empty": "No compatibility entries added yet.",
+          "error": "Check the compatibility entries below.",
+          "targetLabel": "Target",
+          "constraintLabel": "Constraint"
+        },
+        "specifications": {
+          "heading": "Specifications",
+          "add": "Add specification",
+          "remove": "Remove specification",
+          "empty": "No specifications added yet.",
+          "error": "Check the specifications below.",
+          "keyLabel": "Key",
+          "labelLabel": "Label ({locale})",
+          "valueLabel": "Value ({locale})"
+        },
+        "demoPages": {
+          "heading": "Demo pages",
+          "add": "Add demo page",
+          "remove": "Remove demo page",
+          "empty": "No demo pages added yet.",
+          "error": "Check the demo pages below.",
+          "slugLabel": "Slug",
+          "previewUrlLabel": "Preview URL",
+          "titleLabel": "Title ({locale})"
+        }
+      },
+      "submitError": "We couldn't save your changes. Please try again.",
+      "creating": "Creating…",
+      "createSubmit": "Create draft",
+      "saving": "Saving…",
+      "saveSubmit": "Save changes"
+    },
+    "versionForm": {
+      "heading": "Add a version",
+      "fields": {
+        "version": {
+          "label": "Version",
+          "error": "Enter a valid semantic version, e.g. 1.0.0."
+        },
+        "releasedAt": {
+          "label": "Released at",
+          "error": "Choose a release date and time."
+        },
+        "notesVi": {
+          "label": "Release notes (Vietnamese)",
+          "error": "Enter release notes."
+        },
+        "notesEn": {
+          "label": "Release notes (English)",
+          "error": "Enter release notes."
+        }
+      },
+      "submitError": "We couldn't add this version. Please try again.",
+      "submitting": "Adding version…",
+      "submit": "Add version"
+    },
+    "submitForReview": {
+      "action": "Submit for review",
+      "pending": "Submitting…",
+      "submitted": "Submitted for review",
+      "error": "We couldn't submit this version for review. Please try again."
+    },
+    "newProduct": {
+      "heading": "New product",
+      "loading": "Loading…",
+      "redirecting": "Redirecting you to sign in…",
+      "error": {
+        "heading": "We couldn't load this page",
+        "description": "Something went wrong. Please try again.",
+        "action": "Try again"
+      }
+    },
+    "productDetail": {
+      "loading": "Loading product…",
+      "redirecting": "Redirecting you to sign in…",
+      "versionsHeading": "Versions",
+      "noVersions": "No versions yet.",
+      "error": {
+        "heading": "We couldn't load this product",
+        "description": "Something went wrong while loading this product. Please try again.",
+        "action": "Try again"
+      },
+      "notFound": {
+        "heading": "Product not found",
+        "description": "This product doesn't exist or isn't linked to your seller account.",
+        "cta": "Back to your products"
+      }
+    }
+  }
+}

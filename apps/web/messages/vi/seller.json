@@ -1,0 +1,192 @@
+{
+  "Seller": {
+    "nav": {
+      "label": "Người bán"
+    },
+    "list": {
+      "heading": "Sản phẩm của bạn",
+      "loading": "Đang tải sản phẩm của bạn…",
+      "redirecting": "Đang chuyển hướng đến trang đăng nhập…",
+      "empty": "Bạn chưa tạo sản phẩm nào.",
+      "noVersions": "Chưa có phiên bản nào.",
+      "createAction": "Sản phẩm mới",
+      "loadMore": "Tải thêm",
+      "error": {
+        "heading": "Không thể tải sản phẩm của bạn",
+        "description": "Đã xảy ra lỗi khi tải sản phẩm của bạn. Vui lòng thử lại.",
+        "action": "Thử lại"
+      },
+      "forbidden": {
+        "heading": "Cần quyền người bán",
+        "description": "Tài khoản của bạn chưa có quyền người bán. Vui lòng liên hệ quản trị viên nếu bạn cho rằng đây là nhầm lẫn."
+      }
+    },
+    "states": {
+      "publicationState": {
+        "draft": "Bản nháp",
+        "published": "Đã xuất bản",
+        "delisted": "Đã gỡ"
+      },
+      "reviewState": {
+        "draft": "Bản nháp",
+        "in_review": "Đang xét duyệt",
+        "approved": "Đã duyệt"
+      }
+    },
+    "authoringForm": {
+      "fields": {
+        "slug": {
+          "label": "Slug",
+          "error": "Nhập slug viết thường, phân tách bằng dấu gạch nối."
+        },
+        "category": {
+          "label": "Danh mục"
+        },
+        "thumbnailUrl": {
+          "label": "URL ảnh thu nhỏ",
+          "error": "Nhập một URL HTTPS công khai hợp lệ."
+        },
+        "documentationUrl": {
+          "label": "URL tài liệu",
+          "error": "Nhập một URL HTTPS công khai hợp lệ."
+        },
+        "isolatedPreviewUrl": {
+          "label": "URL xem trước độc lập",
+          "error": "Nhập một URL HTTPS công khai hợp lệ."
+        },
+        "translationTitle": {
+          "label": "Tiêu đề"
+        },
+        "translationSummary": {
+          "label": "Tóm tắt"
+        },
+        "translationDescription": {
+          "label": "Mô tả"
+        }
+      },
+      "categories": {
+        "wordpress": "WordPress",
+        "elementor": "Elementor",
+        "html": "HTML",
+        "shopify": "Shopify",
+        "jamstack": "Jamstack",
+        "marketing": "Marketing",
+        "cms": "CMS",
+        "ecommerce": "Thương mại điện tử",
+        "ui-templates": "Mẫu giao diện",
+        "plugins": "Plugin"
+      },
+      "locales": {
+        "vi": "Tiếng Việt",
+        "en": "Tiếng Anh"
+      },
+      "sections": {
+        "translations": {
+          "heading": "Bản dịch"
+        },
+        "media": {
+          "heading": "Phương tiện",
+          "add": "Thêm phương tiện",
+          "remove": "Xoá phương tiện",
+          "empty": "Chưa có phương tiện nào.",
+          "error": "Kiểm tra lại các mục phương tiện bên dưới.",
+          "kindLabel": "Loại",
+          "kindImage": "Hình ảnh",
+          "kindVideo": "Video",
+          "urlLabel": "URL phương tiện",
+          "altLabel": "Văn bản thay thế ({locale})"
+        },
+        "compatibility": {
+          "heading": "Khả năng tương thích",
+          "add": "Thêm mục tương thích",
+          "remove": "Xoá mục",
+          "empty": "Chưa có mục tương thích nào.",
+          "error": "Kiểm tra lại các mục tương thích bên dưới.",
+          "targetLabel": "Đối tượng",
+          "constraintLabel": "Ràng buộc"
+        },
+        "specifications": {
+          "heading": "Thông số kỹ thuật",
+          "add": "Thêm thông số",
+          "remove": "Xoá thông số",
+          "empty": "Chưa có thông số nào.",
+          "error": "Kiểm tra lại các thông số bên dưới.",
+          "keyLabel": "Khoá",
+          "labelLabel": "Nhãn ({locale})",
+          "valueLabel": "Giá trị ({locale})"
+        },
+        "demoPages": {
+          "heading": "Trang demo",
+          "add": "Thêm trang demo",
+          "remove": "Xoá trang demo",
+          "empty": "Chưa có trang demo nào.",
+          "error": "Kiểm tra lại các trang demo bên dưới.",
+          "slugLabel": "Slug",
+          "previewUrlLabel": "URL xem trước",
+          "titleLabel": "Tiêu đề ({locale})"
+        }
+      },
+      "submitError": "Không thể lưu thay đổi của bạn. Vui lòng thử lại.",
+      "creating": "Đang tạo…",
+      "createSubmit": "Tạo bản nháp",
+      "saving": "Đang lưu…",
+      "saveSubmit": "Lưu thay đổi"
+    },
+    "versionForm": {
+      "heading": "Thêm phiên bản",
+      "fields": {
+        "version": {
+          "label": "Phiên bản",
+          "error": "Nhập phiên bản ngữ nghĩa hợp lệ, ví dụ 1.0.0."
+        },
+        "releasedAt": {
+          "label": "Ngày phát hành",
+          "error": "Chọn ngày và giờ phát hành."
+        },
+        "notesVi": {
+          "label": "Ghi chú phát hành (Tiếng Việt)",
+          "error": "Nhập ghi chú phát hành."
+        },
+        "notesEn": {
+          "label": "Ghi chú phát hành (Tiếng Anh)",
+          "error": "Nhập ghi chú phát hành."
+        }
+      },
+      "submitError": "Không thể thêm phiên bản này. Vui lòng thử lại.",
+      "submitting": "Đang thêm phiên bản…",
+      "submit": "Thêm phiên bản"
+    },
+    "submitForReview": {
+      "action": "Gửi xét duyệt",
+      "pending": "Đang gửi…",
+      "submitted": "Đã gửi xét duyệt",
+      "error": "Không thể gửi phiên bản này để xét duyệt. Vui lòng thử lại."
+    },
+    "newProduct": {
+      "heading": "Sản phẩm mới",
+      "loading": "Đang tải…",
+      "redirecting": "Đang chuyển hướng đến trang đăng nhập…",
+      "error": {
+        "heading": "Không thể tải trang này",
+        "description": "Đã xảy ra lỗi. Vui lòng thử lại.",
+        "action": "Thử lại"
+      }
+    },
+    "productDetail": {
+      "loading": "Đang tải sản phẩm…",
+      "redirecting": "Đang chuyển hướng đến trang đăng nhập…",
+      "versionsHeading": "Phiên bản",
+      "noVersions": "Chưa có phiên bản nào.",
+      "error": {
+        "heading": "Không thể tải sản phẩm này",
+        "description": "Đã xảy ra lỗi khi tải sản phẩm này. Vui lòng thử lại.",
+        "action": "Thử lại"
+      },
+      "notFound": {
+        "heading": "Không tìm thấy sản phẩm",
+        "description": "Sản phẩm này không tồn tại hoặc không thuộc tài khoản người bán của bạn.",
+        "cta": "Quay lại sản phẩm của bạn"
+      }
+    }
+  }
+}

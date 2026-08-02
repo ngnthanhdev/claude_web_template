@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -9,6 +10,50 @@ import { LocaleCurrencyToggle } from "@/components/nav/locale-currency-toggle";
 import { MegaMenu } from "@/components/nav/mega-menu";
 import { MobileDrawer } from "@/components/nav/mobile-drawer";
 import { buttonVariants } from "@/components/ui/button";
+import { useSession } from "@/hooks/use-session";
+import { listSellerProducts } from "@/lib/seller-client";
+
+/**
+ * The nav's only signal for "does this signed-in caller have seller access"
+ * — there is no role/claim on the session itself (design §5/§8: "the
+ * client `seller` role is UX only"), so this issues the same read the
+ * seller list page itself makes (`GET /v1/seller/products`, one row) and
+ * treats a successful response as seller context, any failure (403 for a
+ * non-seller, or not-yet-loaded) as not. This never fabricates a "you're a
+ * seller" state from client-only data; it only ever reflects what the
+ * server guard actually allowed. Customer/account navigation is entirely
+ * unaffected — this only ever adds the one seller link, never removes or
+ * reorders anything existing.
+ */
+function useIsSellerContext(): boolean {
+  const session = useSession();
+
+  const sellerContextQuery = useQuery({
+    queryKey: ["seller", "nav-context"] as const,
+    queryFn: () => listSellerProducts({ limit: 1 }),
+    enabled: session.status === "authenticated",
+    retry: false,
+  });
+
+  return sellerContextQuery.isSuccess;
+}
+
+function SellerNavEntry() {
+  const locale = useLocale();
+  const t = useTranslations("Seller.nav");
+  const isSeller = useIsSellerContext();
+
+  if (!isSeller) return null;
+
+  return (
+    <Link
+      className={buttonVariants({ variant: "ghost" })}
+      href={`/${locale}/seller`}
+    >
+      {t("label")}
+    </Link>
+  );
+}
 
 export function AppShell({ children }: { children: ReactNode }) {
   const locale = useLocale();
@@ -54,6 +99,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               </svg>
             </Link>
             <CartNavEntry />
+            <SellerNavEntry />
             <div className="hidden sm:block">
               <LocaleCurrencyToggle />
             </div>

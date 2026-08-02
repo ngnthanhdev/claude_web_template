@@ -167,6 +167,12 @@ enum PublicationState {
   delisted
 }
 
+enum ReviewState {
+  draft
+  in_review
+  approved
+}
+
 enum LicenceIdentifier {
   Regular
   Extended
@@ -362,12 +368,16 @@ model ProductVersion {
   productId    String                      @map("product_id") @db.Uuid
   version      String                      @db.VarChar(64)
   releasedAt   DateTime                    @map("released_at") @db.Timestamptz(3)
+  reviewState  ReviewState                 @default(draft) @map("review_state")
   product      Product                     @relation("ProductVersions", fields: [productId], references: [id], onDelete: Restrict)
   currentFor   Product?                    @relation("CurrentProductVersion")
   translations ProductVersionTranslation[]
+  artifact     Artifact?
+  buildRuns    BuildRun[]
 
   @@unique([productId, version])
   @@index([productId, releasedAt])
+  @@index([productId, reviewState])
   @@map("product_versions")
 }
 
@@ -501,4 +511,50 @@ model DownloadEvent {
   @@index([entitlementId, issuedAt, id], map: "download_events_entitlement_id_issued_at_id_idx")
   @@index([userId, issuedAt, id], map: "download_events_user_id_issued_at_id_idx")
   @@map("download_events")
+}
+
+enum BuildRunStatus {
+  pending
+  running
+  succeeded
+  failed
+}
+
+enum BuildVerdict {
+  pending
+  passed
+  failed
+}
+
+model Artifact {
+  id               String         @id @default(uuid()) @db.Uuid
+  productVersionId String         @map("product_version_id") @db.Uuid
+  storageId        String         @map("storage_id") @db.Text
+  checksum         String         @db.VarChar(128)
+  signature        String         @db.Text
+  sizeBytes        BigInt         @map("size_bytes")
+  producedAt       DateTime       @map("produced_at") @db.Timestamptz(3)
+  factoryRunId     String         @map("factory_run_id") @db.VarChar(128)
+  productVersion   ProductVersion @relation(fields: [productVersionId], references: [id], onDelete: Restrict)
+  buildRuns        BuildRun[]
+
+  @@unique([productVersionId], map: "artifacts_product_version_id_key")
+  @@map("artifacts")
+}
+
+model BuildRun {
+  id               String         @id @default(uuid()) @db.Uuid
+  productVersionId String         @map("product_version_id") @db.Uuid
+  status           BuildRunStatus @default(pending)
+  startedAt        DateTime       @map("started_at") @db.Timestamptz(3)
+  finishedAt       DateTime?      @map("finished_at") @db.Timestamptz(3)
+  factoryRunId     String         @map("factory_run_id") @db.VarChar(128)
+  artifactId       String?        @map("artifact_id") @db.Uuid
+  qaVerdict        BuildVerdict   @default(pending) @map("qa_verdict")
+  scanVerdict      BuildVerdict   @default(pending) @map("scan_verdict")
+  productVersion   ProductVersion @relation(fields: [productVersionId], references: [id], onDelete: Restrict)
+  artifact         Artifact?      @relation(fields: [artifactId], references: [id], onDelete: Restrict)
+
+  @@unique([productVersionId, factoryRunId], map: "build_runs_product_version_id_factory_run_id_key")
+  @@map("build_runs")
 }

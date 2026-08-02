@@ -67,3 +67,21 @@ brainstorm surfaced a decision only a human can make (`Assignee: human`).
 (Delete this comment block's content when the first real task is added; keep
 the format itself as the template for every task appended after it.)
 -->
+
+---
+
+### T-1f7c2a — Seller-authoring code-review follow-ups (DRY + robustness edges)
+
+- **Status:** todo
+- **Assignee:** ai
+- **Files:** apps/api/src/seller/*.controller.ts, apps/api/src/factory-ingest/factory-ingest.controller.ts, apps/api/src/seller/seller-products.service.ts, apps/api/src/seller/seller-versions.service.ts, apps/web/src/lib/api-client.ts, apps/web/src/lib/seller-client.ts
+- **Acceptance:**
+  - The `parseRequest` Zod→`ZodValidationException` wrapper (duplicated verbatim across the three seller controllers + the factory-ingest controller) and the `productIdParamSchema = z.string().uuid()` redeclaration are hoisted to one shared helper.
+  - `isUniqueConstraintViolation` (P2002 predicate, duplicated in seller-products + seller-versions services) is shared from one place.
+  - `apiClient` gains a `patch` method and `seller-client.ts`'s local `patchRequest` (~48-line duplicate of the internal `request`) is deleted in favour of it.
+  - The base64url `(createdAt,id)` keyset cursor codec in `seller-products.service.ts` folds into the shared cursor-codec util alongside the Layer-7 orders/entitlements pagers (the standing Layer-7 DRY item).
+  - Two low robustness edges: a validated-but-unseeded category currently throws a bare `Error` (→500) in `seller-products.service.ts` — map to a 4xx if the category enum can drift ahead of seed data; and the `replay` null-artifact branch in `factory-ingest.service.ts` is dead/defensive — leave or tighten, no behaviour change required.
+  - Behaviour unchanged; `pnpm lint typecheck test` stays green.
+- **Skills:** typescript-strict, nestjs-backend, web-api-integration
+
+From the Layer 8 Round 2 code review (2026-08-02): no correctness/security defects, but several verbatim duplications (`parseRequest`, `isUniqueConstraintViolation`, `patchRequest`, the keyset cursor codec) worth consolidating, plus two low-severity robustness edges. All non-blocking — deferred out of the layer to keep task scope tight.

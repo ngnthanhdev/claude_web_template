@@ -1,6 +1,7 @@
 import {
   checkoutRequestSchema,
   checkoutResponseSchema,
+  downloadIssueRequestSchema,
   downloadIssueResponseSchema,
   libraryResponseSchema,
   orderCollectionResponseSchema,
@@ -8,6 +9,7 @@ import {
   orderSchema,
   type CheckoutRequest,
   type CheckoutResponse,
+  type DownloadIssueRequest,
   type DownloadIssueResponse,
   type LibraryResponse,
   type Order,
@@ -124,23 +126,28 @@ export async function listLibrary(
 }
 
 /**
- * Issues a short-lived signed download URL for an owned entitlement. This is
- * a POST-to-issue call only: the entitlement id travels in the request path,
- * never a download token, and the returned `{ url, expiresAt }` is handed
- * back to the caller to use directly — this function never logs it, never
- * appends it to a link the caller didn't ask for, and never embeds it in a
- * request target of its own.
+ * Issues a short-lived signed download URL for an owned entitlement. The
+ * entitlement id travels in the request path; the request body carries the
+ * `{ productId, version }` the server cross-checks against that entitlement
+ * (anti-tamper — a mismatch 404s), built and validated only from the shared
+ * `downloadIssueRequestSchema` so no other field can be sent. A download
+ * token never appears in the request target, and the returned
+ * `{ url, expiresAt }` is handed back to the caller to use directly — this
+ * function never logs it, never appends it to a link the caller didn't ask
+ * for, and never embeds it in a request target of its own.
  */
 export async function issueDownload(
   entitlementId: string,
+  download: DownloadIssueRequest,
   csrfToken: string,
 ): Promise<DownloadIssueResponse> {
   const id = uuidSchema.parse(entitlementId);
+  const body = downloadIssueRequestSchema.parse(download);
 
   return apiClient.post(
     `${apiProxyBasePath}/entitlements/${id}/download`,
     downloadIssueResponseSchema,
-    undefined,
+    body,
     { headers: csrfHeaders(csrfToken) },
   );
 }

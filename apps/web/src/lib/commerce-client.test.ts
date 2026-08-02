@@ -11,6 +11,7 @@ import {
 } from "./commerce-client";
 
 const PRODUCT_ID = "2a80d74e-6f18-48a6-9034-7b79a8af93e9";
+const DOWNLOAD_ISSUE_REQUEST = { productId: PRODUCT_ID, version: "1.4.0" };
 const ORDER_ID = "00000000-0000-4000-8000-000000000010";
 const PAYMENT_ATTEMPT_ID = "00000000-0000-4000-8000-000000000011";
 const ENTITLEMENT_ID = "00000000-0000-4000-8000-000000000012";
@@ -214,7 +215,7 @@ describe("listLibrary", () => {
 });
 
 describe("issueDownload", () => {
-  it("POSTs to issue only (no token in the request target) with the CSRF header", async () => {
+  it("POSTs the productId/version body (no token in the request target) with the CSRF header", async () => {
     const fetchMock = stubFetchOnce(
       jsonResponse({
         url: "https://cdn.kitvera.example/downloads/abc",
@@ -222,7 +223,11 @@ describe("issueDownload", () => {
       }),
     );
 
-    const result = await issueDownload(ENTITLEMENT_ID, CSRF_TOKEN);
+    const result = await issueDownload(
+      ENTITLEMENT_ID,
+      DOWNLOAD_ISSUE_REQUEST,
+      CSRF_TOKEN,
+    );
 
     expect(result).toEqual({
       url: "https://cdn.kitvera.example/downloads/abc",
@@ -234,8 +239,23 @@ describe("issueDownload", () => {
     expect(calledPath).not.toContain("token");
     const init = calledInit(fetchMock);
     expect(init.method).toBe("POST");
-    expect(init.body).toBeUndefined();
+    expect(JSON.parse(init.body as string)).toEqual(DOWNLOAD_ISSUE_REQUEST);
+    expect(init.body).not.toContain("token");
     expect(new Headers(init.headers).get("x-csrf-token")).toBe(CSRF_TOKEN);
+  });
+
+  it("rejects a request carrying a field the shared schema does not allow", async () => {
+    // Deliberately smuggling an entitlement id onto the body: the shared
+    // download-issue request schema only allows productId and version, so
+    // this must be rejected before any request is sent.
+    const tamperedInput = {
+      ...DOWNLOAD_ISSUE_REQUEST,
+      entitlementId: ENTITLEMENT_ID,
+    };
+
+    await expect(
+      issueDownload(ENTITLEMENT_ID, tamperedInput, CSRF_TOKEN),
+    ).rejects.toBeInstanceOf(ZodError);
   });
 
   it("never logs the issued download URL/token", async () => {
@@ -252,7 +272,7 @@ describe("issueDownload", () => {
       vi.spyOn(console, "error").mockImplementation(() => undefined),
     ];
 
-    await issueDownload(ENTITLEMENT_ID, CSRF_TOKEN);
+    await issueDownload(ENTITLEMENT_ID, DOWNLOAD_ISSUE_REQUEST, CSRF_TOKEN);
 
     for (const spy of consoleSpies) {
       expect(spy).not.toHaveBeenCalled();
@@ -264,7 +284,7 @@ describe("issueDownload", () => {
     stubFetchOnce(jsonResponse({ url: "https://cdn.kitvera.example/x" }));
 
     await expect(
-      issueDownload(ENTITLEMENT_ID, CSRF_TOKEN),
+      issueDownload(ENTITLEMENT_ID, DOWNLOAD_ISSUE_REQUEST, CSRF_TOKEN),
     ).rejects.toBeInstanceOf(ZodError);
   });
 });

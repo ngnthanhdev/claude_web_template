@@ -134,6 +134,8 @@ export function LibraryList() {
               <DownloadAction
                 csrfToken={csrfToken}
                 entitlementId={entitlement.id}
+                productId={entitlement.productId}
+                version={entitlement.version}
               />
             </li>
           ))}

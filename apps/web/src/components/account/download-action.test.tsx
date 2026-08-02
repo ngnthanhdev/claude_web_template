@@ -78,6 +78,7 @@ const ENTITLEMENT_ID = "33333333-3333-4333-8333-333333333303";
 const PRODUCT_ID = "44444444-4444-4444-8444-444444444404";
 const ENTITLEMENT_ID_2 = "66666666-6666-4666-8666-666666666606";
 const PRODUCT_ID_2 = "77777777-7777-4777-8777-777777777707";
+const ENTITLEMENT_VERSION = "1.4.0";
 
 function sessionFixture(csrfToken: string) {
   return {
@@ -112,7 +113,7 @@ function orderFixture(
 }
 
 function entitlementFixture(id: string, productId: string, createdAt: string) {
-  return { id, productId, version: "1.4.0", createdAt };
+  return { id, productId, version: ENTITLEMENT_VERSION, createdAt };
 }
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -677,7 +678,12 @@ describe("DownloadAction", () => {
     const user = userEvent.setup();
 
     const { container } = renderWithProviders(
-      <DownloadAction csrfToken={csrfToken} entitlementId={ENTITLEMENT_ID} />,
+      <DownloadAction
+        csrfToken={csrfToken}
+        entitlementId={ENTITLEMENT_ID}
+        productId={PRODUCT_ID}
+        version={ENTITLEMENT_VERSION}
+      />,
     );
 
     await user.click(
@@ -690,6 +696,10 @@ describe("DownloadAction", () => {
 
     const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(init.method).toBe("POST");
+    expect(JSON.parse(init.body as string)).toEqual({
+      productId: PRODUCT_ID,
+      version: ENTITLEMENT_VERSION,
+    });
     expect(new Headers(init.headers).get("x-csrf-token")).toBe(csrfToken);
 
     // The issued URL/token never reaches the DOM: no anchor is rendered at
@@ -715,7 +725,12 @@ describe("DownloadAction", () => {
     const user = userEvent.setup();
 
     renderWithProviders(
-      <DownloadAction csrfToken={csrfToken} entitlementId={ENTITLEMENT_ID} />,
+      <DownloadAction
+        csrfToken={csrfToken}
+        entitlementId={ENTITLEMENT_ID}
+        productId={PRODUCT_ID}
+        version={ENTITLEMENT_VERSION}
+      />,
     );
 
     await user.click(

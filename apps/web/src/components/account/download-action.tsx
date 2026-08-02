@@ -8,29 +8,37 @@ import { issueDownload } from "@/lib/commerce-client";
 
 export interface DownloadActionProps {
   entitlementId: string;
+  productId: string;
+  version: string;
   csrfToken: string;
 }
 
 /**
  * The library's Download action. POSTs `/v1/entitlements/:id/download` via
- * the Round-2 commerce client to issue a short-lived signed URL, then
- * navigates directly to it with `window.location.assign`. The endpoint
- * responds `content-disposition: attachment`, so the browser downloads the
- * file in place instead of navigating away or opening a new tab — and
- * unlike `window.open`, this isn't liable to be silently blocked as a
- * popup. The returned `{ url, expiresAt }` is only ever handed to
+ * the Round-2 commerce client to issue a short-lived signed URL, sending the
+ * entitlement's own `{ productId, version }` in the body so the server can
+ * cross-check them against the entitlement (anti-tamper — a mismatch
+ * 404s), then navigates directly to the issued URL with
+ * `window.location.assign`. The endpoint responds
+ * `content-disposition: attachment`, so the browser downloads the file in
+ * place instead of navigating away or opening a new tab — and unlike
+ * `window.open`, this isn't liable to be silently blocked as a popup. The
+ * returned `{ url, expiresAt }` is only ever handed to
  * `window.location.assign` — this component never renders it into an
  * anchor `href`, a query string, or any pre-fetched link, and never logs it
  * (design §9 "Download/entitlement tokens / Information disclosure").
  */
 export function DownloadAction({
   entitlementId,
+  productId,
+  version,
   csrfToken,
 }: DownloadActionProps) {
   const t = useTranslations("Account.library.download");
 
   const downloadMutation = useMutation({
-    mutationFn: () => issueDownload(entitlementId, csrfToken),
+    mutationFn: () =>
+      issueDownload(entitlementId, { productId, version }, csrfToken),
     onSuccess: (issued) => {
       window.location.assign(issued.url);
     },

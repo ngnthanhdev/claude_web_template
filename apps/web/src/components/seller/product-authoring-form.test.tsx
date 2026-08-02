@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 
 import type { SellerProductDetailResponse } from "@shared/seller";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider, type QueryClient } from "@tanstack/react-query";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 import userEvent from "@testing-library/user-event";
@@ -14,6 +14,8 @@ import { axe } from "vitest-axe";
 import { createQueryClient } from "@/lib/query-client";
 
 import enSeller from "../../../messages/en/seller.json";
+
+import NewSellerProductPage from "../../app/[locale]/seller/products/new/page";
 
 import { ProductAuthoringForm } from "./product-authoring-form";
 import { SellerProductList } from "./seller-product-list";
@@ -114,8 +116,10 @@ function productDetailFixture(): SellerProductDetailResponse {
   };
 }
 
-function renderWithProviders(ui: ReactNode) {
-  const queryClient = createQueryClient();
+function renderWithProviders(
+  ui: ReactNode,
+  queryClient: QueryClient = createQueryClient(),
+) {
   return render(
     <NextIntlClientProvider locale="en" messages={enSeller}>
       <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
@@ -515,6 +519,141 @@ describe("SubmitForReviewAction", () => {
       expect(
         screen.getByText(enSeller.Seller.submitForReview.error),
       ).toBeInTheDocument(),
+    );
+  });
+});
+
+describe("ProductAuthoringForm (edit)", () => {
+  it("shows translation validation errors and blocks submission when a freshly created product's required fields are still empty", async () => {
+    const csrfToken = base64UrlToken();
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const onSuccess = vi.fn();
+    const user = userEvent.setup();
+
+    renderWithProviders(
+      <ProductAuthoringForm
+        csrfToken={csrfToken}
+        initialProduct={productDetailFixture()}
+        mode="edit"
+        onSuccess={onSuccess}
+        productId={PRODUCT_ID}
+      />,
+    );
+
+    await user.click(
+      screen.getByRole("button", {
+        name: enSeller.Seller.authoringForm.saveSubmit,
+      }),
+    );
+
+    const titleErrors = await screen.findAllByText(
+      enSeller.Seller.authoringForm.fields.translationTitle.error,
+    );
+    expect(titleErrors.length).toBeGreaterThan(0);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(onSuccess).not.toHaveBeenCalled();
+  });
+});
+
+describe("query invalidation after seller mutations", () => {
+  it("invalidates the seller products list after creating a draft product", async () => {
+    const csrfToken = base64UrlToken();
+    const detail = productDetailFixture();
+    const queryClient = createQueryClient();
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+
+    const impl = vi.fn(
+      async (
+        input: RequestInfo | URL,
+        init?: RequestInit,
+      ): Promise<Response> => {
+        const url = String(input);
+        const method = (init?.method ?? "GET").toUpperCase();
+        if (url === "/api/v1/sessions/current" && method === "GET") {
+          return jsonResponse(sessionFixture(csrfToken));
+        }
+        if (url === "/api/v1/seller/products" && method === "POST") {
+          return jsonResponse({ ...detail, versions: [] });
+        }
+        throw new Error(`Unhandled fetch in test: ${method} ${url}`);
+      },
+    );
+    vi.stubGlobal("fetch", impl);
+    const user = userEvent.setup();
+
+    renderWithProviders(<NewSellerProductPage />, queryClient);
+
+    await user.type(
+      await screen.findByLabelText(
+        enSeller.Seller.authoringForm.fields.slug.label,
+      ),
+      "lotus-commerce-theme",
+    );
+    await user.type(
+      screen.getByLabelText(
+        enSeller.Seller.authoringForm.fields.thumbnailUrl.label,
+      ),
+      "https://cdn.kitvera.example/thumb.png",
+    );
+    await user.type(
+      screen.getByLabelText(
+        enSeller.Seller.authoringForm.fields.documentationUrl.label,
+      ),
+      "https://kitvera.example/docs",
+    );
+    await user.type(
+      screen.getByLabelText(
+        enSeller.Seller.authoringForm.fields.isolatedPreviewUrl.label,
+      ),
+      "https://kitvera.example/preview",
+    );
+    await user.click(
+      screen.getByRole("button", {
+        name: enSeller.Seller.authoringForm.createSubmit,
+      }),
+    );
+
+    await waitFor(() =>
+      expect(invalidateSpy).toHaveBeenCalledWith({
+        queryKey: ["seller", "products"],
+      }),
+    );
+  });
+
+  it("invalidates the seller products list after submitting a version for review", async () => {
+    const csrfToken = base64UrlToken();
+    const queryClient = createQueryClient();
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+    const fetchMock = vi.fn(async () =>
+      jsonResponse({
+        productId: PRODUCT_ID,
+        version: "1.0.0",
+        reviewState: "in_review",
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+
+    renderWithProviders(
+      <SubmitForReviewAction
+        csrfToken={csrfToken}
+        productId={PRODUCT_ID}
+        version="1.0.0"
+      />,
+      queryClient,
+    );
+
+    await user.click(
+      screen.getByRole("button", {
+        name: enSeller.Seller.submitForReview.action,
+      }),
+    );
+
+    await waitFor(() =>
+      expect(invalidateSpy).toHaveBeenCalledWith({
+        queryKey: ["seller", "products"],
+      }),
     );
   });
 });

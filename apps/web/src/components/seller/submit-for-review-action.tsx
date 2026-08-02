@@ -1,7 +1,7 @@
 "use client";
 
 import type { SubmitForReviewResponse } from "@shared/seller";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
@@ -28,10 +28,14 @@ export function SubmitForReviewAction({
   onSubmitted,
 }: SubmitForReviewActionProps) {
   const t = useTranslations("Seller.submitForReview");
+  const queryClient = useQueryClient();
 
   const submitMutation = useMutation({
     mutationFn: () => submitForReview(productId, { version }, csrfToken),
-    onSuccess: onSubmitted,
+    onSuccess: (result) => {
+      void queryClient.invalidateQueries({ queryKey: ["seller", "products"] });
+      onSubmitted?.(result);
+    },
   });
 
   if (submitMutation.isSuccess) {

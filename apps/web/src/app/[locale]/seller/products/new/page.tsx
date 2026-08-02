@@ -1,6 +1,7 @@
 "use client";
 
 import { localeSchema } from "@shared/localization";
+import { useQueryClient } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -21,6 +22,7 @@ export default function NewSellerProductPage() {
   const router = useRouter();
   const t = useTranslations("Seller.newProduct");
   const session = useSession();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (session.status === "unauthenticated") {
@@ -69,9 +71,12 @@ export default function NewSellerProductPage() {
       <ProductAuthoringForm
         csrfToken={session.csrfToken}
         mode="create"
-        onSuccess={(product) =>
-          router.push(`/${locale}/seller/products/${product.id}`)
-        }
+        onSuccess={(product) => {
+          void queryClient.invalidateQueries({
+            queryKey: ["seller", "products"],
+          });
+          router.push(`/${locale}/seller/products/${product.id}`);
+        }}
       />
     </section>
   );

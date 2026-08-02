@@ -148,6 +148,7 @@ export default function SellerProductDetailPage({
 
   function updateProductCache(updated: SellerProductDetailResponse) {
     queryClient.setQueryData(productQueryKey(id), updated);
+    void queryClient.invalidateQueries({ queryKey: ["seller", "products"] });
   }
 
   return (

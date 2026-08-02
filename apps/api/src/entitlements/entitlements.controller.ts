@@ -11,10 +11,10 @@ import {
   Req,
   UseGuards,
 } from "@nestjs/common";
-import { semanticVersionSchema } from "@marketplace/shared/catalogue";
-import type {
-  DownloadIssueResponse,
-  LibraryResponse,
+import {
+  downloadIssueRequestSchema,
+  type DownloadIssueResponse,
+  type LibraryResponse,
 } from "@marketplace/shared/commerce";
 import { ZodValidationException } from "nestjs-zod";
 import { ZodError, z } from "zod";
@@ -35,13 +35,6 @@ const libraryQuerySchema = z
   .strict();
 
 const entitlementIdSchema = z.string().uuid();
-
-const downloadIssueRequestSchema = z
-  .object({
-    productId: z.string().uuid(),
-    version: semanticVersionSchema,
-  })
-  .strict();
 
 function parseRequest<T>(
   schema: { parse(input: unknown): T },

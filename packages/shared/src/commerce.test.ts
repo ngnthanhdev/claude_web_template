@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   checkoutRequestSchema,
   checkoutResponseSchema,
+  downloadIssueRequestSchema,
   downloadIssueResponseSchema,
   entitlementSchema,
   libraryResponseSchema,
@@ -278,6 +279,56 @@ describe("account/library entitlement response contract", () => {
       ).toBe(false);
     });
   }
+});
+
+describe("download-issue request contract", () => {
+  const validDownloadIssueRequest = {
+    productId: "2a80d74e-6f18-48a6-9034-7b79a8af93e9",
+    version: "1.4.0",
+  };
+
+  it("accepts exactly a productId and a version", () => {
+    expect(downloadIssueRequestSchema.parse(validDownloadIssueRequest)).toEqual(
+      validDownloadIssueRequest,
+    );
+  });
+
+  it("rejects a missing productId or version", () => {
+    const { productId: _productId, ...withoutProductId } =
+      validDownloadIssueRequest;
+    expect(downloadIssueRequestSchema.safeParse(withoutProductId).success).toBe(
+      false,
+    );
+
+    const { version: _version, ...withoutVersion } = validDownloadIssueRequest;
+    expect(downloadIssueRequestSchema.safeParse(withoutVersion).success).toBe(
+      false,
+    );
+  });
+
+  it("rejects an extra field beyond productId and version", () => {
+    expect(
+      downloadIssueRequestSchema.safeParse({
+        ...validDownloadIssueRequest,
+        entitlementId: "3b6e1c2a-4f5d-4e6f-8a9b-0c1d2e3f4a5b",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects a malformed productId or version", () => {
+    expect(
+      downloadIssueRequestSchema.safeParse({
+        ...validDownloadIssueRequest,
+        productId: "not-a-uuid",
+      }).success,
+    ).toBe(false);
+    expect(
+      downloadIssueRequestSchema.safeParse({
+        ...validDownloadIssueRequest,
+        version: "not-a-version",
+      }).success,
+    ).toBe(false);
+  });
 });
 
 describe("download-issue response contract", () => {

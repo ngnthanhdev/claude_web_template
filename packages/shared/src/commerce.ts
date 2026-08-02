@@ -130,6 +130,14 @@ export const libraryResponseSchema = z
   .strict();
 export type LibraryResponse = z.infer<typeof libraryResponseSchema>;
 
+export const downloadIssueRequestSchema = z
+  .object({
+    productId: z.string().uuid(),
+    version: semanticVersionSchema,
+  })
+  .strict();
+export type DownloadIssueRequest = z.infer<typeof downloadIssueRequestSchema>;
+
 export const downloadIssueResponseSchema = z
   .object({
     url: z.string().min(1).max(2_048),

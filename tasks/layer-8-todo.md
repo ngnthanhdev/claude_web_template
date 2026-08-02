@@ -180,7 +180,7 @@ belong to the admin gate `T-4c8a9e`:
 
 ### T-3af6c8 — Gate the seller integration suites in CI
 
-- **Status:** in-progress
+- **Status:** done
 - **Assignee:** ai
 - **Files:** .github/workflows/ci.yml
 - **Acceptance:**
@@ -192,7 +192,7 @@ belong to the admin gate `T-4c8a9e`:
 
 ### T-c15e29 — Cross-viewport Playwright e2e for the seller authoring happy path
 
-- **Status:** in-progress
+- **Status:** done
 - **Assignee:** ai
 - **Files:** apps/web/e2e/seller-authoring.spec.ts, apps/web/e2e/fixtures/seller-user.ts, apps/web/e2e/README.md, apps/api/prisma/seed-e2e.mjs
 - **Acceptance:**

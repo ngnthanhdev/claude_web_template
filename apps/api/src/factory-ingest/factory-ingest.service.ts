@@ -132,10 +132,25 @@ export class FactoryIngestService {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === "P2002"
       ) {
-        // The version already carries a different artifact (its 1:1 slot is
-        // taken by an earlier, different `factoryRunId`) — reject rather
-        // than leave a partial record; the transaction above already rolled
-        // back.
+        // Under at-least-once delivery a concurrent retry of the *same*
+        // `factoryRunId` can race this create: both pass the pre-check, one
+        // commits, and the loser lands here. Re-read the row for this exact
+        // run — if it now exists, this is that idempotent replay, so return
+        // 200 (or reject a checksum that disagrees with the committed
+        // record) rather than the 422 reserved for a *different* run
+        // colliding with the version's taken 1:1 artifact slot.
+        const raced = await this.prisma.buildRun.findUnique({
+          where: {
+            productVersionId_factoryRunId: {
+              productVersionId,
+              factoryRunId: request.factoryRunId,
+            },
+          },
+          include: { artifact: true },
+        });
+        if (raced !== null) {
+          return this.replay(request, raced);
+        }
         throw new UnprocessableEntityException(
           "Product version already has a recorded artifact",
         );

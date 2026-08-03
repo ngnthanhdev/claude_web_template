@@ -17,7 +17,7 @@
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.1.6",
     "@nestjs/platform-fastify": "^11.1.6",
-    "@prisma/client": "^6.18.0",
+    "@prisma/client": "^7.9.1",
     "fastify": "^5.10.0",
     "nestjs-zod": "^5.0.1",
     "reflect-metadata": "^0.2.2",

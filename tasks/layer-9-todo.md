@@ -75,6 +75,25 @@ to fan out to parallel `task-implementer` worktrees. No resource task touches
    integration suites in `ci.yml`), `T-5d0e6a` (Playwright
    grant-seller → review → approve → publish admin happy path).
 
+## Deferred from Round-3 review (backlog, not blocking)
+
+Both LOW and rated low-likelihood by code + security review; recorded so they
+aren't lost:
+
+- **Last-admin concurrent mutual-revoke** (`admin-users.service.ts`): the
+  self-last-admin-revoke lockout holds for a single actor, but two admins
+  revoking each other in the same instant can reach zero admins. A truly
+  race-free fix needs SERIALIZABLE isolation or a single guarded SQL delete;
+  the state is recoverable via `ADMIN_BOOTSTRAP_EMAILS`. Left as a hardening
+  follow-up.
+- **Cursor codec duplication** (`admin-review.service.ts`,
+  `admin-users.service.ts` — and pre-existing in `commerce`/`seller`): the
+  base64url tuple cursor encode/decode is copied per resource. Candidate for a
+  single generic `makeCursorCodec(schema)` helper; folds into the existing DRY
+  backlog `T-1f7c2a`.
+- **Review-queue `review_state`-leading index** (deferred in `T-38e5c1`): a
+  perf index for the admin queue on a growing `product_versions` table.
+
 ## Excluded from this pass (design §2 SEQUENCES / DEFERS — do NOT scope here)
 
 Per design §2/§10, these are sequenced to **later** passes and are out of scope
@@ -132,7 +151,7 @@ for this layer even though some backing data now exists:
 
 ### T-b2d9f6 — Admin MFA enroll / confirm / verify / recovery endpoints
 
-- **Status:** review
+- **Status:** done
 - **Assignee:** ai
 - **Files:** apps/api/src/admin/mfa/admin-mfa.module.ts, apps/api/src/admin/mfa/admin-mfa.controller.ts, apps/api/src/admin/mfa/admin-mfa.service.ts, apps/api/src/admin/mfa/totp.ts, apps/api/src/admin/mfa/admin-mfa.controller.test.ts, apps/api/src/admin/mfa/admin-mfa.integration.test.ts, apps/api/prisma/schema.prisma, apps/api/prisma/migrations/&lt;ts&gt;_admin_mfa_rate_limit/migration.sql, apps/api/src/auth/core/auth-rate-limit.service.ts
 - **Note (Round-3 sole schema owner):** this is the ONLY Round-3 task that edits `apps/api/prisma/schema.prisma` — it adds an `adminMfaVerification` member to the existing `AuthRateAction` enum (+ a migration) so failed MFA verifications reuse the DB-backed limiter, and adds a `checkAdminMfaVerification` method to `auth-rate-limit.service.ts` mirroring the magic-link methods. No other Round-3 task touches the schema or that service.
@@ -145,7 +164,7 @@ for this layer even though some backing data now exists:
 
 ### T-38e5c1 — Admin catalogue review resource (approve / reject)
 
-- **Status:** review
+- **Status:** done
 - **Assignee:** ai
 - **Files:** apps/api/src/admin/catalogue/admin-catalogue.module.ts, apps/api/src/admin/catalogue/admin-review.controller.ts, apps/api/src/admin/catalogue/admin-review.service.ts, apps/api/src/admin/catalogue/admin-review.controller.test.ts, apps/api/src/admin/catalogue/admin-review.integration.test.ts
 - **Acceptance:**
@@ -159,7 +178,7 @@ for this layer even though some backing data now exists:
 
 ### T-a6f204 — Admin release/publication resource (publish / delist)
 
-- **Status:** review
+- **Status:** done
 - **Assignee:** ai
 - **Files:** apps/api/src/admin/publication/admin-publication.module.ts, apps/api/src/admin/publication/admin-publication.controller.ts, apps/api/src/admin/publication/admin-publication.service.ts, apps/api/src/admin/publication/admin-publication.controller.test.ts, apps/api/src/admin/publication/admin-publication.integration.test.ts
 - **Acceptance:**
@@ -171,7 +190,7 @@ for this layer even though some backing data now exists:
 
 ### T-d9017b — Admin user-role provisioning (grant/revoke seller, grant admin)
 
-- **Status:** review
+- **Status:** done
 - **Assignee:** ai
 - **Files:** apps/api/src/admin/users/admin-users.module.ts, apps/api/src/admin/users/admin-users.controller.ts, apps/api/src/admin/users/admin-users.service.ts, apps/api/src/admin/users/admin-users.controller.test.ts, apps/api/src/admin/users/admin-users.integration.test.ts
 - **Acceptance:**
@@ -183,7 +202,7 @@ for this layer even though some backing data now exists:
 
 ### T-4c62ae — Web admin API client
 
-- **Status:** review
+- **Status:** done
 - **Assignee:** ai
 - **Files:** apps/web/src/lib/admin-client.ts, apps/web/src/lib/admin-client.test.ts
 - **Acceptance:**

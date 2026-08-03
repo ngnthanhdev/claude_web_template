@@ -214,7 +214,7 @@ for this layer even though some backing data now exists:
 
 ### T-83bd5f — Compose admin modules and composed admin integration suite
 
-- **Status:** todo
+- **Status:** in-progress
 - **Assignee:** ai
 - **Files:** apps/api/src/app.module.ts, apps/api/test/admin-surface.integration.test.ts
 - **Acceptance:**
@@ -227,7 +227,7 @@ for this layer even though some backing data now exists:
 
 ### T-2e7a9c — Admin shell surface (/[locale]/admin/*)
 
-- **Status:** todo
+- **Status:** in-progress
 - **Assignee:** ai
 - **Files:** apps/web/src/app/[locale]/admin/page.tsx, apps/web/src/app/[locale]/admin/review/page.tsx, apps/web/src/app/[locale]/admin/publish/page.tsx, apps/web/src/app/[locale]/admin/users/page.tsx, apps/web/src/app/[locale]/admin/mfa/page.tsx, apps/web/src/components/admin/review-queue.tsx, apps/web/src/components/admin/review-actions.tsx, apps/web/src/components/admin/publication-panel.tsx, apps/web/src/components/admin/user-roles-panel.tsx, apps/web/src/components/admin/mfa-enrollment.tsx, apps/web/src/components/admin/admin-nav-entry.tsx, apps/web/src/components/app-shell.tsx, apps/web/messages/vi/admin.json, apps/web/messages/en/admin.json, apps/web/src/components/admin/review-queue.test.tsx
 - **Acceptance:**

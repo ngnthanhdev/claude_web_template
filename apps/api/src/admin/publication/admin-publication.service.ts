@@ -83,34 +83,41 @@ export class AdminPublicationService {
     }
 
     const publishedAt = new Date();
-    const updated = await this.prisma.$transaction(async (tx) => {
-      const result = await tx.product.update({
-        where: { id: productId },
+    await this.prisma.$transaction(async (tx) => {
+      // Conditional update: the eligibility read above ran outside this
+      // transaction, so guard the state precondition here. A concurrent
+      // publish (or any move off `draft`) makes `count` 0 and 422s without
+      // writing a duplicate audit row or clobbering `publishedAt`.
+      const result = await tx.product.updateMany({
+        where: { id: productId, publicationState: PublicationState.draft },
         data: {
           publicationState: PublicationState.published,
           currentVersion: body.version,
           publishedAt,
         },
-        select: { publicationState: true },
       });
+      if (result.count !== 1) {
+        throw new UnprocessableEntityException(
+          "Product version is not eligible to publish",
+        );
+      }
       await this.audit.record(tx, {
         actingAdminId,
         action: "productPublished",
         targetType: "product",
         targetId: productId,
         afterState: {
-          publicationState: result.publicationState,
+          publicationState: PublicationState.published,
           version: body.version,
           checksum: artifact.checksum,
         },
       });
-      return result;
     });
 
     return publishProductResponseSchema.parse({
       productId,
       version: body.version,
-      publicationState: updated.publicationState,
+      publicationState: PublicationState.published,
     });
   }
 
@@ -136,29 +143,34 @@ export class AdminPublicationService {
       );
     }
 
-    const updated = await this.prisma.$transaction(async (tx) => {
-      const result = await tx.product.update({
-        where: { id: productId },
+    await this.prisma.$transaction(async (tx) => {
+      // Conditional update guards the `published` precondition against a
+      // concurrent delist between the read above and this write.
+      const result = await tx.product.updateMany({
+        where: { id: productId, publicationState: PublicationState.published },
         data: { publicationState: PublicationState.delisted },
-        select: { publicationState: true },
       });
+      if (result.count !== 1) {
+        throw new UnprocessableEntityException(
+          "Only a published product can be delisted",
+        );
+      }
       await this.audit.record(tx, {
         actingAdminId,
         action: "productDelisted",
         targetType: "product",
         targetId: productId,
         afterState: {
-          publicationState: result.publicationState,
+          publicationState: PublicationState.delisted,
           version: product.currentVersion,
           checksum: product.currentVersionEntry?.artifact?.checksum ?? null,
         },
       });
-      return result;
     });
 
     return delistProductResponseSchema.parse({
       productId,
-      publicationState: updated.publicationState,
+      publicationState: PublicationState.delisted,
     });
   }
 }

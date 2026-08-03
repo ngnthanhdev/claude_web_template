@@ -200,7 +200,11 @@ describe("AdminMfaController", () => {
       .send({})
       .expect(HttpStatus.OK);
 
-    expect(mfa.enrollStart).toHaveBeenCalledWith(userId, "admin@example.com");
+    expect(mfa.enrollStart).toHaveBeenCalledWith(
+      userId,
+      "admin@example.com",
+      sessionId,
+    );
     expect(JSON.parse(response.text)).not.toHaveProperty("encryptedSecret");
   });
 
@@ -278,13 +282,18 @@ describe("AdminMfaController", () => {
 
 describe("AdminMfaService", () => {
   const prisma = {
-    adminMfaFactor: { upsert: vi.fn(), findFirst: vi.fn(), update: vi.fn() },
+    adminMfaFactor: {
+      upsert: vi.fn(),
+      findFirst: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+    },
     adminMfaRecoveryCode: {
       deleteMany: vi.fn(),
       createMany: vi.fn(),
       updateMany: vi.fn(),
     },
-    adminMfaSession: { create: vi.fn() },
+    adminMfaSession: { create: vi.fn(), findFirst: vi.fn() },
     $transaction: vi.fn(),
   };
   const rateLimit = { checkAdminMfaVerification: vi.fn() };
@@ -325,7 +334,11 @@ describe("AdminMfaService", () => {
         }),
     );
 
-    const enrolled = await service.enrollStart(userId, "admin@example.com");
+    const enrolled = await service.enrollStart(
+      userId,
+      "admin@example.com",
+      sessionId,
+    );
     expect(enrolled.factorId).toBe(factorId);
     expect(JSON.stringify(enrolled)).not.toContain(
       prisma.adminMfaFactor.upsert.mock.calls[0]?.[0]?.create?.encryptedSecret,
@@ -460,5 +473,60 @@ describe("AdminMfaService", () => {
       },
     );
     expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  describe("re-enrollment step-up (design §6/§8)", () => {
+    const enforcedConfig = configWith({
+      NODE_ENV: "production",
+      ADMIN_MFA_SECRET_ENCRYPTION_KEY: encryptionKey,
+    });
+    function enforcedService(): AdminMfaService {
+      return new AdminMfaService(
+        prisma as never,
+        enforcedConfig,
+        rateLimit as unknown as AuthRateLimitService,
+        audit as unknown as AdminAuditService,
+        clock,
+      );
+    }
+
+    it("blocks re-enrolling over a confirmed factor without a recent step-up when enforced", async () => {
+      prisma.adminMfaFactor.findUnique.mockResolvedValue({ confirmedAt: now });
+      prisma.adminMfaSession.findFirst.mockResolvedValue(null);
+
+      await expect(
+        enforcedService().enrollStart(userId, "admin@example.com", sessionId),
+      ).rejects.toMatchObject({ status: HttpStatus.FORBIDDEN });
+      expect(prisma.adminMfaFactor.upsert).not.toHaveBeenCalled();
+    });
+
+    it("allows first-time enrollment (no confirmed factor) even when enforced", async () => {
+      prisma.adminMfaFactor.findUnique.mockResolvedValue(null);
+      prisma.adminMfaFactor.upsert.mockResolvedValue({ id: factorId });
+
+      const enrolled = await enforcedService().enrollStart(
+        userId,
+        "admin@example.com",
+        sessionId,
+      );
+
+      expect(enrolled.factorId).toBe(factorId);
+      expect(prisma.adminMfaFactor.upsert).toHaveBeenCalledTimes(1);
+    });
+
+    it("allows re-enrollment when a recent step-up marker exists", async () => {
+      prisma.adminMfaFactor.findUnique.mockResolvedValue({ confirmedAt: now });
+      prisma.adminMfaSession.findFirst.mockResolvedValue({ sessionId });
+      prisma.adminMfaFactor.upsert.mockResolvedValue({ id: factorId });
+
+      const enrolled = await enforcedService().enrollStart(
+        userId,
+        "admin@example.com",
+        sessionId,
+      );
+
+      expect(enrolled.factorId).toBe(factorId);
+      expect(prisma.adminMfaFactor.upsert).toHaveBeenCalledTimes(1);
+    });
   });
 });

@@ -218,7 +218,7 @@ describe("AdminPublicationController", () => {
 
 describe("AdminPublicationService boundaries", () => {
   const tx = {
-    product: { update: vi.fn() },
+    product: { updateMany: vi.fn() },
     adminAuditLog: { create: vi.fn() },
   };
   const prisma = {
@@ -233,7 +233,7 @@ describe("AdminPublicationService boundaries", () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
-    tx.product.update.mockResolvedValue({ publicationState: "published" });
+    tx.product.updateMany.mockResolvedValue({ count: 1 });
     tx.adminAuditLog.create.mockResolvedValue({ id: "audit-row-1" });
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -365,9 +365,9 @@ describe("AdminPublicationService boundaries", () => {
       version: "1.0.0",
       publicationState: "published",
     });
-    expect(tx.product.update).toHaveBeenCalledWith(
+    expect(tx.product.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: productId },
+        where: { id: productId, publicationState: "draft" },
         data: expect.objectContaining({
           publicationState: "published",
           currentVersion: "1.0.0",
@@ -421,14 +421,14 @@ describe("AdminPublicationService boundaries", () => {
       currentVersion: "1.0.0",
       currentVersionEntry: { artifact: { checksum: "checksum-value" } },
     });
-    tx.product.update.mockResolvedValue({ publicationState: "delisted" });
+    tx.product.updateMany.mockResolvedValue({ count: 1 });
 
     const response = await service.delist(actingAdminId, productId);
 
     expect(response).toEqual({ productId, publicationState: "delisted" });
-    expect(tx.product.update).toHaveBeenCalledWith(
+    expect(tx.product.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: productId },
+        where: { id: productId, publicationState: "published" },
         data: { publicationState: "delisted" },
       }),
     );

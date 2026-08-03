@@ -250,25 +250,33 @@ export class AdminReviewService {
         );
       }
 
-      const updated = await tx.productVersion.update({
-        where: { productId_version: { productId, version } },
+      // Conditional update re-checks `in_review` under the row lock, so a
+      // concurrent approve/reject between the read above and this write can
+      // only have one winner (`count === 1`) — no last-writer-wins state flip
+      // or duplicate audit row.
+      const updated = await tx.productVersion.updateMany({
+        where: { productId, version, reviewState: ReviewState.in_review },
         data: { reviewState: ReviewState.approved },
-        select: { reviewState: true },
       });
+      if (updated.count !== 1) {
+        throw new UnprocessableEntityException(
+          "Only an in_review version can be approved",
+        );
+      }
 
       await this.audit.record(tx, {
         actingAdminId,
         action: AdminAuditAction.reviewApproved,
         targetType: AdminAuditTargetType.productVersion,
         targetId: current.id,
-        beforeState: { reviewState: current.reviewState, productId, version },
-        afterState: { reviewState: updated.reviewState, productId, version },
+        beforeState: { reviewState: ReviewState.in_review, productId, version },
+        afterState: { reviewState: ReviewState.approved, productId, version },
       });
 
       return approveReviewResponseSchema.parse({
         productId,
         version,
-        reviewState: updated.reviewState,
+        reviewState: ReviewState.approved,
       });
     });
   }
@@ -293,20 +301,26 @@ export class AdminReviewService {
         );
       }
 
-      const updated = await tx.productVersion.update({
-        where: { productId_version: { productId, version } },
+      // Conditional update re-checks `in_review` under the row lock (see
+      // approve) so concurrent transitions cannot both win.
+      const updated = await tx.productVersion.updateMany({
+        where: { productId, version, reviewState: ReviewState.in_review },
         data: { reviewState: ReviewState.draft },
-        select: { reviewState: true },
       });
+      if (updated.count !== 1) {
+        throw new UnprocessableEntityException(
+          "Only an in_review version can be rejected",
+        );
+      }
 
       await this.audit.record(tx, {
         actingAdminId,
         action: AdminAuditAction.reviewRejected,
         targetType: AdminAuditTargetType.productVersion,
         targetId: current.id,
-        beforeState: { reviewState: current.reviewState, productId, version },
+        beforeState: { reviewState: ReviewState.in_review, productId, version },
         afterState: {
-          reviewState: updated.reviewState,
+          reviewState: ReviewState.draft,
           productId,
           version,
           reason,
@@ -316,7 +330,7 @@ export class AdminReviewService {
       return rejectReviewResponseSchema.parse({
         productId,
         version,
-        reviewState: updated.reviewState,
+        reviewState: ReviewState.draft,
       });
     });
   }

@@ -63,7 +63,11 @@ export class AdminMfaController {
     void body;
     const principal = getAdminPrincipal(request);
     const session = getResolvedSession(request);
-    return this.mfa.enrollStart(principal.userId, session.user.email);
+    return this.mfa.enrollStart(
+      principal.userId,
+      session.user.email,
+      session.sessionId,
+    );
   }
 
   @Post("confirm")

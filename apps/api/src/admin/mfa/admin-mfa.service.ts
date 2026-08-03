@@ -31,6 +31,10 @@ import type { Env } from "../../config/env.js";
 import { PrismaService } from "../../prisma/prisma.service.js";
 import { AdminAuditService } from "../admin-audit.service.js";
 import {
+  ADMIN_MFA_SESSION_RECENCY_MS,
+  resolveAdminMfaEnforcement,
+} from "../admin-mfa-enforcement.guard.js";
+import {
   base32Encode,
   buildOtpauthUri,
   decryptTotpSecret,
@@ -88,7 +92,10 @@ export class AdminMfaService {
   async enrollStart(
     adminUserId: string,
     accountEmail: string,
+    sessionId: string,
   ): Promise<AdminMfaEnrollStartResponse> {
+    await this.assertReEnrollmentAllowed(adminUserId, sessionId);
+
     const secret = generateTotpSecret();
     const encryptedSecret = encryptTotpSecret(this.encryptionKey(), secret);
 
@@ -140,6 +147,11 @@ export class AdminMfaService {
         id: body.factorId,
         userId: adminUserId,
         type: AdminMfaFactorType.totp,
+        // Only a still-pending factor can be confirmed. Re-confirming an
+        // already-confirmed factor (which would rotate its recovery codes and
+        // mis-audit as `mfaEnrolled`) is not a confirm path — it must go
+        // through step-up-gated re-enrollment.
+        confirmedAt: null,
       },
       select: { id: true, encryptedSecret: true },
     });
@@ -305,6 +317,46 @@ export class AdminMfaService {
       recoveryCodes,
       regeneratedAt: now.toISOString(),
     });
+  }
+
+  /**
+   * Re-enrolling replaces a confirmed factor's secret — a sensitive action
+   * (design §6/§8): a hijacked but un-stepped-up admin session must not be
+   * able to swap the victim's authenticator for one it controls. When MFA is
+   * enforced AND a confirmed factor already exists for the caller, require a
+   * recent `AdminMfaSession` step-up marker (the same one the enforcement
+   * guard reads) before allowing re-enrollment. First-time enrollment (no
+   * confirmed factor yet) stays un-gated to avoid a chicken-and-egg lockout;
+   * a locked-out admin re-enrolls by first presenting a recovery code to
+   * `verify` (which writes the marker), mirroring the protection the
+   * `recovery-codes` route already has.
+   */
+  private async assertReEnrollmentAllowed(
+    adminUserId: string,
+    sessionId: string,
+  ): Promise<void> {
+    if (!resolveAdminMfaEnforcement(this.config)) return;
+
+    const existing = await this.prisma.adminMfaFactor.findUnique({
+      where: {
+        userId_type: { userId: adminUserId, type: AdminMfaFactorType.totp },
+      },
+      select: { confirmedAt: true },
+    });
+    if (existing?.confirmedAt == null) return;
+
+    const cutoff = new Date(
+      this.clock.now().getTime() - ADMIN_MFA_SESSION_RECENCY_MS,
+    );
+    const marker = await this.prisma.adminMfaSession.findFirst({
+      where: { sessionId, verifiedAt: { gte: cutoff } },
+      select: { sessionId: true },
+    });
+    if (marker === null) {
+      throw new ForbiddenException(
+        "A recent admin MFA verification is required to re-enroll",
+      );
+    }
   }
 
   private encryptionKey(): Buffer {

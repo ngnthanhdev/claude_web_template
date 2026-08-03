@@ -282,7 +282,7 @@ describe("AdminReviewController", () => {
 
 describe("AdminReviewService boundaries", () => {
   const tx = {
-    productVersion: { findUnique: vi.fn(), update: vi.fn() },
+    productVersion: { findUnique: vi.fn(), updateMany: vi.fn() },
   };
   const prisma = {
     productVersion: { findMany: vi.fn() },
@@ -336,7 +336,7 @@ describe("AdminReviewService boundaries", () => {
     await expect(
       service.approve(productId, version, userId),
     ).rejects.toMatchObject({ status: HttpStatus.NOT_FOUND });
-    expect(tx.productVersion.update).not.toHaveBeenCalled();
+    expect(tx.productVersion.updateMany).not.toHaveBeenCalled();
     expect(audit.record).not.toHaveBeenCalled();
   });
 
@@ -349,7 +349,7 @@ describe("AdminReviewService boundaries", () => {
     await expect(
       service.approve(productId, version, userId),
     ).rejects.toMatchObject({ status: HttpStatus.UNPROCESSABLE_ENTITY });
-    expect(tx.productVersion.update).not.toHaveBeenCalled();
+    expect(tx.productVersion.updateMany).not.toHaveBeenCalled();
     expect(audit.record).not.toHaveBeenCalled();
   });
 
@@ -358,15 +358,14 @@ describe("AdminReviewService boundaries", () => {
       id: "version-row-1",
       reviewState: "in_review",
     });
-    tx.productVersion.update.mockResolvedValue({ reviewState: "approved" });
+    tx.productVersion.updateMany.mockResolvedValue({ count: 1 });
 
     const response = await service.approve(productId, version, userId);
 
     expect(response).toEqual({ productId, version, reviewState: "approved" });
-    expect(tx.productVersion.update).toHaveBeenCalledWith({
-      where: { productId_version: { productId, version } },
+    expect(tx.productVersion.updateMany).toHaveBeenCalledWith({
+      where: { productId, version, reviewState: "in_review" },
       data: { reviewState: "approved" },
-      select: { reviewState: true },
     });
     expect(audit.record).toHaveBeenCalledTimes(1);
     expect(audit.record).toHaveBeenCalledWith(
@@ -389,7 +388,7 @@ describe("AdminReviewService boundaries", () => {
     await expect(
       service.reject(productId, version, userId, "Missing changelog entry."),
     ).rejects.toMatchObject({ status: HttpStatus.UNPROCESSABLE_ENTITY });
-    expect(tx.productVersion.update).not.toHaveBeenCalled();
+    expect(tx.productVersion.updateMany).not.toHaveBeenCalled();
     expect(audit.record).not.toHaveBeenCalled();
   });
 
@@ -398,7 +397,7 @@ describe("AdminReviewService boundaries", () => {
       id: "version-row-1",
       reviewState: "in_review",
     });
-    tx.productVersion.update.mockResolvedValue({ reviewState: "draft" });
+    tx.productVersion.updateMany.mockResolvedValue({ count: 1 });
 
     const response = await service.reject(
       productId,
@@ -408,10 +407,9 @@ describe("AdminReviewService boundaries", () => {
     );
 
     expect(response).toEqual({ productId, version, reviewState: "draft" });
-    expect(tx.productVersion.update).toHaveBeenCalledWith({
-      where: { productId_version: { productId, version } },
+    expect(tx.productVersion.updateMany).toHaveBeenCalledWith({
+      where: { productId, version, reviewState: "in_review" },
       data: { reviewState: "draft" },
-      select: { reviewState: true },
     });
     expect(audit.record).toHaveBeenCalledTimes(1);
     expect(audit.record).toHaveBeenCalledWith(

@@ -33,6 +33,10 @@ import { requestLogSerializer } from "../src/common/request-log-serializer.js";
 import { PrismaService } from "../src/prisma/prisma.service.js";
 
 const integrationDatabaseUrl = process.env.ADMIN_FLOW_INTEGRATION_DATABASE_URL;
+// Captured before the enforced-app sub-case overwrites it, restored in
+// afterAll so this suite doesn't leak ADMIN_MFA_ENFORCED=true into any other
+// test file sharing the vitest process.
+let originalAdminMfaEnforced: string | undefined;
 const describeWithPostgres =
   integrationDatabaseUrl === undefined ? describe.skip : describe;
 
@@ -374,6 +378,7 @@ describeWithPostgres(
       // dynamically re-importing `AppModule` and every class used as a DI
       // lookup token against it — mirrors
       // `test/commerce-flow.integration.test.ts`'s `bootComposedApp`).
+      originalAdminMfaEnforced = process.env.ADMIN_MFA_ENFORCED;
       process.env.ADMIN_MFA_ENFORCED = "true";
       vi.resetModules();
       const [
@@ -413,6 +418,11 @@ describeWithPostgres(
 
     afterAll(async () => {
       if (integrationDatabaseUrl === undefined) return;
+      if (originalAdminMfaEnforced === undefined) {
+        delete process.env.ADMIN_MFA_ENFORCED;
+      } else {
+        process.env.ADMIN_MFA_ENFORCED = originalAdminMfaEnforced;
+      }
       await app.close();
       await enforcedApp.close();
       await prisma.$disconnect();

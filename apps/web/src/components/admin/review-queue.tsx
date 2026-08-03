@@ -187,7 +187,14 @@ export function ReviewQueue() {
               </div>
               <ReviewActions
                 csrfToken={session.csrfToken}
-                onApproved={invalidateQueue}
+                // Deliberately NOT invalidating on approve: the approve-success
+                // state hosts the "go to publish" pre-fill link (the primary
+                // path to publish — there is no publishable-products list
+                // endpoint). Invalidating here would refetch the queue,
+                // dropping the now-approved row and unmounting that link before
+                // the admin can use it. The row persists (its actions show the
+                // approved state) until the query goes stale (60s) or the page
+                // remounts. Reject has no follow-up affordance, so it refreshes.
                 onRejected={invalidateQueue}
                 productId={item.productId}
                 version={item.version}

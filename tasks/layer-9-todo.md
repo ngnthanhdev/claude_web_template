@@ -58,6 +58,16 @@ to fan out to parallel `task-implementer` worktrees. No resource task touches
    approve/reject), `T-a6f204` (publish/delist), `T-d9017b` (user-role
    provisioning), `T-4c62ae` (web admin client). Each is its own module/file set
    and depends only on Round 2 (the client on Round 1).
+   - **Round-2 constraints every Round-3 API task must honor:** (a) compose
+     BOTH `AdminRolesGuard` AND `AdminMfaEnforcementGuard` on every guarded
+     admin route (except MFA enroll/confirm, which precede verification); (b)
+     `AdminAuditService.record` now projects `before/after` through a
+     **fail-closed allowlist** of primitive fields — audit diffs may use ONLY:
+     `reviewState`, `publicationState`, `role`, `roleKey`, `reason`, `checksum`,
+     `confirmedAt`, `type`, `version`, `productId`, `userId`, `factorId` (any
+     other key is silently dropped — add to `admin-audit.service.ts`'s allowlist
+     consciously if a new non-sensitive field must be recorded); (c) the
+     per-session step-up marker window is `ADMIN_MFA_SESSION_RECENCY_MS` (15m).
 4. **Round 4 — Composition & web shell (parallel):** `T-83bd5f` (wire the admin
    modules into `app.module.ts` + composed disposable-Postgres integration
    suite), `T-2e7a9c` (the `/[locale]/admin/*` shell).

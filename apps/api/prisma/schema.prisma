@@ -20,6 +20,8 @@ model User {
   orders             Order[]
   entitlements       Entitlement[]
   downloadEvents     DownloadEvent[]
+  adminAuditLogs     AdminAuditLog[]
+  adminMfaFactors    AdminMfaFactor[]
 
   @@map("users")
 }
@@ -41,6 +43,7 @@ model Session {
   rotatedTo          Session?            @relation("SessionRotation", fields: [rotatedToId], references: [id], onDelete: Restrict)
   rotatedFrom        Session?            @relation("SessionRotation")
   authSecurityEvents AuthSecurityEvent[]
+  adminMfaSessions   AdminMfaSession[]
 
   @@index([userId, idleExpiresAt])
   @@index([idleExpiresAt])
@@ -557,4 +560,100 @@ model BuildRun {
 
   @@unique([productVersionId, factoryRunId], map: "build_runs_product_version_id_factory_run_id_key")
   @@map("build_runs")
+}
+
+enum AdminAuditAction {
+  reviewApproved
+  reviewRejected
+  productPublished
+  productDelisted
+  roleGranted
+  roleRevoked
+  mfaEnrolled
+  mfaRecoveryRegenerated
+}
+
+enum AdminAuditTargetType {
+  productVersion
+  product
+  userRole
+  adminMfaFactor
+}
+
+enum AdminMfaFactorType {
+  // TOTP is the only supported factor today; the enum is left open so a
+  // WebAuthn factor type can be added later without a breaking migration.
+  totp
+}
+
+// Append-only: admin actions are recorded here for accountability and are
+// never updated or deleted after being written — there is intentionally
+// no `updatedAt` field and no repository method that mutates or removes a
+// row once inserted. `beforeState`/`afterState` are redacted diffs of the
+// affected record (no secrets or PII), captured by the caller.
+model AdminAuditLog {
+  id            String               @id @default(uuid()) @db.Uuid
+  actingAdminId String               @map("acting_admin_id") @db.Uuid
+  action        AdminAuditAction
+  targetType    AdminAuditTargetType @map("target_type")
+  targetId      String               @map("target_id") @db.VarChar(64)
+  beforeState   Json?                @map("before_state")
+  afterState    Json?                @map("after_state")
+  requestId     String?              @map("request_id") @db.VarChar(128)
+  createdAt     DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  actingAdmin   User                 @relation(fields: [actingAdminId], references: [id], onDelete: Restrict)
+
+  @@index([actingAdminId, createdAt, id], map: "admin_audit_logs_acting_admin_id_created_at_id_idx")
+  @@index([targetType, targetId, createdAt], map: "admin_audit_logs_target_type_target_id_created_at_idx")
+  @@map("admin_audit_logs")
+}
+
+// The TOTP shared secret is encrypted at rest (application-layer envelope
+// encryption), not hashed, because verifying a code requires the plaintext
+// secret back. Recovery codes (below) are the opposite: one-way hashed,
+// since they are only ever compared, never decrypted. Neither value is
+// ever logged.
+model AdminMfaFactor {
+  id              String                 @id @default(uuid()) @db.Uuid
+  userId          String                 @map("user_id") @db.Uuid
+  type            AdminMfaFactorType
+  encryptedSecret String                 @map("encrypted_secret") @db.Text
+  confirmedAt     DateTime?              @map("confirmed_at") @db.Timestamptz(3)
+  createdAt       DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  user            User                   @relation(fields: [userId], references: [id], onDelete: Restrict)
+  recoveryCodes   AdminMfaRecoveryCode[]
+
+  // One active factor per (user, type): a user enrolls TOTP once, and
+  // re-enrollment replaces the existing row rather than accumulating
+  // duplicates.
+  @@unique([userId, type])
+  @@map("admin_mfa_factors")
+}
+
+model AdminMfaRecoveryCode {
+  id        String         @id @default(uuid()) @db.Uuid
+  factorId  String         @map("factor_id") @db.Uuid
+  codeHash  String         @map("code_hash") @db.VarChar(255)
+  usedAt    DateTime?      @map("used_at") @db.Timestamptz(3)
+  createdAt DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  factor    AdminMfaFactor @relation(fields: [factorId], references: [id], onDelete: Restrict)
+
+  @@index([factorId], map: "admin_mfa_recovery_codes_factor_id_idx")
+  @@map("admin_mfa_recovery_codes")
+}
+
+// Marks that a session has completed an admin MFA challenge, so the
+// step-up enforcement guard (a later round) can require a sufficiently
+// recent `verifiedAt` before allowing an admin action. One row per
+// successful challenge; the guard reads the most recent row for the
+// session.
+model AdminMfaSession {
+  id         String   @id @default(uuid()) @db.Uuid
+  sessionId  String   @map("session_id") @db.Uuid
+  verifiedAt DateTime @map("verified_at") @db.Timestamptz(3)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  session    Session  @relation(fields: [sessionId], references: [id], onDelete: Restrict)
+
+  @@index([sessionId], map: "admin_mfa_sessions_session_id_idx")
+  @@map("admin_mfa_sessions")
 }

@@ -14,7 +14,7 @@
     "board": "pnpm --filter @tools/board start"
   },
   "devDependencies": {
-    "turbo": "^2.1.0",
+    "turbo": "^2.10.7",
     "typescript": "^5.6.0",
     "prettier": "^3.3.0"
   },

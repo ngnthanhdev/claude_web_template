@@ -54,6 +54,14 @@ const totpCodeSchema = z
   .regex(/^\d{6}$/, "must be a 6-digit TOTP code");
 
 /**
+ * A one-time recovery code (design §6). Distinct from a 6-digit TOTP: a
+ * bounded non-empty string the service issues (hashed at rest) and the admin
+ * may present at `verify` time in place of a TOTP code. Bounds keep the input
+ * validated at the DTO boundary without over-constraining the issued format.
+ */
+const recoveryCodeSchema = z.string().trim().min(8).max(64);
+
+/**
  * Artifact metadata surfaced to an admin reviewer (design §5) — no
  * buyer/order/revenue field. `signature` is excluded: it is a
  * server/factory verification credential checked during publish, not a
@@ -142,15 +150,12 @@ export type AdminReviewQueueItemDetailResponse = z.infer<
 
 /**
  * Dedicated guarded transition: moves the addressed `ProductVersion`
- * `in_review -> approved` only (design §4/§5/§8). Never a field on a generic
- * edit request.
+ * `in_review -> approved` only (design §4/§5/§8). The target product+version
+ * are named in the route path (`/admin/products/:productId/versions/:version/
+ * approve`), so the body carries no identity — an empty allowlist that still
+ * rejects any smuggled `reviewState`/`publicationState`/acting-admin field.
  */
-export const approveReviewRequestSchema = z
-  .object({
-    productId: z.string().uuid(),
-    version: semanticVersionSchema,
-  })
-  .strict();
+export const approveReviewRequestSchema = z.object({}).strict();
 export type ApproveReviewRequest = z.infer<typeof approveReviewRequestSchema>;
 
 export const approveReviewResponseSchema = z
@@ -164,13 +169,12 @@ export type ApproveReviewResponse = z.infer<typeof approveReviewResponseSchema>;
 
 /**
  * Dedicated guarded transition: moves the addressed `ProductVersion` back to
- * `draft` and always requires a non-empty `reason` (design §4/§7 — the
- * reason is recorded on the audit row).
+ * `draft` and always requires a non-empty `reason` (design §4/§7 — the reason
+ * is recorded on the audit row). Target product+version come from the route
+ * path; the body carries only the `reason`.
  */
 export const rejectReviewRequestSchema = z
   .object({
-    productId: z.string().uuid(),
-    version: semanticVersionSchema,
     reason: nonEmptyTextSchema.max(MAX_REASON_LENGTH),
   })
   .strict();
@@ -188,12 +192,12 @@ export type RejectReviewResponse = z.infer<typeof rejectReviewResponseSchema>;
 /**
  * Dedicated guarded transition: flips the target `Product`'s
  * `PublicationState` to `published`, naming the specific `ProductVersion`
- * becoming the live version (design §5). A publish request missing its
- * target version must fail to parse.
+ * becoming the live version (design §5). The product is named in the route
+ * path (`/admin/products/:productId/publish`); the body names only the target
+ * `version`, so a publish request missing its target version fails to parse.
  */
 export const publishProductRequestSchema = z
   .object({
-    productId: z.string().uuid(),
     version: semanticVersionSchema,
   })
   .strict();
@@ -212,14 +216,12 @@ export type PublishProductResponse = z.infer<
 
 /**
  * Dedicated guarded transition: flips the target `Product`'s
- * `PublicationState` to `delisted` (design §5). `PublicationState` lives on
- * `Product`, not `ProductVersion`, so delist names only the product.
+ * `PublicationState` to `delisted` (design §5). The product is named in the
+ * route path (`/admin/products/:productId/delist`), so the body carries no
+ * identity — an empty allowlist that still rejects a smuggled
+ * `publicationState`/acting-admin field.
  */
-export const delistProductRequestSchema = z
-  .object({
-    productId: z.string().uuid(),
-  })
-  .strict();
+export const delistProductRequestSchema = z.object({}).strict();
 export type DelistProductRequest = z.infer<typeof delistProductRequestSchema>;
 
 export const delistProductResponseSchema = z
@@ -231,11 +233,15 @@ export const delistProductResponseSchema = z
 export type DelistProductResponse = z.infer<typeof delistProductResponseSchema>;
 
 /**
- * PII-minimized admin user directory entry (design §4/§8): normalized email
- * and assigned role keys only — no id, session, token, order, or other PII.
+ * PII-minimized admin user directory entry (design §4/§8): the opaque user
+ * `id` (the resource handle the `:userId` grant/revoke routes address — a
+ * UUID, not PII, so a user's email never has to enter a URL/path/log),
+ * normalized email, and assigned role keys only — no session, token, order,
+ * name, phone, or other PII.
  */
 export const adminUserSummarySchema = z
   .object({
+    id: z.string().uuid(),
     email: normalizedEmailSchema,
     roles: z.array(adminRoleKeySchema),
   })
@@ -251,13 +257,13 @@ export const adminUserListResponseSchema = z
 export type AdminUserListResponse = z.infer<typeof adminUserListResponseSchema>;
 
 /**
- * Grants/revokes a role on the user addressed by (normalized) email — the
- * only user-targeting field the admin surface exposes, since the user list
- * carries no id (design §4/§8). `role` is allowlisted to `seller|admin`.
+ * Grants a role to the user addressed by the route path
+ * (`POST /admin/users/:userId/roles`). The body carries only the `role`
+ * (allowlisted to `seller|admin`) — the acting admin and the target user both
+ * come from the server (session + path), never the body (design §4/§8).
  */
 export const adminGrantRoleRequestSchema = z
   .object({
-    email: normalizedEmailSchema,
     role: adminRoleKeySchema,
   })
   .strict();
@@ -266,9 +272,11 @@ export type AdminGrantRoleRequest = z.infer<typeof adminGrantRoleRequestSchema>;
 export const adminGrantRoleResponseSchema = adminUserSummarySchema;
 export type AdminGrantRoleResponse = AdminUserSummary;
 
-export const adminRevokeRoleRequestSchema = adminGrantRoleRequestSchema;
-export type AdminRevokeRoleRequest = AdminGrantRoleRequest;
-
+/**
+ * Revoke addresses both the user and the role in the route path
+ * (`DELETE /admin/users/:userId/roles/:roleKey`, the role key validated as
+ * `adminRoleKeySchema`), so it carries no request body — only a response.
+ */
 export const adminRevokeRoleResponseSchema = adminUserSummarySchema;
 export type AdminRevokeRoleResponse = AdminUserSummary;
 
@@ -322,9 +330,15 @@ export type AdminMfaEnrollConfirmResponse = z.infer<
   typeof adminMfaEnrollConfirmResponseSchema
 >;
 
+/**
+ * Validates a confirmed factor at challenge time. Accepts either a 6-digit
+ * TOTP code or a one-time recovery code (design §6) — the service
+ * disambiguates and consumes a recovery code single-use. A recovery code is
+ * not a 6-digit numeric, so the input is a union of the two accepted shapes.
+ */
 export const adminMfaVerifyRequestSchema = z
   .object({
-    code: totpCodeSchema,
+    code: z.union([totpCodeSchema, recoveryCodeSchema]),
   })
   .strict();
 export type AdminMfaVerifyRequest = z.infer<typeof adminMfaVerifyRequestSchema>;

@@ -12,12 +12,13 @@ import {
   adminMfaVerifyResponseSchema,
   adminReviewQueueItemDetailResponseSchema,
   adminReviewQueueListResponseSchema,
-  adminRevokeRoleRequestSchema,
+  adminRevokeRoleResponseSchema,
   adminRoleKeySchema,
   adminUserListResponseSchema,
   approveReviewRequestSchema,
   approveReviewResponseSchema,
   delistProductRequestSchema,
+  delistProductResponseSchema,
   publishProductRequestSchema,
   publishProductResponseSchema,
   rejectReviewRequestSchema,
@@ -70,31 +71,35 @@ const validReviewQueueItemDetail = {
   ],
 };
 
-const validApproveRequest = {
+/**
+ * The product+version a transition addresses. In the wire protocol these come
+ * from the route path (`/admin/products/:productId/versions/:version/...`),
+ * so they appear on the *response* DTOs (server echoes them) but never on a
+ * request body — the request-body fixtures below deliberately omit them.
+ */
+const transitionTarget = {
   productId: "2a80d74e-6f18-48a6-9034-7b79a8af93e9",
   version: "1.0.0",
 };
 
+const validApproveRequest = {};
+
 const validRejectRequest = {
-  ...validApproveRequest,
   reason: "Missing changelog entry for this version.",
 };
 
 const validPublishRequest = {
-  productId: "2a80d74e-6f18-48a6-9034-7b79a8af93e9",
   version: "1.0.0",
 };
 
-const validDelistRequest = {
-  productId: "2a80d74e-6f18-48a6-9034-7b79a8af93e9",
-};
+const validDelistRequest = {};
 
 const validGrantRoleRequest = {
-  email: "reviewer@example.com",
   role: "seller",
 };
 
 const validUserSummary = {
+  id: "7c1f9a3e-2b4d-4c6f-8a9b-0c1d2e3f4a5d",
   email: "reviewer@example.com",
   roles: ["seller"],
 };
@@ -202,24 +207,21 @@ describe("admin review-queue list/detail response contracts", () => {
 });
 
 describe("approve-review request/response contract", () => {
-  it("accepts a representative valid request", () => {
+  it("accepts an empty request (target is in the route path)", () => {
     expect(approveReviewRequestSchema.parse(validApproveRequest)).toEqual(
       validApproveRequest,
     );
   });
 
   it("accepts a representative valid response", () => {
-    const response = { ...validApproveRequest, reviewState: "approved" };
+    const response = { ...transitionTarget, reviewState: "approved" };
     expect(approveReviewResponseSchema.parse(response)).toEqual(response);
   });
 
   for (const smuggledField of acceptingAdminOrAuditFields) {
     it(`rejects a smuggled acting-admin/audit field: ${Object.keys(smuggledField)[0]}`, () => {
       expect(
-        approveReviewRequestSchema.safeParse({
-          ...validApproveRequest,
-          ...smuggledField,
-        }).success,
+        approveReviewRequestSchema.safeParse({ ...smuggledField }).success,
       ).toBe(false);
     });
   }
@@ -227,16 +229,20 @@ describe("approve-review request/response contract", () => {
   it("rejects a request that tries to free-set reviewState/publicationState directly", () => {
     expect(
       approveReviewRequestSchema.safeParse({
-        ...validApproveRequest,
         reviewState: "approved",
       }).success,
     ).toBe(false);
     expect(
       approveReviewRequestSchema.safeParse({
-        ...validApproveRequest,
         publicationState: "published",
       }).success,
     ).toBe(false);
+  });
+
+  it("rejects a request that re-carries the path-owned productId/version", () => {
+    expect(approveReviewRequestSchema.safeParse(transitionTarget).success).toBe(
+      false,
+    );
   });
 });
 
@@ -248,23 +254,18 @@ describe("reject-review request/response contract", () => {
   });
 
   it("accepts a representative valid response", () => {
-    const response = { ...validApproveRequest, reviewState: "draft" };
+    const response = { ...transitionTarget, reviewState: "draft" };
     expect(rejectReviewResponseSchema.parse(response)).toEqual(response);
   });
 
   it("rejects a reject request missing its reason", () => {
-    expect(
-      rejectReviewRequestSchema.safeParse(validApproveRequest).success,
-    ).toBe(false);
+    expect(rejectReviewRequestSchema.safeParse({}).success).toBe(false);
   });
 
   it("rejects a reject request with an empty/whitespace-only reason", () => {
-    expect(
-      rejectReviewRequestSchema.safeParse({
-        ...validApproveRequest,
-        reason: "   ",
-      }).success,
-    ).toBe(false);
+    expect(rejectReviewRequestSchema.safeParse({ reason: "   " }).success).toBe(
+      false,
+    );
   });
 
   for (const smuggledField of acceptingAdminOrAuditFields) {
@@ -287,15 +288,24 @@ describe("publish-product request/response contract", () => {
   });
 
   it("accepts a representative valid response", () => {
-    const response = { ...validPublishRequest, publicationState: "published" };
+    const response = {
+      ...transitionTarget,
+      publicationState: "published",
+    };
     expect(publishProductResponseSchema.parse(response)).toEqual(response);
   });
 
   it("rejects a publish request missing its target version", () => {
-    const { version: _version, ...withoutVersion } = validPublishRequest;
-    expect(publishProductRequestSchema.safeParse(withoutVersion).success).toBe(
-      false,
-    );
+    expect(publishProductRequestSchema.safeParse({}).success).toBe(false);
+  });
+
+  it("rejects a publish request re-carrying the path-owned productId", () => {
+    expect(
+      publishProductRequestSchema.safeParse({
+        ...validPublishRequest,
+        productId: transitionTarget.productId,
+      }).success,
+    ).toBe(false);
   });
 
   for (const smuggledField of acceptingAdminOrAuditFields) {
@@ -310,17 +320,24 @@ describe("publish-product request/response contract", () => {
   }
 });
 
-describe("delist-product request contract", () => {
-  it("accepts a representative valid request naming only the product", () => {
+describe("delist-product request/response contract", () => {
+  it("accepts an empty request (target is in the route path)", () => {
     expect(delistProductRequestSchema.parse(validDelistRequest)).toEqual(
       validDelistRequest,
     );
   });
 
+  it("accepts a representative valid response", () => {
+    const response = {
+      productId: transitionTarget.productId,
+      publicationState: "delisted",
+    };
+    expect(delistProductResponseSchema.parse(response)).toEqual(response);
+  });
+
   it("rejects a delist request carrying a free-set publicationState", () => {
     expect(
       delistProductRequestSchema.safeParse({
-        ...validDelistRequest,
         publicationState: "delisted",
       }).success,
     ).toBe(false);
@@ -329,10 +346,7 @@ describe("delist-product request contract", () => {
   for (const smuggledField of acceptingAdminOrAuditFields) {
     it(`rejects a smuggled acting-admin/audit field: ${Object.keys(smuggledField)[0]}`, () => {
       expect(
-        delistProductRequestSchema.safeParse({
-          ...validDelistRequest,
-          ...smuggledField,
-        }).success,
+        delistProductRequestSchema.safeParse({ ...smuggledField }).success,
       ).toBe(false);
     });
   }
@@ -347,9 +361,8 @@ describe("admin user-list response contract", () => {
     expect(adminUserListResponseSchema.parse(response)).toEqual(response);
   });
 
-  it("carries only normalized email + role keys (rejects id/session/token/order/PII fields)", () => {
+  it("carries only opaque id + normalized email + role keys (rejects session/token/order/PII fields)", () => {
     for (const forbiddenField of [
-      { id: "2a80d74e-6f18-48a6-9034-7b79a8af93e9" },
       { userId: "2a80d74e-6f18-48a6-9034-7b79a8af93e9" },
       { sessionId: "2a80d74e-6f18-48a6-9034-7b79a8af93e9" },
       { token: "leaked-token" },
@@ -368,14 +381,8 @@ describe("admin user-list response contract", () => {
 });
 
 describe("grant-role / revoke-role request/response contract", () => {
-  it("accepts a representative valid grant request", () => {
+  it("accepts a representative valid grant request (role only; user is path-addressed)", () => {
     expect(adminGrantRoleRequestSchema.parse(validGrantRoleRequest)).toEqual(
-      validGrantRoleRequest,
-    );
-  });
-
-  it("accepts a representative valid revoke request", () => {
-    expect(adminRevokeRoleRequestSchema.parse(validGrantRoleRequest)).toEqual(
       validGrantRoleRequest,
     );
   });
@@ -386,18 +393,29 @@ describe("grant-role / revoke-role request/response contract", () => {
     );
   });
 
-  it("rejects a role key outside seller|admin on grant/revoke", () => {
+  it("accepts a representative valid revoke response", () => {
+    expect(adminRevokeRoleResponseSchema.parse(validUserSummary)).toEqual(
+      validUserSummary,
+    );
+  });
+
+  it("rejects a role key outside seller|admin on grant", () => {
     for (const badRole of ["owner", "buyer", "superadmin"]) {
+      expect(
+        adminGrantRoleRequestSchema.safeParse({ role: badRole }).success,
+      ).toBe(false);
+    }
+  });
+
+  it("rejects a user identifier smuggled into the grant body (user is server/path-owned)", () => {
+    for (const smuggledUser of [
+      { userId: "2a80d74e-6f18-48a6-9034-7b79a8af93e9" },
+      { email: "reviewer@example.com" },
+    ]) {
       expect(
         adminGrantRoleRequestSchema.safeParse({
           ...validGrantRoleRequest,
-          role: badRole,
-        }).success,
-      ).toBe(false);
-      expect(
-        adminRevokeRoleRequestSchema.safeParse({
-          ...validGrantRoleRequest,
-          role: badRole,
+          ...smuggledUser,
         }).success,
       ).toBe(false);
     }
@@ -473,7 +491,7 @@ describe("MFA enroll-confirm request/response contract", () => {
     ).toEqual(validMfaEnrollConfirmResponse);
   });
 
-  it("rejects a malformed TOTP code", () => {
+  it("rejects a malformed TOTP code (confirm is TOTP-only)", () => {
     for (const badCode of ["12345", "abcdef", "1234567"]) {
       expect(
         adminMfaEnrollConfirmRequestSchema.safeParse({
@@ -495,13 +513,28 @@ describe("MFA enroll-confirm request/response contract", () => {
 });
 
 describe("MFA verify request/response contract", () => {
-  it("accepts a representative valid request/response", () => {
+  it("accepts a valid TOTP code", () => {
     expect(adminMfaVerifyRequestSchema.parse(validMfaVerifyRequest)).toEqual(
       validMfaVerifyRequest,
     );
     expect(adminMfaVerifyResponseSchema.parse(validMfaVerifyResponse)).toEqual(
       validMfaVerifyResponse,
     );
+  });
+
+  it("accepts a recovery code in place of a TOTP code", () => {
+    const recoveryRequest = { code: "recovery-code-1" };
+    expect(adminMfaVerifyRequestSchema.parse(recoveryRequest)).toEqual(
+      recoveryRequest,
+    );
+  });
+
+  it("rejects a code that is neither a 6-digit TOTP nor a bounded recovery code", () => {
+    for (const badCode of ["", "12", "abc"]) {
+      expect(
+        adminMfaVerifyRequestSchema.safeParse({ code: badCode }).success,
+      ).toBe(false);
+    }
   });
 
   it("rejects a TOTP secret smuggled onto the verify response", () => {

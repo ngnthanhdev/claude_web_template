@@ -84,7 +84,7 @@ for this layer even though some backing data now exists:
 
 ### T-e1b7a4 — Shared admin Zod contracts
 
-- **Status:** in-progress
+- **Status:** done
 - **Assignee:** ai
 - **Files:** packages/shared/src/admin.ts, packages/shared/src/admin.test.ts, packages/shared/src/index.ts, packages/shared/package.json
 - **Acceptance:**
@@ -96,7 +96,7 @@ for this layer even though some backing data now exists:
 
 ### T-7f3c92 — Prisma AdminAuditLog, admin MFA models, admin-role seed, and migration
 
-- **Status:** in-progress
+- **Status:** done
 - **Assignee:** ai
 - **Files:** apps/api/prisma/schema.prisma, apps/api/prisma/migrations/20260803000000_admin_surface/migration.sql
 - **Acceptance:**
@@ -136,9 +136,10 @@ for this layer even though some backing data now exists:
 
 - **Status:** todo
 - **Assignee:** ai
-- **Files:** apps/api/src/admin/catalogue/admin-catalogue.module.ts, apps/api/src/admin/catalogue/admin-review.controller.ts, apps/api/src/admin/catalogue/admin-review.service.ts, apps/api/src/admin/catalogue/admin-review.controller.test.ts, apps/api/src/admin/catalogue/admin-review.integration.test.ts
+- **Files:** apps/api/src/admin/catalogue/admin-catalogue.module.ts, apps/api/src/admin/catalogue/admin-review.controller.ts, apps/api/src/admin/catalogue/admin-review.service.ts, apps/api/src/admin/catalogue/admin-review.controller.test.ts, apps/api/src/admin/catalogue/admin-review.integration.test.ts, apps/api/prisma/schema.prisma, apps/api/prisma/migrations/&lt;ts&gt;_admin_review_queue_index/migration.sql
 - **Acceptance:**
   - `GET /v1/admin/review` (session-auth + `AdminRolesGuard` + `AdminMfaEnforcementGuard`) returns the cursor-paginated queue of `ProductVersion`s in `in_review` with their `Product` + linked `Artifact`/`BuildRun` QA/scan verdict metadata via the shared admin review-queue DTO (no buyer/order/revenue data), with a schema-bounded limit.
+  - Add the index this cross-product queue needs (flagged in Round-1 review): the Layer-8 `product_versions_product_id_review_state_idx` is `product_id`-leading and cannot serve the admin queue's `review_state = 'in_review'` predicate across all products. Add a `review_state`-leading (ideally partial `WHERE review_state = 'in_review'`) index on `product_versions` whose trailing columns match this endpoint's chosen cursor ordering, in its own additive migration, so the queue does not seq-scan. This is deferred here (not into Round-1 `T-7f3c92`) precisely because the ordering column is only fixed once this query is written.
   - `POST /v1/admin/products/:productId/versions/:version/approve` is a **dedicated guarded transition** (never a generic `PATCH`) that moves a version `in_review → approved` **only** (any other source state → `422`); `POST .../reject` moves it out of `in_review` (back to `draft`) and **requires a `reason`**. This is the approval half of the Layer-8 seller state machine: it reuses the shipped `ReviewState` enum **exactly** and stays consistent with `seller-review.service.ts` (seller does `draft→in_review`; admin does `in_review→approved`/reject). It does **not** touch `PublicationState` (that is `T-a6f204`).
   - Each action writes exactly one `AdminAuditLog` row (from→to, target version, actor) **in the same transaction** as the state change. Reads/acts are admin-scoped (admin sees all — no per-seller ownership filter), use allowlist `createZodDto` DTOs, and take no client-supplied acting id. Registers **no** providers into `app.module.ts` (`T-83bd5f` wires it).
   - Controller/unit tests (`admin-review.controller.test.ts`) + a disposable-PostgreSQL Supertest suite (`admin-review.integration.test.ts`, reading `ADMIN_CATALOGUE_INTEGRATION_DATABASE_URL`, seeding an `admin` `Role`/`UserRole` + an `in_review` version) cover: non-admin `403`; approve only from `in_review` (else `422`); reject requires a `reason`; exactly one audit row per action committed atomically (and none on a failed/rejected transition); no `PublicationState` change. `pnpm --filter @marketplace/api lint`, `typecheck`, `test`, and the explicit integration run pass.

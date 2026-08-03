@@ -96,11 +96,19 @@ async function seedFixtures(prisma: PrismaClient): Promise<void> {
       },
     ],
   });
-  await prisma.role.create({ data: { id: ids.sellerRole, key: "seller" } });
+  // Upsert (not create): the admin-surface migration idempotently seeds the
+  // `seller` role, so a fresh CI database already has it. Use the actual row
+  // id — it may be the migration's id, not `ids.sellerRole`.
+  const sellerRole = await prisma.role.upsert({
+    where: { key: "seller" },
+    update: {},
+    create: { id: ids.sellerRole, key: "seller" },
+    select: { id: true },
+  });
   await prisma.userRole.createMany({
     data: [
-      { userId: ids.sellerAOwner, roleId: ids.sellerRole },
-      { userId: ids.sellerBOwner, roleId: ids.sellerRole },
+      { userId: ids.sellerAOwner, roleId: sellerRole.id },
+      { userId: ids.sellerBOwner, roleId: sellerRole.id },
     ],
   });
   await prisma.sellerProfile.createMany({

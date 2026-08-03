@@ -132,7 +132,7 @@ for this layer even though some backing data now exists:
 
 ### T-b2d9f6 — Admin MFA enroll / confirm / verify / recovery endpoints
 
-- **Status:** in-progress
+- **Status:** review
 - **Assignee:** ai
 - **Files:** apps/api/src/admin/mfa/admin-mfa.module.ts, apps/api/src/admin/mfa/admin-mfa.controller.ts, apps/api/src/admin/mfa/admin-mfa.service.ts, apps/api/src/admin/mfa/totp.ts, apps/api/src/admin/mfa/admin-mfa.controller.test.ts, apps/api/src/admin/mfa/admin-mfa.integration.test.ts, apps/api/prisma/schema.prisma, apps/api/prisma/migrations/&lt;ts&gt;_admin_mfa_rate_limit/migration.sql, apps/api/src/auth/core/auth-rate-limit.service.ts
 - **Note (Round-3 sole schema owner):** this is the ONLY Round-3 task that edits `apps/api/prisma/schema.prisma` — it adds an `adminMfaVerification` member to the existing `AuthRateAction` enum (+ a migration) so failed MFA verifications reuse the DB-backed limiter, and adds a `checkAdminMfaVerification` method to `auth-rate-limit.service.ts` mirroring the magic-link methods. No other Round-3 task touches the schema or that service.
@@ -145,7 +145,7 @@ for this layer even though some backing data now exists:
 
 ### T-38e5c1 — Admin catalogue review resource (approve / reject)
 
-- **Status:** in-progress
+- **Status:** review
 - **Assignee:** ai
 - **Files:** apps/api/src/admin/catalogue/admin-catalogue.module.ts, apps/api/src/admin/catalogue/admin-review.controller.ts, apps/api/src/admin/catalogue/admin-review.service.ts, apps/api/src/admin/catalogue/admin-review.controller.test.ts, apps/api/src/admin/catalogue/admin-review.integration.test.ts
 - **Acceptance:**
@@ -159,7 +159,7 @@ for this layer even though some backing data now exists:
 
 ### T-a6f204 — Admin release/publication resource (publish / delist)
 
-- **Status:** in-progress
+- **Status:** review
 - **Assignee:** ai
 - **Files:** apps/api/src/admin/publication/admin-publication.module.ts, apps/api/src/admin/publication/admin-publication.controller.ts, apps/api/src/admin/publication/admin-publication.service.ts, apps/api/src/admin/publication/admin-publication.controller.test.ts, apps/api/src/admin/publication/admin-publication.integration.test.ts
 - **Acceptance:**
@@ -171,7 +171,7 @@ for this layer even though some backing data now exists:
 
 ### T-d9017b — Admin user-role provisioning (grant/revoke seller, grant admin)
 
-- **Status:** in-progress
+- **Status:** review
 - **Assignee:** ai
 - **Files:** apps/api/src/admin/users/admin-users.module.ts, apps/api/src/admin/users/admin-users.controller.ts, apps/api/src/admin/users/admin-users.service.ts, apps/api/src/admin/users/admin-users.controller.test.ts, apps/api/src/admin/users/admin-users.integration.test.ts
 - **Acceptance:**
@@ -183,7 +183,7 @@ for this layer even though some backing data now exists:
 
 ### T-4c62ae — Web admin API client
 
-- **Status:** in-progress
+- **Status:** review
 - **Assignee:** ai
 - **Files:** apps/web/src/lib/admin-client.ts, apps/web/src/lib/admin-client.test.ts
 - **Acceptance:**

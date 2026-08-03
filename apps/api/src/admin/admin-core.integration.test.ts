@@ -89,6 +89,11 @@ describeWithPostgres("Admin core PostgreSQL integration", () => {
   let prisma: PrismaClient;
   let audit: AdminAuditService;
   let bootstrap: AdminBootstrapService;
+  // The admin-surface migration already seeds an `admin` `Role` row (its own
+  // id), so `seedAdminCoreFixtures`'s upsert may resolve to that pre-existing
+  // id rather than the `adminRoleId` constant above — read back whichever id
+  // actually won rather than assuming the constant.
+  let seededAdminRoleId: string;
 
   beforeAll(async () => {
     if (integrationDatabaseUrl === undefined) {
@@ -97,6 +102,11 @@ describeWithPostgres("Admin core PostgreSQL integration", () => {
     prisma = new PrismaClient({ datasourceUrl: integrationDatabaseUrl });
     await prisma.$connect();
     await seedAdminCoreFixtures(prisma);
+    const adminRole = await prisma.role.findUniqueOrThrow({
+      where: { key: "admin" },
+      select: { id: true },
+    });
+    seededAdminRoleId = adminRole.id;
 
     const moduleRef = await Test.createTestingModule({
       imports: [AdminCoreIntegrationModule],
@@ -159,7 +169,7 @@ describeWithPostgres("Admin core PostgreSQL integration", () => {
     await bootstrap.bootstrap();
 
     const rolesAfterFirstRun = await prisma.userRole.findMany({
-      where: { userId: ids.bootstrapUser, roleId: adminRoleId },
+      where: { userId: ids.bootstrapUser, roleId: seededAdminRoleId },
     });
     expect(rolesAfterFirstRun).toHaveLength(1);
 
@@ -177,7 +187,7 @@ describeWithPostgres("Admin core PostgreSQL integration", () => {
     await bootstrap.bootstrap();
 
     const rolesAfterSecondRun = await prisma.userRole.findMany({
-      where: { userId: ids.bootstrapUser, roleId: adminRoleId },
+      where: { userId: ids.bootstrapUser, roleId: seededAdminRoleId },
     });
     expect(rolesAfterSecondRun).toHaveLength(1);
 

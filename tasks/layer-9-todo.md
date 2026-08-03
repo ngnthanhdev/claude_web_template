@@ -108,7 +108,7 @@ for this layer even though some backing data now exists:
 
 ### T-c4a8e0 — Admin security core: RolesGuard, MFA enforcement, audit service, bootstrap, prod flag
 
-- **Status:** in-progress
+- **Status:** done
 - **Assignee:** ai
 - **Files:** apps/api/src/admin/admin.module.ts, apps/api/src/admin/admin-roles.guard.ts, apps/api/src/admin/admin-mfa-enforcement.guard.ts, apps/api/src/admin/admin-principal.ts, apps/api/src/admin/admin-audit.service.ts, apps/api/src/admin/admin-bootstrap.service.ts, apps/api/src/admin/admin-core.test.ts, apps/api/src/admin/admin-core.integration.test.ts, apps/api/src/config/env.ts, apps/api/.env.example
 - **Acceptance:**

@@ -1,0 +1,172 @@
+{
+  "Admin": {
+    "nav": {
+      "label": "Admin"
+    },
+    "hub": {
+      "heading": "Admin",
+      "loading": "Loading…",
+      "redirecting": "Redirecting you to sign in…",
+      "links": {
+        "review": "Review queue",
+        "publish": "Publish & delist",
+        "users": "Users & roles",
+        "mfa": "Two-factor authentication"
+      },
+      "error": {
+        "heading": "We couldn't load the admin console",
+        "description": "Something went wrong. Please try again.",
+        "action": "Try again"
+      }
+    },
+    "review": {
+      "heading": "Review queue",
+      "loading": "Loading the review queue…",
+      "redirecting": "Redirecting you to sign in…",
+      "empty": "Nothing is waiting for review.",
+      "loadMore": "Load more",
+      "sellerLabel": "Seller",
+      "qaLabel": "QA",
+      "scanLabel": "Scan",
+      "forbidden": {
+        "heading": "Admin access required",
+        "description": "Your account doesn't have admin access. Contact another admin if you believe this is a mistake."
+      },
+      "error": {
+        "heading": "We couldn't load the review queue",
+        "description": "Something went wrong while loading the review queue. Please try again.",
+        "action": "Try again"
+      }
+    },
+    "reviewActions": {
+      "approve": "Approve",
+      "approving": "Approving…",
+      "approved": "Approved",
+      "approveError": "We couldn't approve this version. Please try again.",
+      "goToPublish": "Publish this version",
+      "reject": "Reject",
+      "rejecting": "Rejecting…",
+      "rejected": "Rejected",
+      "rejectError": "We couldn't reject this version. Please try again.",
+      "reasonLabel": "Reason",
+      "reasonError": "Enter a reason.",
+      "rejectSubmit": "Confirm reject",
+      "rejectCancel": "Cancel"
+    },
+    "publish": {
+      "heading": "Publish & delist",
+      "loading": "Loading…",
+      "redirecting": "Redirecting you to sign in…",
+      "forbidden": {
+        "heading": "Admin access required",
+        "description": "Your account doesn't have admin access."
+      },
+      "error": {
+        "heading": "We couldn't load this page",
+        "description": "Something went wrong. Please try again.",
+        "action": "Try again"
+      },
+      "publishForm": {
+        "heading": "Publish a version",
+        "productIdLabel": "Product ID",
+        "productIdError": "Enter the product's id.",
+        "versionLabel": "Version",
+        "versionError": "Enter a valid semantic version, e.g. 1.0.0.",
+        "submit": "Publish",
+        "pending": "Publishing…",
+        "success": "Published.",
+        "unprocessable": "This version can't be published yet — it must be approved with a verified artifact first.",
+        "error": "We couldn't publish this product. Please try again."
+      },
+      "delistForm": {
+        "heading": "Delist a product",
+        "productIdLabel": "Product ID",
+        "productIdError": "Enter the product's id.",
+        "submit": "Delist",
+        "pending": "Delisting…",
+        "success": "Delisted.",
+        "unprocessable": "This product can't be delisted right now.",
+        "error": "We couldn't delist this product. Please try again."
+      }
+    },
+    "users": {
+      "heading": "Users & roles",
+      "loading": "Loading users…",
+      "redirecting": "Redirecting you to sign in…",
+      "empty": "No users found.",
+      "loadMore": "Load more",
+      "rolesLabel": "Roles",
+      "noRoles": "No roles assigned.",
+      "grantLabel": "Grant a role",
+      "grantAction": "Grant",
+      "granting": "Granting…",
+      "grantError": "We couldn't grant this role. Please try again.",
+      "revokeAction": "Revoke",
+      "revoking": "Revoking…",
+      "revokeError": "We couldn't revoke this role. Please try again.",
+      "forbidden": {
+        "heading": "Admin access required",
+        "description": "Your account doesn't have admin access."
+      },
+      "error": {
+        "heading": "We couldn't load users",
+        "description": "Something went wrong while loading users. Please try again.",
+        "action": "Try again"
+      }
+    },
+    "roles": {
+      "seller": "Seller",
+      "admin": "Admin"
+    },
+    "states": {
+      "buildVerdict": {
+        "pending": "Pending",
+        "passed": "Passed",
+        "failed": "Failed"
+      },
+      "publicationState": {
+        "draft": "Draft",
+        "published": "Published",
+        "delisted": "Delisted"
+      }
+    },
+    "mfa": {
+      "heading": "Two-factor authentication",
+      "loading": "Loading…",
+      "redirecting": "Redirecting you to sign in…",
+      "forbidden": {
+        "heading": "Admin access required",
+        "description": "Your account doesn't have admin access."
+      },
+      "error": {
+        "heading": "We couldn't load this page",
+        "description": "Something went wrong. Please try again.",
+        "action": "Try again"
+      },
+      "enroll": {
+        "description": "Enroll an authenticator app for two-factor sign-in.",
+        "start": "Start enrollment",
+        "starting": "Starting…",
+        "error": "We couldn't start enrollment. Please try again.",
+        "secretHeading": "Scan this in your authenticator app",
+        "secretLabel": "Secret key",
+        "otpauthLabel": "Setup link",
+        "warning": "This key is shown once. Save it securely — it will not be shown again."
+      },
+      "confirm": {
+        "codeLabel": "6-digit code",
+        "codeError": "Enter the 6-digit code from your authenticator app.",
+        "submit": "Confirm",
+        "pending": "Confirming…",
+        "error": "We couldn't confirm this code. Please try again."
+      },
+      "recoveryCodes": {
+        "heading": "Recovery codes",
+        "warning": "These codes are shown once. Store them somewhere safe — each can be used only once if you lose access to your authenticator app.",
+        "regenerate": "Regenerate recovery codes",
+        "regenerating": "Regenerating…",
+        "regenerateError": "We couldn't regenerate recovery codes. Please try again."
+      }
+    }
+  }
+}

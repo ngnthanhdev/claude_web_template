@@ -1,0 +1,172 @@
+{
+  "Admin": {
+    "nav": {
+      "label": "Quản trị"
+    },
+    "hub": {
+      "heading": "Quản trị",
+      "loading": "Đang tải…",
+      "redirecting": "Đang chuyển hướng đến trang đăng nhập…",
+      "links": {
+        "review": "Hàng chờ xét duyệt",
+        "publish": "Xuất bản & gỡ bỏ",
+        "users": "Người dùng & vai trò",
+        "mfa": "Xác thực hai yếu tố"
+      },
+      "error": {
+        "heading": "Không thể tải bảng điều khiển quản trị",
+        "description": "Đã xảy ra lỗi. Vui lòng thử lại.",
+        "action": "Thử lại"
+      }
+    },
+    "review": {
+      "heading": "Hàng chờ xét duyệt",
+      "loading": "Đang tải hàng chờ xét duyệt…",
+      "redirecting": "Đang chuyển hướng đến trang đăng nhập…",
+      "empty": "Không có mục nào đang chờ xét duyệt.",
+      "loadMore": "Tải thêm",
+      "sellerLabel": "Người bán",
+      "qaLabel": "QA",
+      "scanLabel": "Quét",
+      "forbidden": {
+        "heading": "Cần quyền quản trị",
+        "description": "Tài khoản của bạn chưa có quyền quản trị. Vui lòng liên hệ quản trị viên khác nếu bạn cho rằng đây là nhầm lẫn."
+      },
+      "error": {
+        "heading": "Không thể tải hàng chờ xét duyệt",
+        "description": "Đã xảy ra lỗi khi tải hàng chờ xét duyệt. Vui lòng thử lại.",
+        "action": "Thử lại"
+      }
+    },
+    "reviewActions": {
+      "approve": "Duyệt",
+      "approving": "Đang duyệt…",
+      "approved": "Đã duyệt",
+      "approveError": "Không thể duyệt phiên bản này. Vui lòng thử lại.",
+      "goToPublish": "Xuất bản phiên bản này",
+      "reject": "Từ chối",
+      "rejecting": "Đang từ chối…",
+      "rejected": "Đã từ chối",
+      "rejectError": "Không thể từ chối phiên bản này. Vui lòng thử lại.",
+      "reasonLabel": "Lý do",
+      "reasonError": "Nhập lý do.",
+      "rejectSubmit": "Xác nhận từ chối",
+      "rejectCancel": "Hủy"
+    },
+    "publish": {
+      "heading": "Xuất bản & gỡ bỏ",
+      "loading": "Đang tải…",
+      "redirecting": "Đang chuyển hướng đến trang đăng nhập…",
+      "forbidden": {
+        "heading": "Cần quyền quản trị",
+        "description": "Tài khoản của bạn chưa có quyền quản trị."
+      },
+      "error": {
+        "heading": "Không thể tải trang này",
+        "description": "Đã xảy ra lỗi. Vui lòng thử lại.",
+        "action": "Thử lại"
+      },
+      "publishForm": {
+        "heading": "Xuất bản một phiên bản",
+        "productIdLabel": "Mã sản phẩm",
+        "productIdError": "Nhập mã sản phẩm.",
+        "versionLabel": "Phiên bản",
+        "versionError": "Nhập phiên bản ngữ nghĩa hợp lệ, ví dụ 1.0.0.",
+        "submit": "Xuất bản",
+        "pending": "Đang xuất bản…",
+        "success": "Đã xuất bản.",
+        "unprocessable": "Phiên bản này chưa thể xuất bản — phiên bản phải được duyệt và có tệp đã xác minh trước.",
+        "error": "Không thể xuất bản sản phẩm này. Vui lòng thử lại."
+      },
+      "delistForm": {
+        "heading": "Gỡ bỏ một sản phẩm",
+        "productIdLabel": "Mã sản phẩm",
+        "productIdError": "Nhập mã sản phẩm.",
+        "submit": "Gỡ bỏ",
+        "pending": "Đang gỡ bỏ…",
+        "success": "Đã gỡ bỏ.",
+        "unprocessable": "Không thể gỡ bỏ sản phẩm này lúc này.",
+        "error": "Không thể gỡ bỏ sản phẩm này. Vui lòng thử lại."
+      }
+    },
+    "users": {
+      "heading": "Người dùng & vai trò",
+      "loading": "Đang tải người dùng…",
+      "redirecting": "Đang chuyển hướng đến trang đăng nhập…",
+      "empty": "Không tìm thấy người dùng nào.",
+      "loadMore": "Tải thêm",
+      "rolesLabel": "Vai trò",
+      "noRoles": "Chưa có vai trò nào.",
+      "grantLabel": "Cấp một vai trò",
+      "grantAction": "Cấp",
+      "granting": "Đang cấp…",
+      "grantError": "Không thể cấp vai trò này. Vui lòng thử lại.",
+      "revokeAction": "Thu hồi",
+      "revoking": "Đang thu hồi…",
+      "revokeError": "Không thể thu hồi vai trò này. Vui lòng thử lại.",
+      "forbidden": {
+        "heading": "Cần quyền quản trị",
+        "description": "Tài khoản của bạn chưa có quyền quản trị."
+      },
+      "error": {
+        "heading": "Không thể tải người dùng",
+        "description": "Đã xảy ra lỗi khi tải người dùng. Vui lòng thử lại.",
+        "action": "Thử lại"
+      }
+    },
+    "roles": {
+      "seller": "Người bán",
+      "admin": "Quản trị viên"
+    },
+    "states": {
+      "buildVerdict": {
+        "pending": "Đang chờ",
+        "passed": "Đạt",
+        "failed": "Không đạt"
+      },
+      "publicationState": {
+        "draft": "Bản nháp",
+        "published": "Đã xuất bản",
+        "delisted": "Đã gỡ"
+      }
+    },
+    "mfa": {
+      "heading": "Xác thực hai yếu tố",
+      "loading": "Đang tải…",
+      "redirecting": "Đang chuyển hướng đến trang đăng nhập…",
+      "forbidden": {
+        "heading": "Cần quyền quản trị",
+        "description": "Tài khoản của bạn chưa có quyền quản trị."
+      },
+      "error": {
+        "heading": "Không thể tải trang này",
+        "description": "Đã xảy ra lỗi. Vui lòng thử lại.",
+        "action": "Thử lại"
+      },
+      "enroll": {
+        "description": "Đăng ký một ứng dụng xác thực cho đăng nhập hai yếu tố.",
+        "start": "Bắt đầu đăng ký",
+        "starting": "Đang bắt đầu…",
+        "error": "Không thể bắt đầu đăng ký. Vui lòng thử lại.",
+        "secretHeading": "Quét mã này trong ứng dụng xác thực của bạn",
+        "secretLabel": "Khóa bí mật",
+        "otpauthLabel": "Liên kết thiết lập",
+        "warning": "Khóa này chỉ hiển thị một lần. Hãy lưu lại an toàn — nó sẽ không hiển thị lại."
+      },
+      "confirm": {
+        "codeLabel": "Mã 6 chữ số",
+        "codeError": "Nhập mã 6 chữ số từ ứng dụng xác thực của bạn.",
+        "submit": "Xác nhận",
+        "pending": "Đang xác nhận…",
+        "error": "Không thể xác nhận mã này. Vui lòng thử lại."
+      },
+      "recoveryCodes": {
+        "heading": "Mã khôi phục",
+        "warning": "Các mã này chỉ hiển thị một lần. Hãy lưu chúng ở nơi an toàn — mỗi mã chỉ dùng được một lần nếu bạn mất quyền truy cập ứng dụng xác thực.",
+        "regenerate": "Tạo lại mã khôi phục",
+        "regenerating": "Đang tạo lại…",
+        "regenerateError": "Không thể tạo lại mã khôi phục. Vui lòng thử lại."
+      }
+    }
+  }
+}

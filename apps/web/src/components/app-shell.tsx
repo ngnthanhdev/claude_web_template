@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { AdminNavEntry } from "@/components/admin/admin-nav-entry";
 import { CartNavEntry } from "@/components/cart/cart-nav-entry";
 import { LocaleCurrencyToggle } from "@/components/nav/locale-currency-toggle";
 import { MegaMenu } from "@/components/nav/mega-menu";
@@ -100,6 +101,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </Link>
             <CartNavEntry />
             <SellerNavEntry />
+            <AdminNavEntry />
             <div className="hidden sm:block">
               <LocaleCurrencyToggle />
             </div>

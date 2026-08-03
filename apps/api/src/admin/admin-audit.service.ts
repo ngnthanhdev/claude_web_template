@@ -3,42 +3,61 @@ import { Prisma } from "@prisma/client";
 import type { AdminAuditAction, AdminAuditTargetType } from "@prisma/client";
 
 /**
- * Field names stripped from `beforeState`/`afterState` at every nesting
- * level before an audit row is written — secrets and PII must never reach
- * the append-only log (design §7/§8), even if a caller forgets to redact
- * before calling `record`.
+ * The ONLY field names allowed into an audit row's `beforeState`/`afterState`.
+ * This is a fail-closed allowlist, not a deny-list: `AdminAuditLog` is
+ * append-only and immutable (design §7), so a secret or PII written by mistake
+ * can never be scrubbed — anything not explicitly listed here is dropped
+ * rather than trusted. These are the non-sensitive domain fields an admin
+ * action legitimately records: state enums, the role key, non-secret
+ * identifiers, the reject `reason` recorded per §7, and the verified-artifact
+ * `checksum` reference (never the signature). Adding a new audited field is a
+ * conscious edit here.
+ *
+ * Callers MUST pass a curated, flat map of JSON primitives; nested objects and
+ * non-primitive values (`Date`/`Decimal`/`Buffer`/etc.) are dropped, so a
+ * whole Prisma entity handed in by mistake cannot smuggle a secret through.
  */
-const REDACTED_FIELD_NAMES = new Set([
-  "encryptedSecret",
-  "secret",
-  "codeHash",
-  "recoveryCodes",
-  "otpauthUri",
-  "email",
-  "normalizedEmail",
-  "signature",
+const ALLOWED_AUDIT_FIELDS = new Set([
+  "reviewState",
+  "publicationState",
+  "role",
+  "roleKey",
+  "reason",
+  "checksum",
+  "confirmedAt",
+  "type",
+  "version",
+  "productId",
+  "userId",
+  "factorId",
 ]);
+
+type AuditJsonPrimitive = string | number | boolean | null;
+
+function isJsonPrimitive(value: unknown): value is AuditJsonPrimitive {
+  return (
+    value === null ||
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  );
+}
 
 function toJsonInput(
   value: Record<string, unknown> | null | undefined,
 ): Prisma.InputJsonValue | typeof Prisma.JsonNull {
   if (value === null || value === undefined) return Prisma.JsonNull;
-  return redact(value) as Prisma.InputJsonValue;
-}
 
-function redact(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    return value.map(redact);
+  const projected: Record<string, AuditJsonPrimitive> = {};
+  for (const [key, entry] of Object.entries(value)) {
+    // Fail closed: only an allowlisted key carrying a JSON primitive survives.
+    // Unlisted keys, nested objects, and non-primitive values are dropped so
+    // nothing sensitive can reach the immutable log.
+    if (!ALLOWED_AUDIT_FIELDS.has(key)) continue;
+    if (!isJsonPrimitive(entry)) continue;
+    projected[key] = entry;
   }
-  if (value !== null && typeof value === "object") {
-    const redacted: Record<string, unknown> = {};
-    for (const [key, entry] of Object.entries(value)) {
-      if (REDACTED_FIELD_NAMES.has(key)) continue;
-      redacted[key] = redact(entry);
-    }
-    return redacted;
-  }
-  return value;
+  return projected as Prisma.InputJsonValue;
 }
 
 export interface AdminAuditEntry {

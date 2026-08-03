@@ -1,6 +1,7 @@
 import type { ExecutionContext } from "@nestjs/common";
 import { ForbiddenException } from "@nestjs/common";
 import type { ConfigService } from "@nestjs/config";
+import { Prisma } from "@prisma/client";
 import { describe, expect, it, vi } from "vitest";
 
 import type { Env } from "../config/env.js";
@@ -201,7 +202,7 @@ describe("AdminMfaEnforcementGuard", () => {
 });
 
 describe("AdminAuditService", () => {
-  it("writes one row and redacts secrets/PII from before/after state at every nesting level", async () => {
+  it("writes one row keeping only allowlisted primitive fields, dropping everything else (fail closed)", async () => {
     const create = vi.fn().mockResolvedValue({ id: "audit-row-1" });
     const tx = { adminAuditLog: { create } };
     const service = new AdminAuditService();
@@ -213,12 +214,12 @@ describe("AdminAuditService", () => {
       targetId: "factor-1",
       beforeState: null,
       afterState: {
-        factorId: "factor-1",
-        encryptedSecret: "should-never-be-logged",
-        owner: {
-          email: "leaks@example.com",
-          codeHash: "should-never-be-logged",
-        },
+        factorId: "factor-1", // allowlisted primitive -> kept
+        confirmedAt: "2026-08-03T00:00:00.000Z", // allowlisted primitive -> kept
+        encryptedSecret: "should-never-be-logged", // known secret -> dropped
+        sessionToken: "should-never-be-logged", // NOVEL unlisted key -> dropped (the deny-list gap)
+        phone: "+15555550100", // unlisted PII -> dropped
+        owner: { email: "leaks@example.com" }, // nested object -> dropped entirely
       },
     });
 
@@ -228,12 +229,12 @@ describe("AdminAuditService", () => {
     expect(data.action).toBe("mfaEnrolled");
     expect(data.afterState).toEqual({
       factorId: "factor-1",
-      owner: {},
+      confirmedAt: "2026-08-03T00:00:00.000Z",
     });
-    expect(JSON.stringify(data.afterState)).not.toContain(
-      "should-never-be-logged",
-    );
-    expect(JSON.stringify(data.afterState)).not.toContain("leaks@example.com");
+    const serialized = JSON.stringify(data.afterState);
+    expect(serialized).not.toContain("should-never-be-logged");
+    expect(serialized).not.toContain("leaks@example.com");
+    expect(serialized).not.toContain("+15555550100");
   });
 });
 
@@ -274,5 +275,29 @@ describe("AdminBootstrapService", () => {
     await service.bootstrap();
 
     expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("treats a concurrent-grant unique violation (P2002) as already granted rather than failing boot", async () => {
+    const p2002 = new Prisma.PrismaClientKnownRequestError(
+      "Unique constraint failed on the fields: (`user_id`,`role_id`)",
+      { code: "P2002", clientVersion: "test" },
+    );
+    const prisma = {
+      role: { findUnique: vi.fn().mockResolvedValue({ id: "admin-role-1" }) },
+      user: { findUnique: vi.fn().mockResolvedValue({ id: userId }) },
+      $transaction: vi.fn().mockRejectedValue(p2002),
+    };
+    const audit = new AdminAuditService();
+    const service = new AdminBootstrapService(
+      prisma as unknown as PrismaService,
+      configWith({
+        NODE_ENV: "test",
+        ADMIN_BOOTSTRAP_EMAILS: "admin@example.com",
+      }),
+      audit,
+    );
+
+    await expect(service.bootstrap()).resolves.toBeUndefined();
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
   });
 });

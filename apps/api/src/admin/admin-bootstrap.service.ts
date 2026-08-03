@@ -5,6 +5,7 @@ import {
   type OnApplicationBootstrap,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { Prisma } from "@prisma/client";
 
 import type { Env } from "../config/env.js";
 import { PrismaService } from "../prisma/prisma.service.js";
@@ -89,26 +90,41 @@ export class AdminBootstrapService implements OnApplicationBootstrap {
     });
     if (user === null) return;
 
-    await this.prisma.$transaction(async (tx) => {
-      const existingAssignment = await tx.userRole.findUnique({
-        where: { userId_roleId: { userId: user.id, roleId: adminRoleId } },
-        select: { id: true },
-      });
-      if (existingAssignment !== null) return;
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        const existingAssignment = await tx.userRole.findUnique({
+          where: { userId_roleId: { userId: user.id, roleId: adminRoleId } },
+          select: { id: true },
+        });
+        if (existingAssignment !== null) return;
 
-      await tx.userRole.create({
-        data: { userId: user.id, roleId: adminRoleId },
+        await tx.userRole.create({
+          data: { userId: user.id, roleId: adminRoleId },
+        });
+        // The bootstrap grant has no separate operator session to attribute
+        // it to — the newly-admitted user is recorded as both actor and
+        // target of their own provisioning.
+        await this.audit.record(tx, {
+          actingAdminId: user.id,
+          action: "roleGranted",
+          targetType: "userRole",
+          targetId: user.id,
+          afterState: { role: ADMIN_ROLE_KEY },
+        });
       });
-      // The bootstrap grant has no separate operator session to attribute
-      // it to — the newly-admitted user is recorded as both actor and
-      // target of their own provisioning.
-      await this.audit.record(tx, {
-        actingAdminId: user.id,
-        action: "roleGranted",
-        targetType: "userRole",
-        targetId: user.id,
-        afterState: { role: ADMIN_ROLE_KEY },
-      });
-    });
+    } catch (error) {
+      // Two instances cold-starting at once can both pass the existence check
+      // and race to insert; the loser hits the `@@unique([userId, roleId])`
+      // constraint (P2002). Treat that as already-granted — the winner wrote
+      // exactly one grant + audit row — rather than letting an uncaught throw
+      // reject application startup.
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2002"
+      ) {
+        return;
+      }
+      throw error;
+    }
   }
 }

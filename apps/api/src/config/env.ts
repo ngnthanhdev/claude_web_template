@@ -43,6 +43,17 @@ const secretSchema = z.string().superRefine((value, context) => {
   }
 });
 
+/**
+ * Tri-state boolean flag: unset (`undefined`, defer to a caller-chosen
+ * default), or the explicit literal string `"true"`/`"false"`. Deliberately
+ * NOT `z.coerce.boolean()` — that coerces the non-empty string `"false"` to
+ * `true`, silently defeating an operator's intent to turn a flag off.
+ */
+const optionalBooleanFlagSchema = z
+  .enum(["true", "false"])
+  .optional()
+  .transform((value) => (value === undefined ? undefined : value === "true"));
+
 const environmentObjectSchema = z.object({
   NODE_ENV: z
     .enum(["development", "test", "production"])
@@ -62,6 +73,25 @@ const environmentObjectSchema = z.object({
     .string()
     .min(1)
     .refine(isAbsolute, "must be an absolute path"),
+  /**
+   * Encrypts (not hashes — verification needs the plaintext back) the TOTP
+   * shared secret at rest (`AdminMfaFactor.encryptedSecret`). Independent of
+   * every other secret above.
+   */
+  ADMIN_MFA_SECRET_ENCRYPTION_KEY: secretSchema,
+  /**
+   * Effective admin-MFA enforcement = this flag when explicitly set, else
+   * `NODE_ENV === "production"` (on in prod, off in dev/test) — mirrors the
+   * sandbox-settle `NODE_ENV` gate. See
+   * `admin-mfa-enforcement.guard.ts#resolveAdminMfaEnforcement`.
+   */
+  ADMIN_MFA_ENFORCED: optionalBooleanFlagSchema,
+  /**
+   * Optional comma-separated normalized-email allowlist consumed by
+   * `AdminBootstrapService` at startup — the only non-self-serve admin-grant
+   * path. Unset (or empty) is a no-op.
+   */
+  ADMIN_BOOTSTRAP_EMAILS: z.string().optional(),
 });
 
 const secretNames = [
@@ -72,6 +102,7 @@ const secretNames = [
   "AUTH_SOURCE_IP_HASH_SECRET",
   "DOWNLOAD_TOKEN_HMAC_SECRET",
   "FACTORY_INGEST_HMAC_SECRET",
+  "ADMIN_MFA_SECRET_ENCRYPTION_KEY",
 ] as const;
 
 export const envSchema = environmentObjectSchema.superRefine(

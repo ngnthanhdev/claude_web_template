@@ -20,6 +20,7 @@ function validEnvironment(): Record<string, unknown> {
     DOWNLOAD_TOKEN_HMAC_SECRET: secret("f"),
     FACTORY_INGEST_HMAC_SECRET: secret("g"),
     LOCAL_ARTIFACT_STORAGE_DIR: "/tmp/kitvera-test-artifacts",
+    ADMIN_MFA_SECRET_ENCRYPTION_KEY: secret("h"),
   };
 }
 
@@ -43,6 +44,7 @@ describe("environment validation", () => {
     "FACTORY_INGEST_HMAC_SECRET",
     "LOCAL_ARTIFACT_STORAGE_DIR",
     "PUBLIC_WEB_ORIGIN",
+    "ADMIN_MFA_SECRET_ENCRYPTION_KEY",
   ])("rejects a missing %s", (name) => {
     const environment = validEnvironment();
     delete environment[name];
@@ -66,6 +68,11 @@ describe("environment validation", () => {
     reusedDownloadSecret.DOWNLOAD_TOKEN_HMAC_SECRET =
       reusedDownloadSecret.AUTH_SESSION_HASH_SECRET;
     expect(() => validateEnv(reusedDownloadSecret)).toThrow(/independent/i);
+
+    const reusedAdminMfaSecret = validEnvironment();
+    reusedAdminMfaSecret.ADMIN_MFA_SECRET_ENCRYPTION_KEY =
+      reusedAdminMfaSecret.AUTH_SESSION_HASH_SECRET;
+    expect(() => validateEnv(reusedAdminMfaSecret)).toThrow(/independent/i);
   });
 
   it("rejects a relative LOCAL_ARTIFACT_STORAGE_DIR path", () => {
@@ -90,6 +97,34 @@ describe("environment validation", () => {
       validateEnv({
         ...validEnvironment(),
         PUBLIC_WEB_ORIGIN: "http://kitvera.example",
+      }),
+    ).toThrow();
+  });
+
+  it("leaves ADMIN_MFA_ENFORCED undefined when unset", () => {
+    const environment = validEnvironment();
+    delete environment.ADMIN_MFA_ENFORCED;
+
+    expect(validateEnv(environment).ADMIN_MFA_ENFORCED).toBeUndefined();
+  });
+
+  it.each(["true", "false"] as const)(
+    "parses an explicit ADMIN_MFA_ENFORCED=%s to its literal boolean",
+    (value) => {
+      const environment = validateEnv({
+        ...validEnvironment(),
+        ADMIN_MFA_ENFORCED: value,
+      });
+
+      expect(environment.ADMIN_MFA_ENFORCED).toBe(value === "true");
+    },
+  );
+
+  it("rejects a non-literal ADMIN_MFA_ENFORCED value", () => {
+    expect(() =>
+      validateEnv({
+        ...validEnvironment(),
+        ADMIN_MFA_ENFORCED: "yes",
       }),
     ).toThrow();
   });

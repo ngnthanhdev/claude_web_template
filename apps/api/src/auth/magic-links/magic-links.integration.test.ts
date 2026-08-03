@@ -10,14 +10,7 @@ import {
 } from "@marketplace/shared/auth";
 import { PrismaClient } from "@prisma/client";
 import request from "supertest";
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-} from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { configureApp } from "../../bootstrap/configure-app.js";
 import { PrismaModule } from "../../prisma/prisma.module.js";
@@ -44,7 +37,9 @@ class CaptureEmailDelivery implements EmailDeliveryPort {
   outcome: EmailDeliveryOutcome = { status: "delivered" };
   failure: Error | null = null;
 
-  async sendMagicLink(delivery: MagicLinkDelivery): Promise<EmailDeliveryOutcome> {
+  async sendMagicLink(
+    delivery: MagicLinkDelivery,
+  ): Promise<EmailDeliveryOutcome> {
     this.deliveries.push(delivery);
     if (this.failure !== null) throw this.failure;
     return this.outcome;
@@ -75,6 +70,7 @@ const secrets = {
   AUTH_SESSION_HASH_SECRET: Buffer.alloc(32, 3).toString("base64url"),
   AUTH_CSRF_HASH_SECRET: Buffer.alloc(32, 4).toString("base64url"),
   AUTH_SOURCE_IP_HASH_SECRET: Buffer.alloc(32, 5).toString("base64url"),
+  ADMIN_MFA_SECRET_ENCRYPTION_KEY: Buffer.alloc(32, 8).toString("base64url"),
 } as const;
 
 function tokenFromLink(link: string): string {
@@ -102,13 +98,15 @@ describeWithPostgres("Magic links PostgreSQL integration", () => {
         ConfigModule.forRoot({
           isGlobal: true,
           ignoreEnvFile: true,
-          load: [() => ({
-            NODE_ENV: "test",
-            DATABASE_URL: integrationDatabaseUrl,
-            CORS_ORIGIN: "https://app.kitvera.test",
-            PUBLIC_WEB_ORIGIN: "https://app.kitvera.test",
-            ...secrets,
-          })],
+          load: [
+            () => ({
+              NODE_ENV: "test",
+              DATABASE_URL: integrationDatabaseUrl,
+              CORS_ORIGIN: "https://app.kitvera.test",
+              PUBLIC_WEB_ORIGIN: "https://app.kitvera.test",
+              ...secrets,
+            }),
+          ],
         }),
         PrismaModule,
         MagicLinksModule,
@@ -163,7 +161,9 @@ describeWithPostgres("Magic links PostgreSQL integration", () => {
           returnTo: "/vi/templates/aurora",
         })
         .expect(202);
-      expect(magicLinkInitiationResponseSchema.parse(JSON.parse(response.text))).toEqual({
+      expect(
+        magicLinkInitiationResponseSchema.parse(JSON.parse(response.text)),
+      ).toEqual({
         status: "accepted",
       });
     }
@@ -191,12 +191,15 @@ describeWithPostgres("Magic links PostgreSQL integration", () => {
     expect(JSON.stringify(rows)).not.toContain(secondToken);
     expect(rows[0]?.revokedAt).not.toBeNull();
     expect(rows[1]?.revokedAt).toBeNull();
-    expect((rows[1]?.expiresAt.getTime() ?? 0) - (rows[1]?.createdAt.getTime() ?? 0))
-      .toBe(15 * 60_000);
-    expect(JSON.stringify(await prisma.authSecurityEvent.findMany()))
-      .not.toContain(firstToken);
-    expect(JSON.stringify(await prisma.authSecurityEvent.findMany()))
-      .not.toContain(secondToken);
+    expect(
+      (rows[1]?.expiresAt.getTime() ?? 0) - (rows[1]?.createdAt.getTime() ?? 0),
+    ).toBe(15 * 60_000);
+    expect(
+      JSON.stringify(await prisma.authSecurityEvent.findMany()),
+    ).not.toContain(firstToken);
+    expect(
+      JSON.stringify(await prisma.authSecurityEvent.findMany()),
+    ).not.toContain(secondToken);
   });
 
   it("keeps existing-account initiation indistinguishable and pending", async () => {
@@ -220,9 +223,11 @@ describeWithPostgres("Magic links PostgreSQL integration", () => {
   it("enforces exact email limits while preserving generic 202", async () => {
     const attempts = [];
     for (let index = 0; index < 4; index += 1) {
-      attempts.push(await request(app.getHttpServer())
-        .post("/v1/auth/magic-links")
-        .send({ email: "concurrent@email.magic.test", locale: "en" }));
+      attempts.push(
+        await request(app.getHttpServer())
+          .post("/v1/auth/magic-links")
+          .send({ email: "concurrent@email.magic.test", locale: "en" }),
+      );
     }
 
     expect(attempts.map(({ status }) => status)).toEqual([202, 202, 202, 202]);
@@ -256,9 +261,11 @@ describeWithPostgres("Magic links PostgreSQL integration", () => {
   it("enforces the exact source-IP initiation window", async () => {
     const attempts = [];
     for (let index = 0; index < 21; index += 1) {
-      attempts.push(await request(app.getHttpServer())
-        .post("/v1/auth/magic-links")
-        .send({ email: `ip-${index}@source.magic.test`, locale: "vi" }));
+      attempts.push(
+        await request(app.getHttpServer())
+          .post("/v1/auth/magic-links")
+          .send({ email: `ip-${index}@source.magic.test`, locale: "vi" }),
+      );
     }
 
     expect(attempts.every(({ status }) => status === 202)).toBe(true);
@@ -269,22 +276,30 @@ describeWithPostgres("Magic links PostgreSQL integration", () => {
 
   it("equalizes delivered, suppressed, failed, and limited generic responses", async () => {
     const outcomes = [];
-    outcomes.push(await request(app.getHttpServer())
-      .post("/v1/auth/magic-links")
-      .send({ email: "equalized@delivery.magic.test", locale: "vi" }));
+    outcomes.push(
+      await request(app.getHttpServer())
+        .post("/v1/auth/magic-links")
+        .send({ email: "equalized@delivery.magic.test", locale: "vi" }),
+    );
 
     email.outcome = { status: "suppressed" };
-    outcomes.push(await request(app.getHttpServer())
-      .post("/v1/auth/magic-links")
-      .send({ email: "equalized@delivery.magic.test", locale: "vi" }));
+    outcomes.push(
+      await request(app.getHttpServer())
+        .post("/v1/auth/magic-links")
+        .send({ email: "equalized@delivery.magic.test", locale: "vi" }),
+    );
 
     email.failure = new Error("provider unavailable");
-    outcomes.push(await request(app.getHttpServer())
-      .post("/v1/auth/magic-links")
-      .send({ email: "equalized@delivery.magic.test", locale: "vi" }));
-    outcomes.push(await request(app.getHttpServer())
-      .post("/v1/auth/magic-links")
-      .send({ email: "equalized@delivery.magic.test", locale: "vi" }));
+    outcomes.push(
+      await request(app.getHttpServer())
+        .post("/v1/auth/magic-links")
+        .send({ email: "equalized@delivery.magic.test", locale: "vi" }),
+    );
+    outcomes.push(
+      await request(app.getHttpServer())
+        .post("/v1/auth/magic-links")
+        .send({ email: "equalized@delivery.magic.test", locale: "vi" }),
+    );
 
     expect(outcomes.map(({ status, body }) => ({ status, body }))).toEqual(
       Array.from({ length: 4 }, () => ({
@@ -295,12 +310,16 @@ describeWithPostgres("Magic links PostgreSQL integration", () => {
     expect(equalizer.startedAtValues).toHaveLength(4);
     expect(email.deliveries).toHaveLength(3);
 
-    const live = await prisma.magicLinkToken.count({ where: { revokedAt: null } });
+    const live = await prisma.magicLinkToken.count({
+      where: { revokedAt: null },
+    });
     expect(live).toBe(0);
     expect(await prisma.user.count()).toBe(0);
-    expect(await prisma.authSecurityEvent.count({
-      where: { kind: "magicLinkIssueFailed" },
-    })).toBe(2);
+    expect(
+      await prisma.authSecurityEvent.count({
+        where: { kind: "magicLinkIssueFailed" },
+      }),
+    ).toBe(2);
   });
 
   it("creates the customer and secure session only on successful redemption", async () => {
@@ -319,7 +338,9 @@ describeWithPostgres("Magic links PostgreSQL integration", () => {
       .post("/v1/auth/magic-link-redemptions")
       .send({ token })
       .expect(201);
-    const body = magicLinkRedemptionResponseSchema.parse(JSON.parse(response.text));
+    const body = magicLinkRedemptionResponseSchema.parse(
+      JSON.parse(response.text),
+    );
 
     expect(body).toMatchObject({
       user: { email: "first@redeem.magic.test" },
@@ -392,17 +413,21 @@ describeWithPostgres("Magic links PostgreSQL integration", () => {
 
     const responses = [];
     for (const token of tokens) {
-      responses.push(await request(app.getHttpServer())
-        .post("/v1/auth/magic-link-redemptions")
-        .send({ token }));
+      responses.push(
+        await request(app.getHttpServer())
+          .post("/v1/auth/magic-link-redemptions")
+          .send({ token }),
+      );
     }
     expect(responses.filter(({ status }) => status === 201)).toHaveLength(10);
     expect(responses.filter(({ status }) => status === 401)).toHaveLength(1);
     expect(await prisma.user.count()).toBe(10);
     expect(await prisma.session.count()).toBe(10);
-    expect(await prisma.authRateEvent.count({
-      where: { action: "magicLinkRedemption" },
-    })).toBe(10);
+    expect(
+      await prisma.authRateEvent.count({
+        where: { action: "magicLinkRedemption" },
+      }),
+    ).toBe(10);
   });
 
   it("keeps token and audit writes bounded after both endpoint limits deny", async () => {
@@ -420,18 +445,24 @@ describeWithPostgres("Magic links PostgreSQL integration", () => {
 
     const deniedInitiations = [];
     for (let index = 0; index < 100; index += 1) {
-      deniedInitiations.push(await request(app.getHttpServer())
-        .post("/v1/auth/magic-links")
-        .send({
-          email: `denied-${index}@bounded.magic.test`,
-          locale: "vi",
-        }));
+      deniedInitiations.push(
+        await request(app.getHttpServer())
+          .post("/v1/auth/magic-links")
+          .send({
+            email: `denied-${index}@bounded.magic.test`,
+            locale: "vi",
+          }),
+      );
     }
-    expect(deniedInitiations.every(({ status, body }) =>
-      status === 202 && body.status === "accepted"),
+    expect(
+      deniedInitiations.every(
+        ({ status, body }) => status === 202 && body.status === "accepted",
+      ),
     ).toBe(true);
     expect(await prisma.magicLinkToken.count()).toBe(initiationSnapshot.tokens);
-    expect(await prisma.authSecurityEvent.count()).toBe(initiationSnapshot.audits);
+    expect(await prisma.authSecurityEvent.count()).toBe(
+      initiationSnapshot.audits,
+    );
 
     await prisma.authRateEvent.deleteMany({
       where: { action: "magicLinkRedemption" },
@@ -450,18 +481,26 @@ describeWithPostgres("Magic links PostgreSQL integration", () => {
 
     const deniedRedemptions = [];
     for (let index = 0; index < 100; index += 1) {
-      deniedRedemptions.push(await request(app.getHttpServer())
-        .post("/v1/auth/magic-link-redemptions")
-        .send({
-          token: Buffer.alloc(32, 150 + index).toString("base64url"),
-        }));
+      deniedRedemptions.push(
+        await request(app.getHttpServer())
+          .post("/v1/auth/magic-link-redemptions")
+          .send({
+            token: Buffer.alloc(32, 150 + index).toString("base64url"),
+          }),
+      );
     }
-    expect(deniedRedemptions.every(({ status, body }) =>
-      status === 401 && body.error?.code === "MAGIC_LINK_INVALID_OR_EXPIRED"),
+    expect(
+      deniedRedemptions.every(
+        ({ status, body }) =>
+          status === 401 &&
+          body.error?.code === "MAGIC_LINK_INVALID_OR_EXPIRED",
+      ),
     ).toBe(true);
-    expect(await prisma.authSecurityEvent.count({
-      where: { kind: "magicLinkRedemptionFailed" },
-    })).toBe(redemptionAuditSnapshot);
+    expect(
+      await prisma.authSecurityEvent.count({
+        where: { kind: "magicLinkRedemptionFailed" },
+      }),
+    ).toBe(redemptionAuditSnapshot);
     expect(await prisma.authSecurityEvent.count()).toBe(totalAuditSnapshot);
   });
 
@@ -480,9 +519,11 @@ describeWithPostgres("Magic links PostgreSQL integration", () => {
       ),
     );
     expect(responses.map(({ status }) => status).sort()).toEqual([201, 401]);
-    expect(await prisma.user.count({
-      where: { normalizedEmail: "race@redeem.magic.test" },
-    })).toBe(1);
+    expect(
+      await prisma.user.count({
+        where: { normalizedEmail: "race@redeem.magic.test" },
+      }),
+    ).toBe(1);
     expect(await prisma.session.count()).toBe(1);
   });
 });

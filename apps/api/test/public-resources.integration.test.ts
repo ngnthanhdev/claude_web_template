@@ -459,6 +459,9 @@ describeWithPostgres("Composed public API resources", () => {
       FACTORY_INGEST_HMAC_SECRET: Buffer.alloc(32, 7).toString("base64url"),
       LOCAL_ARTIFACT_STORAGE_DIR:
         "/tmp/kitvera-public-resources-test-artifacts",
+      ADMIN_MFA_SECRET_ENCRYPTION_KEY: Buffer.alloc(32, 8).toString(
+        "base64url",
+      ),
     };
     expect(() => validateEnv(base)).not.toThrow();
     const missingSecret: Record<string, unknown> = { ...base };

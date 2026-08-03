@@ -46,6 +46,7 @@ function testEnvironment(nodeEnv: Env["NODE_ENV"]): Env {
     DOWNLOAD_TOKEN_HMAC_SECRET: secret(6),
     FACTORY_INGEST_HMAC_SECRET: secret(7),
     LOCAL_ARTIFACT_STORAGE_DIR: "/tmp/kitvera-commerce-test-artifacts",
+    ADMIN_MFA_SECRET_ENCRYPTION_KEY: secret(8),
   } satisfies Env;
 }
 

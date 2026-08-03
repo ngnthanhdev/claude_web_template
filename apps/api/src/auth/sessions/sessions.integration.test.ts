@@ -61,6 +61,7 @@ const testEnvironment = {
   DOWNLOAD_TOKEN_HMAC_SECRET: secret("f"),
   FACTORY_INGEST_HMAC_SECRET: secret("g"),
   LOCAL_ARTIFACT_STORAGE_DIR: "/tmp/kitvera-sessions-test-artifacts",
+  ADMIN_MFA_SECRET_ENCRYPTION_KEY: secret("h"),
 } satisfies Env;
 
 class MutableClock implements AuthClock {

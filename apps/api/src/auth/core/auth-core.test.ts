@@ -32,7 +32,8 @@ import {
 } from "./auth-session.service.js";
 import { AuthCoreModule } from "./auth-core.module.js";
 
-const secret = (byte: string): string => Buffer.alloc(32, byte).toString("base64url");
+const secret = (byte: string): string =>
+  Buffer.alloc(32, byte).toString("base64url");
 
 function cryptoService(random: AuthRandomSource): AuthCryptoService {
   const config = new ConfigService<Env, true>({
@@ -46,6 +47,7 @@ function cryptoService(random: AuthRandomSource): AuthCryptoService {
     AUTH_SESSION_HASH_SECRET: secret("c"),
     AUTH_CSRF_HASH_SECRET: secret("d"),
     AUTH_SOURCE_IP_HASH_SECRET: secret("e"),
+    ADMIN_MFA_SECRET_ENCRYPTION_KEY: secret("h"),
   });
   return new AuthCryptoService(config, random);
 }
@@ -56,12 +58,14 @@ describe("AuthCryptoService", () => {
     const bearer = crypto.generateOpaqueValue();
 
     expect(bearer).toMatch(/^[A-Za-z0-9_-]{43}$/);
-    expect(new Set([
-      crypto.hashMagicLinkToken(bearer),
-      crypto.hashSessionToken(bearer),
-      crypto.hashCsrfToken(bearer),
-      crypto.digestSourceAddress(bearer),
-    ]).size).toBe(4);
+    expect(
+      new Set([
+        crypto.hashMagicLinkToken(bearer),
+        crypto.hashSessionToken(bearer),
+        crypto.hashCsrfToken(bearer),
+        crypto.digestSourceAddress(bearer),
+      ]).size,
+    ).toBe(4);
   });
 
   it("derives a session-bound CSRF value and verifies it in constant-time form", () => {
@@ -74,13 +78,20 @@ describe("AuthCryptoService", () => {
     expect(csrf).toMatch(/^[A-Za-z0-9_-]{43}$/);
     expect(crypto.verifyCsrfToken(firstSession, csrf, storedHash)).toBe(true);
     expect(crypto.verifyCsrfToken(secondSession, csrf, storedHash)).toBe(false);
-    expect(crypto.verifyCsrfToken(firstSession, `${csrf.slice(0, -1)}A`, storedHash)).toBe(false);
+    expect(
+      crypto.verifyCsrfToken(firstSession, `${csrf.slice(0, -1)}A`, storedHash),
+    ).toBe(false);
   });
 });
 
 describe("session cookie helpers", () => {
   it("sets and clears the exact __Host cookie scope", () => {
-    const writes: Array<{ operation: string; name: string; value?: string; options: object }> = [];
+    const writes: Array<{
+      operation: string;
+      name: string;
+      value?: string;
+      options: object;
+    }> = [];
     const reply = {
       setCookie: (name: string, value: string, options: object) => {
         writes.push({ operation: "set", name, value, options });
@@ -236,7 +247,8 @@ describe("database-backed authentication state", () => {
                   : where.id.in.includes(id));
               const matches =
                 idMatches &&
-                (where.userId === undefined || session.userId === where.userId) &&
+                (where.userId === undefined ||
+                  session.userId === where.userId) &&
                 (where.revokedAt === undefined || session.revokedAt === null);
               if (!matches) continue;
               this.sessions.set(id, { ...session, ...data });
@@ -266,14 +278,22 @@ describe("database-backed authentication state", () => {
     const clock = new MutableClock(new Date("2026-07-22T00:00:00.000Z"));
     const prisma = new MemoryRatePrisma();
     const limiter = new AuthRateLimitService(prisma, sequentialCrypto(), clock);
-    const request = { ip: "203.0.113.10", headers: { "x-forwarded-for": "198.51.100.2" } };
+    const request = {
+      ip: "203.0.113.10",
+      headers: { "x-forwarded-for": "198.51.100.2" },
+    };
 
     const initiation = await Promise.all(
       Array.from({ length: 4 }, () =>
         limiter.checkMagicLinkInitiation("buyer@example.com", request),
       ),
     );
-    expect(initiation.map(({ allowed }) => allowed)).toEqual([true, true, true, false]);
+    expect(initiation.map(({ allowed }) => allowed)).toEqual([
+      true,
+      true,
+      true,
+      false,
+    ]);
     expect(prisma.events).toHaveLength(3);
     expect(JSON.stringify(prisma.events)).not.toContain("203.0.113.10");
     expect(JSON.stringify(prisma.events)).not.toContain("198.51.100.2");
@@ -299,10 +319,17 @@ describe("database-backed authentication state", () => {
     ).resolves.toMatchObject({ allowed: false });
 
     const ipPrisma = new MemoryRatePrisma();
-    const ipLimiter = new AuthRateLimitService(ipPrisma, sequentialCrypto(), clock);
+    const ipLimiter = new AuthRateLimitService(
+      ipPrisma,
+      sequentialCrypto(),
+      clock,
+    );
     const ipDecisions = await Promise.all(
       Array.from({ length: 21 }, (_, index) =>
-        ipLimiter.checkMagicLinkInitiation(`buyer-${index}@example.com`, request),
+        ipLimiter.checkMagicLinkInitiation(
+          `buyer-${index}@example.com`,
+          request,
+        ),
       ),
     );
     expect(ipDecisions.filter(({ allowed }) => allowed)).toHaveLength(20);
@@ -327,11 +354,19 @@ describe("database-backed authentication state", () => {
     const clock = new MutableClock(new Date("2026-07-22T00:00:00.000Z"));
     const prisma = new MemorySessionPrisma();
     const sessions = new AuthSessionService(prisma, sequentialCrypto(), clock);
-    const issued = await sessions.createSession("00000000-0000-0000-0000-000000000123");
+    const issued = await sessions.createSession(
+      "00000000-0000-0000-0000-000000000123",
+    );
 
-    expect(JSON.stringify([...prisma.sessions.values()])).not.toContain(issued.sessionToken);
-    expect(JSON.stringify([...prisma.sessions.values()])).not.toContain(issued.csrfToken);
-    await expect(sessions.resolveSession(issued.sessionToken)).resolves.toMatchObject({
+    expect(JSON.stringify([...prisma.sessions.values()])).not.toContain(
+      issued.sessionToken,
+    );
+    expect(JSON.stringify([...prisma.sessions.values()])).not.toContain(
+      issued.csrfToken,
+    );
+    await expect(
+      sessions.resolveSession(issued.sessionToken),
+    ).resolves.toMatchObject({
       replacementSessionToken: null,
     });
 
@@ -341,10 +376,14 @@ describe("database-backed authentication state", () => {
       sessions.resolveSession(issued.sessionToken),
     ]);
     const rotated = concurrentRotation.find((session) => session !== null);
-    expect(concurrentRotation.filter((session) => session !== null)).toHaveLength(1);
+    expect(
+      concurrentRotation.filter((session) => session !== null),
+    ).toHaveLength(1);
     expect(rotated?.replacementSessionToken).toMatch(/^[A-Za-z0-9_-]{43}$/);
     expect(rotated?.absoluteExpiresAt).toEqual(issued.absoluteExpiresAt);
-    await expect(sessions.resolveSession(issued.sessionToken)).resolves.toBeNull();
+    await expect(
+      sessions.resolveSession(issued.sessionToken),
+    ).resolves.toBeNull();
     await expect(
       sessions.resolveSession(rotated?.replacementSessionToken ?? "missing"),
     ).resolves.toMatchObject({ replacementSessionToken: null });
@@ -358,15 +397,25 @@ describe("database-backed authentication state", () => {
     const first = await sessions.createSession(userId);
     const second = await sessions.createSession(userId);
 
-    await expect(sessions.revokeCurrentSession(userId, first.sessionId)).resolves.toBe(true);
-    await expect(sessions.resolveSession(first.sessionToken)).resolves.toBeNull();
-    await expect(sessions.resolveSession(second.sessionToken)).resolves.not.toBeNull();
+    await expect(
+      sessions.revokeCurrentSession(userId, first.sessionId),
+    ).resolves.toBe(true);
+    await expect(
+      sessions.resolveSession(first.sessionToken),
+    ).resolves.toBeNull();
+    await expect(
+      sessions.resolveSession(second.sessionToken),
+    ).resolves.not.toBeNull();
     await expect(sessions.revokeAllSessions(userId)).resolves.toBe(1);
-    await expect(sessions.resolveSession(second.sessionToken)).resolves.toBeNull();
+    await expect(
+      sessions.resolveSession(second.sessionToken),
+    ).resolves.toBeNull();
 
     const expiring = await sessions.createSession(userId);
     clock.advance(30 * 24 * 60 * 60_000);
-    await expect(sessions.resolveSession(expiring.sessionToken)).resolves.toBeNull();
+    await expect(
+      sessions.resolveSession(expiring.sessionToken),
+    ).resolves.toBeNull();
   });
 
   it("keeps the core interfaces strict", () => {
@@ -396,8 +445,12 @@ describe("AuthCoreModule dependency injection", () => {
       .compile();
 
     expect(moduleRef.get(AuthCryptoService)).toBeInstanceOf(AuthCryptoService);
-    expect(moduleRef.get(AuthRateLimitService)).toBeInstanceOf(AuthRateLimitService);
-    expect(moduleRef.get(AuthSessionService)).toBeInstanceOf(AuthSessionService);
+    expect(moduleRef.get(AuthRateLimitService)).toBeInstanceOf(
+      AuthRateLimitService,
+    );
+    expect(moduleRef.get(AuthSessionService)).toBeInstanceOf(
+      AuthSessionService,
+    );
     await moduleRef.close();
   });
 });
@@ -407,83 +460,79 @@ const authCoreDatabaseUrl = process.env.AUTH_CORE_DATABASE_URL;
 describe.runIf(authCoreDatabaseUrl !== undefined)(
   "AuthRateLimitService PostgreSQL contention",
   () => {
-    it(
-      "fails closed without queueing or appending rows during a 100-request IP flood",
-      async () => {
-        if (authCoreDatabaseUrl === undefined) {
-          throw new Error("AUTH_CORE_DATABASE_URL is required for this test");
-        }
-        const client = new PrismaClient({ datasourceUrl: authCoreDatabaseUrl });
-        const prisma = postgresRatePrisma(client);
-        const clock = { now: () => new Date() } satisfies AuthClock;
-        const crypto = sequentialPostgresCrypto();
-        const limiter = new AuthRateLimitService(prisma, crypto, clock);
-        const sourceAddress = "203.0.113.200";
-        const sourceIpDigest = crypto.digestSourceAddress(sourceAddress);
-        const lockKey = `initiation:ip:${sourceIpDigest}`;
-        let announceReady = (): void => undefined;
-        let releaseLock = (): void => undefined;
-        const ready = new Promise<void>((resolve) => {
-          announceReady = resolve;
-        });
-        const hold = new Promise<void>((resolve) => {
-          releaseLock = resolve;
-        });
+    it("fails closed without queueing or appending rows during a 100-request IP flood", async () => {
+      if (authCoreDatabaseUrl === undefined) {
+        throw new Error("AUTH_CORE_DATABASE_URL is required for this test");
+      }
+      const client = new PrismaClient({ datasourceUrl: authCoreDatabaseUrl });
+      const prisma = postgresRatePrisma(client);
+      const clock = { now: () => new Date() } satisfies AuthClock;
+      const crypto = sequentialPostgresCrypto();
+      const limiter = new AuthRateLimitService(prisma, crypto, clock);
+      const sourceAddress = "203.0.113.200";
+      const sourceIpDigest = crypto.digestSourceAddress(sourceAddress);
+      const lockKey = `initiation:ip:${sourceIpDigest}`;
+      let announceReady = (): void => undefined;
+      let releaseLock = (): void => undefined;
+      const ready = new Promise<void>((resolve) => {
+        announceReady = resolve;
+      });
+      const hold = new Promise<void>((resolve) => {
+        releaseLock = resolve;
+      });
 
-        await client.$connect();
-        await client.authRateEvent.deleteMany();
-        const holder = client.$transaction(async (transaction) => {
-          await transaction.$queryRawUnsafe(
-            "SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))::text AS lock_result",
-            lockKey,
-          );
-          announceReady();
-          await hold;
-        });
-        await ready;
+      await client.$connect();
+      await client.authRateEvent.deleteMany();
+      const holder = client.$transaction(async (transaction) => {
+        await transaction.$queryRawUnsafe(
+          "SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))::text AS lock_result",
+          lockKey,
+        );
+        announceReady();
+        await hold;
+      });
+      await ready;
 
-        try {
-          const flood = Promise.all(
-            Array.from({ length: 100 }, (_, index) =>
-              limiter.checkMagicLinkInitiation(`flood-${index}@example.com`, {
-                ip: sourceAddress,
-              }),
+      try {
+        const flood = Promise.all(
+          Array.from({ length: 100 }, (_, index) =>
+            limiter.checkMagicLinkInitiation(`flood-${index}@example.com`, {
+              ip: sourceAddress,
+            }),
+          ),
+        );
+        await completesWithin(client.$queryRaw`SELECT 1`, 1_500);
+        const decisions = await completesWithin(flood, 3_000);
+        expect(decisions.every(({ allowed }) => !allowed)).toBe(true);
+        expect(await client.authRateEvent.count()).toBe(0);
+      } finally {
+        releaseLock();
+        await holder;
+      }
+
+      try {
+        const uncontended = [];
+        for (let index = 0; index < 21; index += 1) {
+          uncontended.push(
+            await limiter.checkMagicLinkInitiation(
+              `uncontended-${index}@example.com`,
+              { ip: sourceAddress },
             ),
           );
-          await completesWithin(client.$queryRaw`SELECT 1`, 1_500);
-          const decisions = await completesWithin(flood, 3_000);
-          expect(decisions.every(({ allowed }) => !allowed)).toBe(true);
-          expect(await client.authRateEvent.count()).toBe(0);
-        } finally {
-          releaseLock();
-          await holder;
         }
+        expect(uncontended.filter(({ allowed }) => allowed)).toHaveLength(20);
+        expect(uncontended.at(-1)?.allowed).toBe(false);
+        expect(await client.authRateEvent.count()).toBe(20);
 
-        try {
-          const uncontended = [];
-          for (let index = 0; index < 21; index += 1) {
-            uncontended.push(
-              await limiter.checkMagicLinkInitiation(
-                `uncontended-${index}@example.com`,
-                { ip: sourceAddress },
-              ),
-            );
-          }
-          expect(uncontended.filter(({ allowed }) => allowed)).toHaveLength(20);
-          expect(uncontended.at(-1)?.allowed).toBe(false);
-          expect(await client.authRateEvent.count()).toBe(20);
-
-          await limiter.checkMagicLinkInitiation("still-denied@example.com", {
-            ip: sourceAddress,
-          });
-          expect(await client.authRateEvent.count()).toBe(20);
-        } finally {
-          await client.authRateEvent.deleteMany();
-          await client.$disconnect();
-        }
-      },
-      15_000,
-    );
+        await limiter.checkMagicLinkInitiation("still-denied@example.com", {
+          ip: sourceAddress,
+        });
+        expect(await client.authRateEvent.count()).toBe(20);
+      } finally {
+        await client.authRateEvent.deleteMany();
+        await client.$disconnect();
+      }
+    }, 15_000);
   },
 );
 
@@ -509,7 +558,10 @@ function sequentialPostgresCrypto(): AuthCryptoService {
   return cryptoService({ bytes: () => Buffer.alloc(32, (byte += 1)) });
 }
 
-async function completesWithin<T>(operation: Promise<T>, milliseconds: number): Promise<T> {
+async function completesWithin<T>(
+  operation: Promise<T>,
+  milliseconds: number,
+): Promise<T> {
   let timeout: ReturnType<typeof setTimeout> | undefined;
   const deadline = new Promise<never>((_resolve, reject) => {
     timeout = setTimeout(

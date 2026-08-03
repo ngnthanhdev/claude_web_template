@@ -93,6 +93,7 @@ describeWithPostgres("Entitlements resources with PostgreSQL", () => {
       DOWNLOAD_TOKEN_HMAC_SECRET: secret(6),
       FACTORY_INGEST_HMAC_SECRET: secret(7),
       LOCAL_ARTIFACT_STORAGE_DIR: artifactsDir,
+      ADMIN_MFA_SECRET_ENCRYPTION_KEY: secret(8),
     } satisfies Env;
 
     prisma = new PrismaClient({ datasourceUrl: integrationDatabaseUrl });

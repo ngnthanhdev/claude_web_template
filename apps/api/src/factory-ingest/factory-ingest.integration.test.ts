@@ -48,6 +48,7 @@ function testEnvironment(): Env {
     DOWNLOAD_TOKEN_HMAC_SECRET: secret(6),
     FACTORY_INGEST_HMAC_SECRET: factorySecret,
     LOCAL_ARTIFACT_STORAGE_DIR: "/tmp/kitvera-factory-ingest-test-artifacts",
+    ADMIN_MFA_SECRET_ENCRYPTION_KEY: secret(8),
   } satisfies Env;
 }
 

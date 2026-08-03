@@ -1,6 +1,6 @@
 # Layer 9 — Admin Surface: First Pass
 
-Status: **todo**
+Status: **in-progress** (Round 1)
 
 This is the **first admin scope pass**, derived from the user-approved design
 `docs/specs/2026-08-01-admin-surface-design.md` (the `T-4c8a9e` gate, approved
@@ -84,7 +84,7 @@ for this layer even though some backing data now exists:
 
 ### T-e1b7a4 — Shared admin Zod contracts
 
-- **Status:** todo
+- **Status:** in-progress
 - **Assignee:** ai
 - **Files:** packages/shared/src/admin.ts, packages/shared/src/admin.test.ts, packages/shared/src/index.ts, packages/shared/package.json
 - **Acceptance:**
@@ -96,7 +96,7 @@ for this layer even though some backing data now exists:
 
 ### T-7f3c92 — Prisma AdminAuditLog, admin MFA models, admin-role seed, and migration
 
-- **Status:** todo
+- **Status:** in-progress
 - **Assignee:** ai
 - **Files:** apps/api/prisma/schema.prisma, apps/api/prisma/migrations/20260803000000_admin_surface/migration.sql
 - **Acceptance:**

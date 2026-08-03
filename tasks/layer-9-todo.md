@@ -93,6 +93,19 @@ aren't lost:
   backlog `T-1f7c2a`.
 - **Review-queue `review_state`-leading index** (deferred in `T-38e5c1`): a
   perf index for the admin queue on a growing `product_versions` table.
+- **Production-MFA admin UX** (Round-4 review, part of the §6 go-live blocker):
+  the shell has no step-up **verify** screen (`mfa-enrollment.tsx` never calls
+  `verifyMfa`), and `admin-nav-entry.tsx` conflates an enforcement-guard `403`
+  with a not-admin `403`, so under `ADMIN_MFA_ENFORCED=true` an
+  enrolled-but-unverified admin is locked out with no in-UI recovery. Must land
+  with the deferred production-admin-MFA work, not this layer (which runs the
+  flag off in dev/test/e2e).
+- **Admin shell gate-boilerplate DRY** (Round-4 review): the unauthenticated
+  redirect + loading/forbidden/error panel markup is repeated across the five
+  admin panels (mirrors the seller shell). Extract a shared `auth-gated-panel`;
+  folds into `T-1f7c2a`. Also move `isAdminForbiddenError`/`useAdminContextStatus`
+  out of `admin-nav-entry.tsx` into a neutral `admin-access.ts`, and add axe
+  assertions to the publish/users/mfa panel tests.
 
 ## Excluded from this pass (design §2 SEQUENCES / DEFERS — do NOT scope here)
 
@@ -214,7 +227,7 @@ for this layer even though some backing data now exists:
 
 ### T-83bd5f — Compose admin modules and composed admin integration suite
 
-- **Status:** review
+- **Status:** done
 - **Assignee:** ai
 - **Files:** apps/api/src/app.module.ts, apps/api/test/admin-surface.integration.test.ts
 - **Acceptance:**
@@ -227,7 +240,7 @@ for this layer even though some backing data now exists:
 
 ### T-2e7a9c — Admin shell surface (/[locale]/admin/*)
 
-- **Status:** review
+- **Status:** done
 - **Assignee:** ai
 - **Files:** apps/web/src/app/[locale]/admin/page.tsx, apps/web/src/app/[locale]/admin/review/page.tsx, apps/web/src/app/[locale]/admin/publish/page.tsx, apps/web/src/app/[locale]/admin/users/page.tsx, apps/web/src/app/[locale]/admin/mfa/page.tsx, apps/web/src/components/admin/review-queue.tsx, apps/web/src/components/admin/review-actions.tsx, apps/web/src/components/admin/publication-panel.tsx, apps/web/src/components/admin/user-roles-panel.tsx, apps/web/src/components/admin/mfa-enrollment.tsx, apps/web/src/components/admin/admin-nav-entry.tsx, apps/web/src/components/app-shell.tsx, apps/web/messages/vi/admin.json, apps/web/messages/en/admin.json, apps/web/src/components/admin/review-queue.test.tsx
 - **Acceptance:**

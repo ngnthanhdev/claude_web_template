@@ -55,6 +55,7 @@ model Session {
 enum AuthRateAction {
   magicLinkInitiation
   magicLinkRedemption
+  adminMfaVerification
 }
 
 enum AuthSecurityEventKind {

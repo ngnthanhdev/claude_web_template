@@ -136,7 +136,8 @@ describe("database-backed authentication state", () => {
   }
 
   type RateEvent = {
-    action: "magicLinkInitiation" | "magicLinkRedemption";
+    action:
+      "magicLinkInitiation" | "magicLinkRedemption" | "adminMfaVerification";
     normalizedEmail?: string;
     sourceIpDigest: string;
     occurredAt: Date;

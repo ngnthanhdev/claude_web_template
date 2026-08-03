@@ -1,0 +1,12 @@
+-- Admin MFA challenge attempts (enroll-confirm and step-up verify) share the
+-- same rate-limit action bucket as magic-link initiation/redemption, keyed by
+-- the acting admin's user id (stored in `AuthRateEvent.normalizedEmail`) and
+-- source-IP digest.
+--
+-- Kept as its own migration, separate from the `auth_rate_events_email_scope_check`
+-- update that follows: Postgres refuses to reference a brand-new enum value
+-- from a constraint expression in the same transaction that adds it
+-- ("unsafe use of new value ... New enum values must be committed before
+-- they can be used"), and `prisma migrate deploy` runs each migration file
+-- as one transaction.
+ALTER TYPE "AuthRateAction" ADD VALUE 'adminMfaVerification';

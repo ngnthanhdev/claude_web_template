@@ -30,7 +30,7 @@ jobs:
   gitleaks:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with: { fetch-depth: 0 }
       # Secret scan — flags credential-shaped strings in the diff/history.
       - name: Gitleaks (secret scan)
@@ -43,7 +43,7 @@ jobs:
     container:
       image: semgrep/semgrep
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # SAST gate over first-party source (apps/ + packages/). p/nodejsscan is
       # dropped on purpose — on this code it produced only false positives (a
       # variable named `secret` read from config, `===` against null, a bounded
@@ -64,7 +64,7 @@ jobs:
   dependency-audit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # pnpm version comes from package.json's packageManager field — passing
       # `version:` here too makes pnpm/action-setup fail on a version conflict.
       - uses: pnpm/action-setup@v4

@@ -31,7 +31,7 @@
     "@types/node": "^22.18.12",
     "@types/supertest": "^6.0.3",
     "eslint": "^9.38.0",
-    "prisma": "^6.18.0",
+    "prisma": "^7.9.1",
     "supertest": "^7.1.4",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.2",
